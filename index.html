@@ -417,10 +417,14 @@ function drawPropIso(t,tx,ty,cx,cy){
   const base=cy+IH*0.28,line='#12160f';ctx.lineJoin='round';
   if(t==='T'){shadow(cx,base,22,9);
     const sway=Math.sin((animT+tx*33)*0.03)*3;
+    const autumn=hash(tx*3+1,ty*7+2)<0.3;
+    const c1=autumn?'#7c3f18':'#28541f', c2=autumn?'#a85f1e':'#356b2a', c3=autumn?'#d18a2c':'#4c8f3a';
     ctx.fillStyle='#4e351d';ctx.strokeStyle=line;ctx.lineWidth=4;rr(cx-6,base-30,12,32,4);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#2f5e2c';ctx.beginPath();ctx.arc(cx+sway,base-46,26,0,7);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#3f7a3a';ctx.beginPath();ctx.arc(cx-8+sway,base-54,13,0,7);ctx.fill();
-    ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.arc(cx+11+sway,base-40,11,0,7);ctx.fill();}
+    ctx.fillStyle=c1;ctx.beginPath();ctx.arc(cx+sway,base-46,26,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle=c2;ctx.beginPath();ctx.arc(cx-10+sway,base-52,15,0,7);ctx.fill();
+    ctx.fillStyle=c2;ctx.beginPath();ctx.arc(cx+11+sway,base-49,13,0,7);ctx.fill();
+    ctx.fillStyle=c3;ctx.beginPath();ctx.arc(cx-4+sway,base-59,10,0,7);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.arc(cx+13+sway,base-39,10,0,7);ctx.fill();}
   else if(t==='H'){shadow(cx,base+2,30,10);ctx.strokeStyle=line;ctx.lineWidth=4;
     ctx.fillStyle='#b48a5a';rr(cx-22,base-34,44,36,4);ctx.fill();ctx.stroke();
     ctx.fillStyle='rgba(0,0,0,.2)';rr(cx+3,base-32,19,32,3);ctx.fill();
@@ -446,6 +450,35 @@ function drawPropIso(t,tx,ty,cx,cy){
   else if(t==='F'){ctx.fillStyle='#4e341c';ctx.strokeStyle=line;ctx.lineWidth=3;
     rr(cx-16,base-20,6,22,2);ctx.fill();ctx.stroke();rr(cx+10,base-20,6,22,2);ctx.fill();ctx.stroke();
     rr(cx-18,base-16,36,6,2);ctx.fill();ctx.stroke();}
+}
+
+/* ---- deterministic environmental decoration (grass tiles, non-colliding) ---- */
+function hash(a,b){const n=Math.sin(a*127.1+b*311.7)*43758.5453;return n-Math.floor(n);}
+function decorAt(tx,ty){
+  if(tileAt(tx,ty)!=='.')return null;
+  if(hash(tx,ty)>0.4)return null;
+  const r=hash(tx+9,ty-4);
+  const type=r<0.26?'flower':r<0.48?'rock':r<0.64?'mushroom':r<0.85?'tuft':'pebbles';
+  return {type,v:hash(tx-3,ty+5)};
+}
+function drawDecor(dec,tx,ty,cx,cy){
+  const base=cy+IH*0.28,line='#12160f';ctx.lineJoin='round';
+  if(dec.type==='rock'){ctx.fillStyle='#565b52';ctx.strokeStyle=line;ctx.lineWidth=3;
+    ctx.beginPath();ctx.ellipse(cx,base-4,10,8,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.ellipse(cx-3,base-7,4,3,0,0,7);ctx.fill();}
+  else if(dec.type==='pebbles'){ctx.fillStyle='#565b52';ctx.strokeStyle=line;ctx.lineWidth=2;
+    for(const[dx,dy,r]of[[-6,0,4],[3,-2,5],[7,3,3]]){ctx.beginPath();ctx.arc(cx+dx,base-2+dy,r,0,7);ctx.fill();ctx.stroke();}}
+  else if(dec.type==='flower'){const cols=['#ff5b6a','#ffd23c','#f2f2f2','#c77dff'];const col=cols[Math.floor(dec.v*4)%4];
+    ctx.strokeStyle='#2f5e2c';ctx.lineWidth=2;
+    for(const dx of[-4,4]){ctx.beginPath();ctx.moveTo(cx+dx,base);ctx.lineTo(cx+dx,base-8);ctx.stroke();
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(cx+dx,base-10,3,0,7);ctx.fill();
+      ctx.fillStyle='#ffe86a';ctx.beginPath();ctx.arc(cx+dx,base-10,1.2,0,7);ctx.fill();}}
+  else if(dec.type==='mushroom'){ctx.strokeStyle=line;ctx.lineWidth=2;
+    ctx.fillStyle='#e8e0d0';ctx.fillRect(cx-2,base-6,4,6);
+    ctx.fillStyle='#d13b2e';ctx.beginPath();ctx.arc(cx,base-6,6,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx-2,base-7,1,0,7);ctx.fill();ctx.beginPath();ctx.arc(cx+2,base-8,1,0,7);ctx.fill();}
+  else if(dec.type==='tuft'){ctx.fillStyle='#3f7a3a';const sw=Math.sin((animT+tx*20)*0.05)*1.5;
+    for(let i=-1;i<2;i++)ctx.fillRect(cx+i*5+sw,base-9,2,10);}
 }
 
 /* ---- cel-shaded critter (used in world? no; battle/panel) ---- */
@@ -504,7 +537,9 @@ function renderWorld(){
     const t=tileAt(x,y);drawGroundIso(PROP.has(t)?'.':t,x,y,c.x,c.y);}
   // depth-sorted entities
   const list=[];
-  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const t=tileAt(x,y);if(PROP.has(t))list.push({t,x,y,d:x+y});}
+  for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const t=tileAt(x,y);
+    if(PROP.has(t))list.push({t,x,y,d:x+y});
+    else if(t==='.'){const dec=decorAt(x,y);if(dec)list.push({dec,x,y,d:x+y-0.01});}}
   list.push({hero:true,d:(P.x+P.y)/TILE});
   list.push({campfire:true,d:(CF.x+CF.y)/TILE});
   for(const e of enemies)list.push({enemy:e,d:(e.x+e.y)/TILE});
@@ -513,6 +548,7 @@ function renderWorld(){
     if(it.hero)drawHero();
     else if(it.enemy)drawEnemy(it.enemy);
     else if(it.campfire)drawCampfire();
+    else if(it.dec){const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawDecor(it.dec,it.x,it.y,c.x,c.y);}
     else{const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawPropIso(it.t,it.x,it.y,c.x,c.y);}
   }
   drawShots();drawParts();drawFloats();
