@@ -321,6 +321,33 @@ function mods(){const m={dmg:1,cd:1,superGain:1,speed:1,catch:0,pierce:0,count:0
   return m;}
 function skillReq(node){if(!node.req)return true;for(const k in node.req){if(((G.skills||{})[k]||0)<node.req[k])return false;}return true;}
 
+/* ---------- procedural sound (Web Audio) ---------- */
+let AC=null;
+function actx(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();}catch(e){}return AC;}
+function tone(freq,dur,type,vol,slideTo){const c=actx();if(!c||(G&&G.muted))return;const t=c.currentTime;
+  const o=c.createOscillator(),g=c.createGain();o.type=type||'square';o.frequency.setValueAtTime(freq,t);
+  if(slideTo)o.frequency.exponentialRampToValueAtTime(Math.max(1,slideTo),t+dur);
+  g.gain.setValueAtTime(vol||0.18,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+0.02);}
+function noiseBurst(dur,vol){const c=actx();if(!c||(G&&G.muted))return;const t=c.currentTime;
+  const b=c.createBuffer(1,Math.max(1,(c.sampleRate*dur)|0),c.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+  const s=c.createBufferSource();s.buffer=b;const g=c.createGain();g.gain.value=vol||0.15;
+  s.connect(g).connect(c.destination);s.start(t);}
+let _hitT=0;
+function sfx(n){switch(n){
+  case 'cast': tone(520,0.11,'square',0.13,900);break;
+  case 'hit': { if(performance.now()-_hitT<45)return;_hitT=performance.now();noiseBurst(0.09,0.12);tone(200,0.08,'sawtooth',0.09,90);break; }
+  case 'super': tone(280,0.5,'sawtooth',0.2,1300);noiseBurst(0.5,0.13);break;
+  case 'catch': tone(500,0.1,'square',0.16,720);setTimeout(()=>tone(760,0.11,'square',0.16,1000),110);setTimeout(()=>tone(1050,0.16,'triangle',0.16,1350),240);break;
+  case 'fail': tone(420,0.22,'square',0.13,150);break;
+  case 'level': [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.12,'triangle',0.17),i*85));break;
+  case 'coin': tone(920,0.06,'square',0.1,1250);setTimeout(()=>tone(1320,0.08,'square',0.1),65);break;
+  case 'engage': tone(300,0.14,'square',0.15,520);setTimeout(()=>tone(520,0.2,'square',0.15,300),140);break;
+  case 'menu': tone(420,0.04,'square',0.08,520);break;
+  case 'heal': [660,880,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.13,'sine',0.14),i*90));break;
+}}
+
 function makeCritter(name,level){const s=SPECIES[name];const c={species:name,type:s.type,level,xp:0,moves:s.moves.slice(0,4),status:null,statusT:0,_s:s};recalc(c);c.hp=c.maxHp;return c;}
 function recalc(c){const s=c._s||SPECIES[c.species];c._s=s;c.type=s.type;const L=c.level;
   c.maxHp=Math.floor(s.hp*(1+(L-1)*0.16))+5;c.atk=Math.floor(s.atk*(1+(L-1)*0.11))+2;
@@ -371,7 +398,7 @@ function newGame(cls,starter){
   G={px:5.5*TILE,py:6.5*TILE,face:Math.PI/2,class:cls||'mage',
     hunger:100,energy:100,party:[makeCritter(starter,5)],
     items:{orb:5,superorb:0,berry:3,potion:0,revive:0,ration:1},coins:60,
-    caughtSpecies:{[starter]:true},day:1,skills:{},skillPoints:0};
+    caughtSpecies:{[starter]:true},day:1,skills:{},skillPoints:0,muted:false};
   syncPlayer();save();
 }
 function syncPlayer(){P.x=G.px;P.y=G.py;P.vx=P.vy=0;P.face=G.face||Math.PI/2;const p=projIso(P.x,P.y);cam.ix=p.x;cam.iy=p.y;}
@@ -382,7 +409,7 @@ function save(){try{if(G){G.px=P.x;G.py=P.y;G.face=P.face;}localStorage.setItem(
 function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);migrate();G.party.forEach(recalc);syncPlayer();return true;}catch(e){return false;}}
 function migrate(){if(!G.items)G.items={orb:5,superorb:0,berry:3,potion:0,revive:0,ration:0};
   ITEM_KEYS.forEach(k=>{if(G.items[k]===undefined)G.items[k]=0;});if(G.coins===undefined)G.coins=60;
-  if(!G.class)G.class='mage';if(!G.skills)G.skills={};if(G.skillPoints===undefined)G.skillPoints=0;
+  if(!G.class)G.class='mage';if(!G.skills)G.skills={};if(G.skillPoints===undefined)G.skillPoints=0;if(G.muted===undefined)G.muted=false;
   (G.party||[]).forEach(c=>{if(c.status===undefined){c.status=null;c.statusT=0;}});
   if(G.px===undefined||G.px<MAP_W){G.px=5.5*TILE;G.py=6.5*TILE;}}
 
@@ -757,7 +784,7 @@ function doInteract(){
   else if(t==='H')restAtHome();
   else if(t==='S')dialog("<b>Sign:</b> Cast spells with your right thumb to blast wild critters! Weaken one, then walk up and tap A to catch it. Heal at the nurse, buy Orbs at the Mart 🛒.");
 }
-function healParty(){G.party.forEach(c=>{c.hp=c.maxHp;c.status=null;c.statusT=0;});G.energy=100;
+function healParty(){G.party.forEach(c=>{c.hp=c.maxHp;c.status=null;c.statusT=0;});G.energy=100;sfx('heal');
   dialog("<b>Nurse:</b> Your critters are fully healed and cured!");toast('Team healed');burst(P.x,P.y-10,'#ff9dc0');save();}
 function restAtHome(){G.energy=100;G.day++;const l=firstAlive();if(l)l.hp=Math.min(l.maxHp,l.hp+Math.floor(l.maxHp*0.3));
   dialog("<b>Home sweet home.</b> You sleep soundly — energy restored (Day "+G.day+").");toast('Rested');save();}
@@ -804,7 +831,7 @@ function startBattle(src){
     foe=makeCritter(WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],lvl);
   }
   foe.alpha=alpha;
-  B={foe,ally:firstAlive(),busy:false,caught:false,ran:false,srcEnemy,alpha};mode='battle';
+  B={foe,ally:firstAlive(),busy:false,caught:false,ran:false,srcEnemy,alpha};mode='battle';sfx('engage');
   document.getElementById('battle').style.display='flex';restoreBattleMenu();
   setBMsg(`${alpha?'⭐ An <b>ALPHA</b> ':'A wild '}<b>${foe.species}</b> (Lv.${foe.level}) ${src?'engaged you':'appeared'}!`);
 }
@@ -869,7 +896,7 @@ function winBattle(){if(!B)return;B.foe.hp=0;renderBattle();const am=B.alpha?3:1
   G.coins+=coins;setBMsg(`Wild ${B.foe.species} fainted! +${gain} XP · +${coins} coins.`);grantXp(B.ally,gain);
   setTimeout(endBattle,1300);}
 function grantXp(c,a){c.xp+=Math.round(a*mods().xp);while(c.xp>=xpToNext(c.level)&&c.level<50){c.xp-=xpToNext(c.level);c.level++;const b=c.maxHp;recalc(c);c.hp+=(c.maxHp-b);
-    if(G)G.skillPoints=(G.skillPoints||0)+1;toast(`${c.species} → Lv.${c.level}! +1 skill point ✦`);}save();}
+    if(G)G.skillPoints=(G.skillPoints||0)+1;sfx('level');toast(`${c.species} → Lv.${c.level}! +1 skill point ✦`);}save();}
 function throwOrb(sup){if(!B||B.busy)return;const it=G.items;
   if(sup){if(it.superorb<=0)return;it.superorb--;}else{if(it.orb<=0)return;it.orb--;}
   B.busy=true;renderBattle();const hr=B.foe.hp/B.foe.maxHp;
@@ -877,7 +904,7 @@ function throwOrb(sup){if(!B||B.busy)return;const it=G.items;
   setBMsg(`You threw ${sup?'a <b>Super Orb</b>':'an <b>Orb</b>'}…`);document.getElementById('foeMon').classList.add('shake');
   setTimeout(()=>{document.getElementById('foeMon').classList.remove('shake');if(!B)return;
     if(Math.random()<ch){B.caught=true;B.foe.status=null;const res=G.party.length>=6;if(!res)G.party.push(B.foe);
-      G.caughtSpecies[B.foe.species]=true;setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!`+(res?' (Team full — released.)':''));save();setTimeout(endBattle,1300);}
+      G.caughtSpecies[B.foe.species]=true;sfx('catch');setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!`+(res?' (Team full — released.)':''));save();setTimeout(endBattle,1300);}
     else{setBMsg(`Oh no! ${B.foe.species} broke free!`);setTimeout(foeTurn,900);}},1100);}
 function openBagMenu(){if(B.busy)return;const it=G.items,fn=G.party.some(c=>c.hp<=0),menu=document.getElementById('bmenu');
   menu.innerHTML=`<div id="bmsg">Use which item?</div>
@@ -913,13 +940,13 @@ function wireBattle(){document.getElementById('bFight').onclick=openFightMenu;
   document.getElementById('bCatch').onclick=()=>throwOrb(false);
   document.getElementById('bBag').onclick=openBagMenu;document.getElementById('bRun').onclick=tryRun;}
 /* draw-a-spell attack in battle (Harry Potter style) */
-function battleCast(spell){if(!B||B.busy)return;B.busy=true;const sp=SPELLS[spell]||SPELLS.bolt,M=mods();
+function battleCast(spell){if(!B||B.busy)return;B.busy=true;sfx('cast');const sp=SPELLS[spell]||SPELLS.bolt,M=mods();
   const s=statusTick(B.ally);if(s.dmg){B.ally.hp-=s.dmg;flashMon('allyMon');}renderBattle();
   if(B.ally.hp<=0){setBMsg(s.note);return setTimeout(faintAlly,900);}
   if(!s.canAct){setBMsg(s.note);return setTimeout(foeTurn,1000);}
   const eff=effect(B.ally.type,B.foe.type),col=TYPES[B.ally.type].color;
   const dmg=Math.max(1,Math.floor(B.ally.atk*sp.mult*M.dmg*eff*2.0*(0.9+Math.random()*0.2)));
-  B.foe.hp-=dmg;flashMon('foeMon');spellFlash(sp.name,col);
+  B.foe.hp-=dmg;flashMon('foeMon');spellFlash(sp.name,col);sfx('hit');
   setBMsg(`Cast <b>${sp.name}</b>!`+(eff>1?' Super effective!':eff<1?' Not very effective…':''));renderBattle();
   setTimeout(()=>{if(B.foe.hp<=0)winBattle();else foeTurn();},850);}
 function flashMon(id){const el=document.getElementById(id);el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),400);}
@@ -946,12 +973,14 @@ function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.
   h+=`<button class="cbtn small" data-item="ration" ${it.ration<=0?'disabled':''}>Eat Ration (fill hunger)</button>`;
   h+=`<button class="cbtn small" data-item="revive" ${(it.revive<=0||!fn)?'disabled':''}>Use Revive</button>`;
   h+=`<button class="cbtn small" id="openSkills" style="background:linear-gradient(#efe0ff,#d9c2ff)">✦ Skill Tree${(G.skillPoints||0)>0?` (${G.skillPoints} pts!)`:''}</button>`;
+  h+=`<button class="cbtn small" id="muteBtn">${G.muted?'🔇 Sound: Off':'🔊 Sound: On'}</button>`;
   h+=`<button class="cbtn small" id="closePanel">Close</button></div>`;
   p.innerHTML=h;p.style.display='flex';
   p.querySelectorAll('canvas.mini').forEach(cv=>drawCritter(cv,46,cv.dataset.sp));
   p.querySelectorAll('[data-lead]').forEach(b=>b.onclick=()=>{const i=+b.dataset.lead;const c=G.party.splice(i,1)[0];G.party.unshift(c);save();openPanel();});
   p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>usePanelItem(b.dataset.item));
   document.getElementById('openSkills').onclick=openSkills;
+  document.getElementById('muteBtn').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('menu');openPanel();};
   document.getElementById('closePanel').onclick=closePanel;}
 function openSkills(){mode='panel';const p=document.getElementById('panel');
   let h=`<h2>✦ Skill Tree</h2><div class="subline">Skill points: <b style="color:#ffd23c">${G.skillPoints||0}</b> · Class: <b>${CLASSES[G.class].name}</b> ${CLASSES[G.class].icon}</div>`;
@@ -994,15 +1023,28 @@ let castCD=0, hurtFlash=0, respawnT=0, superC=0, shakeT=0, shX=0, shY=0, engageC
 function addSuper(a){superC=Math.min(100,superC+a*mods().superGain);}
 function superReady(){return superC>=100;}
 function unleashSuper(){const lead=firstAlive();if(!lead||!superReady())return;superC=0;
-  const M=mods(),el=lead.type,col=TYPES[el].color,n=14;
-  for(let i=0;i<n;i++){const a=i/n*6.283;
-    shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*480,vy:Math.sin(a)*480,dmg:Math.max(6,Math.floor(lead.atk*1.6*M.superPow)),el,col,r:9,life:1.0,pierce:2,hit:new Set()});}
-  waves.push({x:P.x,y:P.y,r:12,maxR:TILE*5,dmg:Math.max(10,Math.floor(lead.atk*2.2*M.superPow)),el,col,hit:new Set()});
-  shakeT=0.45;spellFlash('SUPER!',col);
+  const M=mods(),el=lead.type,col=TYPES[el].color,cl=(G&&G.class)||'mage';sfx('super');
+  const base=lead.atk*M.superPow;
+  if(cl==='ranger'){ // Arrow Volley — many fast piercing arrows in all directions
+    const n=24;for(let i=0;i<n;i++){const a=i/n*6.283;
+      shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*640,vy:Math.sin(a)*640,dmg:Math.max(5,Math.floor(base*1.3)),el,col,r:7,life:1.1,pierce:4,hit:new Set()});}
+    waves.push({x:P.x,y:P.y,r:12,maxR:TILE*4,dmg:Math.max(8,Math.floor(base*1.6)),el,col,hit:new Set()});
+  } else if(cl==='warrior'){ // Warcry Shockwave — huge knockback wave + heavy bolts
+    waves.push({x:P.x,y:P.y,r:12,maxR:TILE*7,dmg:Math.max(14,Math.floor(base*3.0)),el,col,hit:new Set(),kb:60});
+    const n=8;for(let i=0;i<n;i++){const a=i/n*6.283;
+      shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*380,vy:Math.sin(a)*380,dmg:Math.max(10,Math.floor(base*2.2)),el,col,r:16,life:1.0,pierce:3,kb:40,hit:new Set()});}
+    shakeT=0.7;
+  } else { // Mage — Arcane Nova ring + shockwave
+    const n=14;for(let i=0;i<n;i++){const a=i/n*6.283;
+      shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*480,vy:Math.sin(a)*480,dmg:Math.max(6,Math.floor(base*1.6)),el,col,r:9,life:1.0,pierce:2,hit:new Set()});}
+    waves.push({x:P.x,y:P.y,r:12,maxR:TILE*5,dmg:Math.max(10,Math.floor(base*2.2)),el,col,hit:new Set()});
+  }
+  if(!shakeT)shakeT=0.45;spellFlash(cl==='ranger'?'VOLLEY!':cl==='warrior'?'WARCRY!':'SUPER!',col);
   for(let k=0;k<32;k++)spawn(P.x,P.y,{vx:(Math.random()-.5)*320,vy:(Math.random()-.5)*320,g:0,max:.6,r:6,c:col});}
 function updateWaves(dt){for(let i=waves.length-1;i>=0;i--){const w=waves[i];w.r+=430*dt;if(w.r>=w.maxR){waves.splice(i,1);continue;}
   for(const e of enemies){if(w.hit.has(e))continue;const d=Math.hypot(e.x-w.x,e.y-w.y);
-    if(Math.abs(d-w.r)<22){const eff=effect(w.el,e.type),dmg=Math.max(1,Math.floor(w.dmg*eff));e.hp-=dmg;e.flash=0.2;w.hit.add(e);addSuper(dmg*0.3);
+    if(Math.abs(d-w.r)<22){const eff=effect(w.el,e.type),dmg=Math.max(1,Math.floor(w.dmg*eff));e.hp-=dmg;e.flash=0.2;w.hit.add(e);addSuper(dmg*0.3);sfx('hit');
+      if(w.kb){const dd=Math.hypot(e.x-w.x,e.y-w.y)||1;const nx=e.x+(e.x-w.x)/dd*w.kb,ny=e.y+(e.y-w.y)/dd*w.kb;if(!SOLID.has(tileAtWorld(nx,e.y)))e.x=nx;if(!SOLID.has(tileAtWorld(e.x,ny)))e.y=ny;}
       floatText(e.x,e.y-40,(eff>1?'✦':'')+dmg,eff>1?'#ffd23c':'#fff');
       for(let k=0;k<6;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,g:120,max:.4,r:4,c:w.col});
       if(e.hp<=0)defeatEnemy(e);}}}}
@@ -1064,13 +1106,18 @@ function drawEnemy(e){const s=w2s(e.x,e.y),sx=s.x,sy=s.y,bob=Math.sin(e.bob*3)*2
 }
 function nearestEnemy(x,y,maxd){let best=null,bd=maxd||1e9;for(const e of enemies){const d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}return best;}
 function cast(key,aimx,aimy){if(castCD>0)return;const sp=SPELLS[key]||SPELLS.bolt;const lead=firstAlive();if(!lead)return;
-  const M=mods();castCD=sp.cd*M.cd;const el=lead.type,col=TYPES[el].color;
+  const M=mods();castCD=sp.cd*M.cd;const el=lead.type,col=TYPES[el].color;sfx('cast');
   let ang;const tgt=nearestEnemy(P.x,P.y,CAST_RANGE);
   if(tgt)ang=Math.atan2(tgt.y-P.y,tgt.x-P.x);
   else if((aimx||aimy))ang=Math.atan2(aimy,aimx);else ang=P.face;
+  // class projectile flavor
+  const cl=(G&&G.class)||'mage';
+  let spdMul=1,rMul=1,dmgMul=1,pierceAdd=0,kb=0;
+  if(cl==='ranger'){spdMul=1.3;rMul=0.8;pierceAdd=1;}
+  else if(cl==='warrior'){spdMul=0.85;rMul=1.45;dmgMul=1.18;kb=26;}
   const n=(sp.count||1)+M.count;
   for(let i=0;i<n;i++){const a=ang+(i-(n-1)/2)*0.22;
-    shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*sp.speed,vy:Math.sin(a)*sp.speed,dmg:Math.max(3,Math.floor(lead.atk*sp.mult*M.dmg)),el,col,r:sp.r,life:1.2,pierce:(sp.pierce||0)+M.pierce,hit:new Set()});}
+    shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*sp.speed*spdMul,vy:Math.sin(a)*sp.speed*spdMul,dmg:Math.max(3,Math.floor(lead.atk*sp.mult*M.dmg*dmgMul)),el,col,r:sp.r*rMul,life:1.2,pierce:(sp.pierce||0)+M.pierce+pierceAdd,kb,hit:new Set()});}
   for(let i=0;i<7;i++)spawn(P.x+Math.cos(ang)*14,P.y-6+Math.sin(ang)*14,{vx:Math.cos(ang)*90+(Math.random()-.5)*70,vy:Math.sin(ang)*90+(Math.random()-.5)*70,g:0,max:.3,r:4,c:col});
   spellFlash(sp.name,col);
 }
@@ -1083,7 +1130,8 @@ function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.l
   let gone=false;
   for(const e of enemies){if(s.hit.has(e))continue;
     if(Math.hypot(e.x-s.x,e.y-s.y)<ER*(e.scale||1)+s.r){const eff=effect(s.el,e.type);
-      const dmg=Math.max(1,Math.floor(s.dmg*eff*(0.9+Math.random()*0.2)));e.hp-=dmg;e.flash=0.18;s.hit.add(e);addSuper(dmg*0.35);
+      const dmg=Math.max(1,Math.floor(s.dmg*eff*(0.9+Math.random()*0.2)));e.hp-=dmg;e.flash=0.18;s.hit.add(e);addSuper(dmg*0.35);sfx('hit');
+      if(s.kb){const d=Math.hypot(s.vx,s.vy)||1;const nx=e.x+s.vx/d*s.kb,ny=e.y+s.vy/d*s.kb;if(!SOLID.has(tileAtWorld(nx,e.y)))e.x=nx;if(!SOLID.has(tileAtWorld(e.x,ny)))e.y=ny;}
       for(let k=0;k<7;k++)spawn(s.x,s.y,{vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,g:120,max:.4,r:4,c:eff>1?'#fff2a0':s.col});
       floatText(e.x,e.y-40,(eff>1?'✦':'')+dmg,eff>1?'#ffd23c':'#ffffff');
       if(e.hp<=0)defeatEnemy(e);
@@ -1091,7 +1139,7 @@ function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.l
     }}
   if(gone)shots.splice(i,1);
 }}
-function defeatEnemy(e){const idx=enemies.indexOf(e);if(idx<0)return;enemies.splice(idx,1);
+function defeatEnemy(e){const idx=enemies.indexOf(e);if(idx<0)return;enemies.splice(idx,1);sfx('coin');
   const mult=e.alpha?3:1,lead=firstAlive(),gain=(8+e.level*5)*mult,coins=Math.round((5+e.level*3+Math.floor(Math.random()*5))*mult*mods().coins);
   if(lead)grantXp(lead,gain);G.coins+=coins;
   const kk=e.alpha?36:18;for(let k=0;k<kk;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*(e.alpha?320:230),vy:(Math.random()-.5)*280-40,g:170,max:.8,r:5,c:e.alpha?'#ffd23c':TYPES[e.type].color});
@@ -1101,10 +1149,10 @@ function catchEnemy(e){if(G.items.orb<=0){toast('No Orbs! Buy some at the Mart �
   G.items.orb--;const hr=e.hp/e.maxHp;let ch=(1-hr)*0.7+0.2-e.level*0.006+mods().catch;ch=Math.min(0.97,Math.max(0.05,ch));
   burst(e.x,e.y,'#ffd23c');
   if(Math.random()<ch){const idx=enemies.indexOf(e);if(idx>=0)enemies.splice(idx,1);
-    const res=G.party.length>=6;if(!res)G.party.push(makeCritter(e.sp,e.level));G.caughtSpecies[e.sp]=true;
+    const res=G.party.length>=6;if(!res)G.party.push(makeCritter(e.sp,e.level));G.caughtSpecies[e.sp]=true;sfx('catch');
     toast((e.alpha?`⭐ Caught the ALPHA ${e.sp}!`:`Gotcha! Caught ${e.sp}!`)+(res?' (Team full — released.)':''));
     for(let k=0;k<22;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*220,vy:(Math.random()-.5)*220,g:110,max:.8,r:5,c:'#ffd23c'});save();}
-  else{toast(`${e.sp} broke free!`);e.hp=Math.min(e.maxHp,e.hp+Math.floor(e.maxHp*0.12));}
+  else{sfx('fail');toast(`${e.sp} broke free!`);e.hp=Math.min(e.maxHp,e.hp+Math.floor(e.maxHp*0.12));}
 }
 function onLeadFaint(){const alive=firstAlive();
   if(!alive){P.x=5.5*TILE;P.y=6.5*TILE;G.party.forEach(c=>{c.hp=Math.max(1,Math.floor(c.maxHp*0.5));c.status=null;});
@@ -1199,7 +1247,8 @@ window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;updKb();});
 function updKb(){kb.x=(keys['arrowright']||keys['d']?1:0)-(keys['arrowleft']||keys['a']?1:0);
   kb.y=(keys['arrowdown']||keys['s']?1:0)-(keys['arrowup']||keys['w']?1:0);}
 // buttons
-function bindBtn(el,fn){el.addEventListener('click',e=>{e.preventDefault();fn();});}
+window.addEventListener('pointerdown',()=>actx(),{capture:true}); // unlock/resume audio on first touch
+function bindBtn(el,fn){el.addEventListener('click',e=>{e.preventDefault();actx();sfx('menu');fn();});}
 bindBtn(document.getElementById('btnA'),()=>{if(mode==='world')doInteract();else if(dialogCb)closeDialog();});
 bindBtn(document.getElementById('btnMenu'),()=>{if(mode==='world')openPanel();else if(mode==='panel')closePanel();});
 bindBtn(document.getElementById('btnSuper'),()=>{if(mode==='world')unleashSuper();});

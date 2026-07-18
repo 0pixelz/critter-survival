@@ -10,7 +10,8 @@ A tiny **isometric action survival RPG** that runs entirely in your browser — 
 
 ## ✨ Features
 
-- **Character classes** — start by choosing **Mage** (+spell power, −cooldown), **Ranger** (+move speed, +catch rate), or **Warrior** (+Super charge), each with its own look (wizard/hood+bow/helmet+sword) and a wand/arrow/blade that glows in your lead's element.
+- **Character classes that play differently** — choose **Mage** (+spell power, −cooldown; balanced arcane bolts + Nova Super), **Ranger** (+move speed, +catch; fast **piercing arrows** + an all-directions **Volley** Super), or **Warrior** (+Super charge; heavy **knockback** bolts + a screen-shaking **Warcry** shockwave Super). Each has its own look (wizard/hood+bow/helmet+sword) with a weapon that glows in your lead's element.
+- **Sound** — procedural sound effects (casts, hits, catches, level-ups, coins, battle) generated live with the Web Audio API — no audio files. Toggle sound on/off in the ☰ menu.
 - **Diablo-style skill tree** — every level-up earns a skill point to spend across three branches (Arcane, Storm, Survival): spell power, cast haste, split shot, piercing, super focus/overload, swiftness, mending regen, beast tamer, scholar (XP), and fortune (coins), with rank caps and prerequisites. Open it from the ☰ menu.
 - **Charge-up Super** — dealing damage fills your ✦ Super meter (bottom-right). When it glows gold, unleash a screen-shaking special: a ring of bolts plus an expanding elemental shockwave that blasts everything around you.
 - **Expressive brawler art** — the hero is a chunky wand-wielding battle-mage, and every critter is drawn as an expressive cartoon brawler with big glossy eyes, eyebrows, cel-shaded bodies, thick outlines, and type crests (flames, lightning, fins, leaves).
