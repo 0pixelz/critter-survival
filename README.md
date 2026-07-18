@@ -10,6 +10,8 @@ A tiny **isometric action survival RPG** that runs entirely in your browser — 
 
 ## ✨ Features
 
+- **Character classes** — start by choosing **Mage** (+spell power, −cooldown), **Ranger** (+move speed, +catch rate), or **Warrior** (+Super charge), each with its own look (wizard/hood+bow/helmet+sword) and a wand/arrow/blade that glows in your lead's element.
+- **Diablo-style skill tree** — every level-up earns a skill point to spend across three branches (Arcane, Storm, Survival): spell power, cast haste, split shot, piercing, super focus/overload, swiftness, mending regen, beast tamer, scholar (XP), and fortune (coins), with rank caps and prerequisites. Open it from the ☰ menu.
 - **Charge-up Super** — dealing damage fills your ✦ Super meter (bottom-right). When it glows gold, unleash a screen-shaking special: a ring of bolts plus an expanding elemental shockwave that blasts everything around you.
 - **Expressive brawler art** — the hero is a chunky wand-wielding battle-mage, and every critter is drawn as an expressive cartoon brawler with big glossy eyes, eyebrows, cel-shaded bodies, thick outlines, and type crests (flames, lightning, fins, leaves).
 - **Alpha critters (mini-bosses)** — rare, oversized enemies with a golden crown and a glowing aura that lights up the dark. They hit harder and take a beating, but give triple XP & coins and are a trophy to defeat or catch.
