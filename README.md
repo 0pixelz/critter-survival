@@ -6,6 +6,7 @@ A tiny **isometric action survival RPG** that runs entirely in your browser — 
 
 ## ✨ Features
 
+- **Alpha critters (mini-bosses)** — rare, oversized enemies with a golden crown and a glowing aura that lights up the dark. They hit harder and take a beating, but give triple XP & coins and are a trophy to defeat or catch.
 - **Real-time gesture combat** — roaming enemy critters wander the map; blast them with your **right thumb**. Flick for a quick **Bolt**, or draw a shape for a bigger spell — a **V** (Power Blast), a **Z**/zigzag (Chain Bolt, pierces), or a **circle** (Nova, 3-way). Spells auto-aim the nearest enemy, fly as glowing projectiles, and are blocked by walls.
 - **Element matchups** — your shots take on your **lead critter's type**, so the 6-type chart (Leaf, Ember, Aqua, Spark, Stone, Gale) still decides what's super effective. Floating damage numbers show the hits.
 - **Explore a tile world** — a town, paths, water, beaches, and tall grass, with a floating 360° joystick and a smooth follow camera.
