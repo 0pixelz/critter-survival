@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Critter Wilds — Survival RPG</title>
+<style>
+  :root{
+    --ink:#14202b; --panel:#f7f3e8; --panel-line:#3b2f22;
+    --accent:#5aa02c; --accent-dark:#3c6d1c; --danger:#c0392b;
+    --hud:#1c2b1a; --gold:#e6b422;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:#0d1510;color:#eee;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;overflow:hidden;
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:10px;padding:8px;}
+  #stage{position:relative;image-rendering:pixelated;box-shadow:0 10px 40px rgba(0,0,0,.6);
+    border:4px solid #2a2118;border-radius:8px;background:#000;}
+  canvas{display:block;image-rendering:pixelated;border-radius:4px;}
+
+  /* HUD */
+  #hud{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:8px;
+    pointer-events:none;font-size:12px;}
+  .meter{flex:1;background:rgba(10,18,12,.78);border:2px solid #0c130d;border-radius:8px;
+    padding:5px 7px;backdrop-filter:blur(2px);}
+  .meter b{display:block;font-size:10px;letter-spacing:.5px;opacity:.8;margin-bottom:3px;
+    text-transform:uppercase;}
+  .bar{height:9px;border-radius:5px;background:#0c130d;overflow:hidden;}
+  .bar > i{display:block;height:100%;transition:width .25s ease;}
+  .b-hunger > i{background:linear-gradient(90deg,#e6952b,#f2c14e);}
+  .b-energy > i{background:linear-gradient(90deg,#2b8ce6,#4ec3f2);}
+  .b-hp > i{background:linear-gradient(90deg,#c0392b,#e74c3c);}
+
+  /* bottom controls hint */
+  #hint{position:absolute;bottom:6px;left:8px;right:8px;text-align:center;
+    font-size:11px;color:#cfe0c4;text-shadow:0 1px 2px #000;pointer-events:none;}
+
+  /* Dialog / message box */
+  #dialog{position:absolute;left:8px;right:8px;bottom:8px;background:var(--panel);
+    color:var(--ink);border:4px solid var(--panel-line);border-radius:10px;
+    padding:12px 14px;font-size:15px;line-height:1.35;display:none;min-height:56px;
+    box-shadow:0 6px 0 rgba(0,0,0,.25);}
+  #dialog small{display:block;margin-top:6px;color:#6b5d47;font-size:11px;}
+
+  /* Battle overlay */
+  #battle{position:absolute;inset:0;display:none;flex-direction:column;
+    background:linear-gradient(160deg,#bfe3f5,#dff0d0 55%,#c7e39a);color:var(--ink);}
+  #bfield{position:relative;flex:1;overflow:hidden;}
+  .mon{position:absolute;text-align:center;}
+  .mon canvas{filter:drop-shadow(0 6px 4px rgba(0,0,0,.25));}
+  .foe{top:14%;right:8%;}
+  .ally{bottom:6%;left:8%;}
+  .nameplate{background:var(--panel);border:3px solid var(--panel-line);border-radius:8px;
+    padding:5px 9px;min-width:140px;font-size:13px;box-shadow:2px 3px 0 rgba(0,0,0,.2);}
+  .nameplate .row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .nameplate .hpwrap{height:8px;background:#5c5140;border-radius:5px;margin-top:4px;overflow:hidden;}
+  .nameplate .hpwrap > i{display:block;height:100%;background:#4caf50;transition:width .3s;}
+  .foeplate{position:absolute;top:6%;left:6%;}
+  .allyplate{position:absolute;bottom:34%;right:6%;}
+  .typechip{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;color:#fff;
+    vertical-align:middle;text-transform:uppercase;letter-spacing:.5px;}
+
+  #bmenu{background:var(--panel);border-top:4px solid var(--panel-line);padding:10px;
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:130px;}
+  #bmsg{grid-column:1/3;font-size:14px;min-height:20px;color:var(--ink);}
+  .btn{background:#fff;border:3px solid var(--panel-line);border-radius:10px;
+    padding:12px;font-size:15px;font-weight:bold;color:var(--ink);cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.18);transition:transform .05s,box-shadow .05s;text-align:center;}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18);}
+  .btn.small{padding:9px;font-size:13px;}
+  .btn.wide{grid-column:1/3;}
+  .btn:disabled{opacity:.45;cursor:default;}
+
+  /* Touch dpad */
+  #touch{position:absolute;bottom:10px;left:0;right:0;display:none;
+    justify-content:space-between;padding:0 14px;pointer-events:none;}
+  #dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);
+    gap:4px;pointer-events:auto;}
+  #dpad div{background:rgba(20,30,20,.55);border:2px solid rgba(255,255,255,.25);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;}
+  #dpad .empty{background:transparent;border:none;}
+  #abtns{display:flex;flex-direction:column;gap:8px;justify-content:flex-end;pointer-events:auto;}
+  #abtns button{width:60px;height:60px;border-radius:50%;border:3px solid rgba(255,255,255,.35);
+    background:rgba(90,160,44,.85);color:#fff;font-weight:bold;font-size:15px;}
+
+  /* Title / menus */
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:14px;text-align:center;
+    background:radial-gradient(circle at 50% 30%,#1d3320,#0a140c 75%);padding:20px;}
+  .overlay h1{margin:0;font-size:34px;color:#eafbe0;text-shadow:0 3px 0 #143c14,0 0 18px #4caf50;}
+  .overlay p{margin:0;max-width:340px;color:#bcd6b2;font-size:14px;line-height:1.4;}
+  .overlay .btn{background:var(--accent);color:#fff;border-color:#20370f;min-width:200px;}
+  .starter{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .starter .card{background:#f7f3e8;border:3px solid #2a2118;border-radius:12px;padding:10px;
+    width:120px;cursor:pointer;color:#14202b;box-shadow:0 5px 0 rgba(0,0,0,.3);}
+  .starter .card:active{transform:translateY(3px);}
+  .starter .card b{font-size:14px;}
+  .starter .card small{display:block;color:#5a4;font-size:11px;margin-top:2px;}
+
+  /* Party / bag panel */
+  #panel{position:absolute;inset:0;display:none;flex-direction:column;
+    background:rgba(8,14,9,.92);padding:14px;gap:10px;overflow:auto;}
+  #panel h2{margin:2px 0 4px;color:#eafbe0;font-size:18px;text-align:center;}
+  .plist{display:flex;flex-direction:column;gap:8px;}
+  .pcard{background:var(--panel);color:var(--ink);border:3px solid var(--panel-line);
+    border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:10px;}
+  .pcard .lv{margin-left:auto;font-size:12px;opacity:.7;}
+  .pcard .mini{width:40px;height:40px;flex:none;}
+  .pcard .hpwrap{height:7px;background:#5c5140;border-radius:5px;margin-top:4px;overflow:hidden;}
+  .pcard .hpwrap > i{display:block;height:100%;background:#4caf50;}
+  .close{align-self:center;margin-top:6px;}
+  .toast{position:absolute;top:44px;left:50%;transform:translateX(-50%);
+    background:rgba(10,18,12,.9);color:#eafbe0;padding:7px 14px;border-radius:20px;
+    font-size:13px;border:1px solid #2c3a2a;opacity:0;transition:opacity .3s,top .3s;pointer-events:none;}
+  .flash{animation:flash .4s;}
+  @keyframes flash{0%,100%{filter:none}50%{filter:brightness(1.8) saturate(1.5)}}
+  .shake{animation:shake .35s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="game" width="512" height="384"></canvas>
+
+    <div id="hud">
+      <div class="meter"><b>Hunger</b><div class="bar b-hunger"><i id="mHunger"></i></div></div>
+      <div class="meter"><b>Energy</b><div class="bar b-energy"><i id="mEnergy"></i></div></div>
+      <div class="meter"><b id="leadName">Lead</b><div class="bar b-hp"><i id="mHp"></i></div></div>
+    </div>
+    <div id="hint">Move: arrows / WASD · Interact: Space/E · Party: P · Bag: B</div>
+    <div id="dialog"></div>
+    <div class="toast" id="toast"></div>
+
+    <!-- Touch controls -->
+    <div id="touch">
+      <div id="dpad">
+        <div class="empty"></div><div data-dir="up">▲</div><div class="empty"></div>
+        <div data-dir="left">◀</div><div class="empty"></div><div data-dir="right">▶</div>
+        <div class="empty"></div><div data-dir="down">▼</div><div class="empty"></div>
+      </div>
+      <div id="abtns">
+        <button id="btnA">A</button>
+        <button id="btnMenu">☰</button>
+      </div>
+    </div>
+
+    <!-- Battle -->
+    <div id="battle">
+      <div id="bfield">
+        <div class="mon foe" id="foeMon"></div>
+        <div class="mon ally" id="allyMon"></div>
+        <div class="nameplate foeplate" id="foePlate"></div>
+        <div class="nameplate allyplate" id="allyPlate"></div>
+      </div>
+      <div id="bmenu">
+        <div id="bmsg"></div>
+        <button class="btn" id="bFight">Fight</button>
+        <button class="btn" id="bCatch">Catch</button>
+        <button class="btn" id="bBag">Berry</button>
+        <button class="btn" id="bRun">Run</button>
+      </div>
+    </div>
+
+    <!-- Party / Bag panel -->
+    <div id="panel"></div>
+
+    <!-- Title -->
+    <div class="overlay" id="title">
+      <h1>Critter Wilds</h1>
+      <p>Explore the wild, befriend critters, and survive. Keep your hunger and energy up while you build a team of six.</p>
+      <button class="btn" id="startBtn">New Game</button>
+      <p style="font-size:12px;opacity:.7">A tiny survival-RPG. Progress auto-saves in your browser.</p>
+    </div>
+
+    <!-- Starter select -->
+    <div class="overlay" id="starterSel" style="display:none">
+      <h1 style="font-size:24px">Choose your first critter</h1>
+      <div class="starter" id="starterCards"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Critter Wilds — a small browser survival RPG (single file)
+   ============================================================ */
+const TILE = 32, VIEW_W = 16, VIEW_H = 12;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+/* ---------- Type chart ---------- */
+const TYPES = {
+  Leaf:  {color:'#4caf50', strong:['Aqua','Stone'],  weak:['Ember','Gale']},
+  Ember: {color:'#e8613c', strong:['Leaf','Gale'],   weak:['Aqua','Stone']},
+  Aqua:  {color:'#2f8fe0', strong:['Ember','Stone'], weak:['Leaf','Spark']},
+  Spark: {color:'#f2c336', strong:['Aqua','Gale'],   weak:['Stone','Leaf']},
+  Stone: {color:'#b08d57', strong:['Ember','Spark'], weak:['Aqua','Leaf']},
+  Gale:  {color:'#9b8cf0', strong:['Leaf','Spark'],  weak:['Ember','Stone']},
+};
+function effect(atkType, defType){
+  const t = TYPES[atkType];
+  if(!t) return 1;
+  if(t.strong.includes(defType)) return 2;
+  if(t.weak.includes(defType)) return 0.5;
+  return 1;
+}
+
+/* ---------- Move pool ---------- */
+const MOVES = {
+  Tackle:   {type:'Stone', power:35, acc:.95},
+  Vinelash: {type:'Leaf',  power:40, acc:.95},
+  Emberpuff:{type:'Ember', power:40, acc:.95},
+  Bubble:   {type:'Aqua',  power:40, acc:.95},
+  Zap:      {type:'Spark', power:40, acc:.95},
+  Gust:     {type:'Gale',  power:38, acc:.95},
+  Pebble:   {type:'Stone', power:40, acc:.9},
+  Leafstorm:{type:'Leaf',  power:60, acc:.8},
+  Scorch:   {type:'Ember', power:60, acc:.8},
+  Torrent:  {type:'Aqua',  power:60, acc:.8},
+  Thunder:  {type:'Spark', power:65, acc:.75},
+  Boulder:  {type:'Stone', power:62, acc:.78},
+  Cyclone:  {type:'Gale',  power:58, acc:.82},
+};
+
+/* ---------- Critter species ---------- */
+const SPECIES = {
+  Sproutle:{type:'Leaf', hp:45, atk:12, def:11, spd:11, color:'#5bbf4c', accent:'#2e7d32', shape:'round', moves:['Vinelash','Tackle','Leafstorm']},
+  Cindパウ:{}, // placeholder removed below
+  Cindnip: {type:'Ember',hp:44, atk:14, def:9,  spd:13, color:'#ef6a45', accent:'#b23a1c', shape:'fox',   moves:['Emberpuff','Tackle','Scorch']},
+  Puddlet: {type:'Aqua', hp:48, atk:11, def:12, spd:10, color:'#3f9be6', accent:'#1c5fa0', shape:'round', moves:['Bubble','Tackle','Torrent']},
+  Sparkit: {type:'Spark',hp:42, atk:13, def:9,  spd:15, color:'#f4cf4a', accent:'#c79a11', shape:'fox',   moves:['Zap','Tackle','Thunder']},
+  Pebblo:  {type:'Stone',hp:52, atk:12, def:15, spd:7,  color:'#b8935e', accent:'#7a5a30', shape:'blob',  moves:['Pebble','Tackle','Boulder']},
+  Zephlet: {type:'Gale', hp:43, atk:12, def:10, spd:14, color:'#a99cf2', accent:'#6b5cc0', shape:'bird',  moves:['Gust','Tackle','Cyclone']},
+  Mosslet: {type:'Leaf', hp:50, atk:11, def:13, spd:9,  color:'#7cc26a', accent:'#3e7d34', shape:'blob',  moves:['Vinelash','Tackle']},
+  Emburr:  {type:'Ember',hp:47, atk:15, def:10, spd:12, color:'#e2542e', accent:'#9c2f13', shape:'blob',  moves:['Emberpuff','Pebble','Scorch']},
+};
+delete SPECIES['Cindパウ'];
+
+const STARTERS = ['Sproutle','Cindnip','Puddlet'];
+const WILD_POOL = ['Sproutle','Cindnip','Puddlet','Sparkit','Pebblo','Zephlet','Mosslet','Emburr'];
+
+/* ---------- Critter factory ---------- */
+function makeCritter(speciesName, level){
+  const s = SPECIES[speciesName];
+  const c = {
+    species: speciesName, type: s.type, level,
+    xp: 0, moves: s.moves.slice(0,4),
+    _s: s,
+  };
+  recalc(c);
+  c.hp = c.maxHp;
+  return c;
+}
+function recalc(c){
+  const s = c._s || SPECIES[c.species];
+  c._s = s; c.type = s.type;
+  const L = c.level;
+  c.maxHp = Math.floor(s.hp * (1 + (L-1)*0.16)) + 5;
+  c.atk   = Math.floor(s.atk * (1 + (L-1)*0.11)) + 2;
+  c.def   = Math.floor(s.def * (1 + (L-1)*0.11)) + 2;
+  c.spd   = Math.floor(s.spd * (1 + (L-1)*0.10)) + 2;
+  if(c.hp === undefined) c.hp = c.maxHp;
+  if(c.hp > c.maxHp) c.hp = c.maxHp;
+}
+function xpToNext(level){ return 16 + level*level*4; }
+
+/* ---------- World map ----------
+   . grass  , tall grass  T tree  W water  H house  P path
+   F fence  ~ sand  N healer NPC  S sign  B berry bush  @ start
+--------------------------------------------------------------*/
+const MAP_STR = [
+"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+"T............TT........,,,,,,.T",
+"T..HH...HH...TT...T....,,,,,,.T",
+"T..HH...HH...........T.,,,,,,.T",
+"T..PP...PP...P........,,,,,,,.T",
+"T..PPPPPPPPPPP..T.....,,,,,,,.T",
+"T......N.....P.......T.,,,,,.TT",
+"T..S...PPPP..P..BB.....,,,,..TT",
+"T......P..P..P..BB......,,...FT",
+"T..HH..P..PPPP.........~~~~..FT",
+"T..HH..P.......T.....~~~~~~~..T",
+"T......P....B.......~WWWWW~~..T",
+"T..PPPPP...........~WWWWWWW~..T",
+"T..P.......TT.....~WWWWWWWWW..T",
+"T..P...,,,,.TT....~~WWWWWWW~..T",
+"T..P..,,,,,,......T.~~WWW~~...T",
+"T.....,,,,,,.......T..~~~....TT",
+"T......,,,,....BB......T.....TT",
+"T............................T",
+"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+];
+const MAP_W = MAP_STR[0].length, MAP_H = MAP_STR.length;
+let grid = [];             // walkable/tile info
+const BLOCKED = new Set(['T','W','H','F']);
+const ENCOUNTER = new Set([',']);
+
+function buildGrid(){
+  grid = [];
+  for(let y=0;y<MAP_H;y++){
+    const row=[];
+    for(let x=0;x<MAP_W;x++){
+      row.push(MAP_STR[y][x]);
+    }
+    grid.push(row);
+  }
+}
+function tileAt(x,y){
+  if(x<0||y<0||x>=MAP_W||y>=MAP_H) return 'T';
+  return grid[y][x];
+}
+function isBlocked(x,y){ return BLOCKED.has(tileAt(x,y)); }
+
+/* ---------- Game state ---------- */
+let G = null;
+function newGame(starter){
+  G = {
+    px:5, py:6, dir:'down', steps:0,
+    hunger:100, energy:100,
+    party:[ makeCritter(starter, 5) ],
+    orbs:5, berries:3, caughtSpecies:{[starter]:true},
+    day:1, playtime:0,
+  };
+  save();
+}
+
+/* ---------- Persistence (guarded; degrades if unavailable) ---------- */
+const SAVE_KEY = 'critter-wilds-save-v1';
+function save(){
+  try{
+    const data = JSON.stringify(G, (k,v)=> k==='_s'?undefined:v);
+    localStorage.setItem(SAVE_KEY, data);
+  }catch(e){/* storage unavailable — in-memory only */}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    G = JSON.parse(raw);
+    G.party.forEach(recalc);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- Sprite drawing (procedural, no assets) ---------- */
+function drawCritter(cx, size, species, facing){
+  const s = SPECIES[species];
+  const c = cx.getContext('2d');
+  c.clearRect(0,0,size,size);
+  c.imageSmoothingEnabled=false;
+  const cxm=size/2, cym=size*0.56, r=size*0.30;
+  // shadow
+  c.fillStyle='rgba(0,0,0,.18)';
+  c.beginPath(); c.ellipse(cxm, size*0.9, r*1.1, r*0.35, 0,0,7); c.fill();
+  // body
+  c.fillStyle=s.color;
+  if(s.shape==='fox'){
+    c.beginPath(); c.moveTo(cxm-r*0.9, cym-r*0.5); c.lineTo(cxm-r*1.2, cym-r*1.4);
+    c.lineTo(cxm-r*0.3, cym-r*0.9); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(cxm+r*0.9, cym-r*0.5); c.lineTo(cxm+r*1.2, cym-r*1.4);
+    c.lineTo(cxm+r*0.3, cym-r*0.9); c.closePath(); c.fill();
+  }
+  if(s.shape==='bird'){
+    c.fillStyle=s.accent;
+    c.beginPath(); c.ellipse(cxm-r*1.1, cym, r*0.7, r*0.4, -0.5,0,7); c.fill();
+    c.beginPath(); c.ellipse(cxm+r*1.1, cym, r*0.7, r*0.4, 0.5,0,7); c.fill();
+    c.fillStyle=s.color;
+  }
+  c.beginPath(); c.ellipse(cxm, cym, r, r*1.05, 0,0,7); c.fill();
+  // belly
+  c.fillStyle='rgba(255,255,255,.35)';
+  c.beginPath(); c.ellipse(cxm, cym+r*0.25, r*0.55, r*0.6, 0,0,7); c.fill();
+  // ears/nub
+  c.fillStyle=s.accent;
+  if(s.shape==='round'||s.shape==='blob'){
+    c.beginPath(); c.arc(cxm-r*0.55, cym-r*0.85, r*0.22,0,7); c.fill();
+    c.beginPath(); c.arc(cxm+r*0.55, cym-r*0.85, r*0.22,0,7); c.fill();
+  }
+  // eyes
+  c.fillStyle='#1a1a1a';
+  const eo=r*0.36;
+  c.beginPath(); c.arc(cxm-eo, cym-r*0.1, r*0.13,0,7); c.fill();
+  c.beginPath(); c.arc(cxm+eo, cym-r*0.1, r*0.13,0,7); c.fill();
+  c.fillStyle='#fff';
+  c.beginPath(); c.arc(cxm-eo+1, cym-r*0.15, r*0.05,0,7); c.fill();
+  c.beginPath(); c.arc(cxm+eo+1, cym-r*0.15, r*0.05,0,7); c.fill();
+  // cheeks
+  c.fillStyle='rgba(255,120,120,.4)';
+  c.beginPath(); c.arc(cxm-r*0.6, cym+r*0.15, r*0.12,0,7); c.fill();
+  c.beginPath(); c.arc(cxm+r*0.6, cym+r*0.15, r*0.12,0,7); c.fill();
+}
+
+/* offscreen sprite cache */
+const spriteCache={};
+function spriteCanvas(species,size){
+  const key=species+size;
+  if(spriteCache[key]) return spriteCache[key];
+  const cv=document.createElement('canvas'); cv.width=size; cv.height=size;
+  drawCritter(cv,size,species);
+  spriteCache[key]=cv; return cv;
+}
+
+/* ---------- Tile rendering ---------- */
+let animTick=0;
+function drawTile(t,px,py){
+  switch(t){
+    case 'T': // tree
+      ctx.fillStyle='#3a6b2c'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#7a5230'; ctx.fillRect(px+TILE*0.42,py+TILE*0.55,TILE*0.16,TILE*0.4);
+      ctx.fillStyle='#2f7d32'; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE*0.42,TILE*0.34,0,7); ctx.fill();
+      ctx.fillStyle='#43a047'; ctx.beginPath(); ctx.arc(px+TILE*0.4,py+TILE*0.36,TILE*0.2,0,7); ctx.fill();
+      break;
+    case 'W': // water
+      ctx.fillStyle='#2f8fe0'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='rgba(255,255,255,.25)';
+      const wy=py+TILE*0.4+Math.sin((animTick+px)*0.05)*2;
+      ctx.fillRect(px+4,wy,TILE*0.4,2); ctx.fillRect(px+TILE*0.5,wy+6,TILE*0.35,2);
+      break;
+    case 'H': // house
+      ctx.fillStyle='#caa26a'; ctx.fillRect(px,py+TILE*0.35,TILE,TILE*0.65);
+      ctx.fillStyle='#8d3b2e'; ctx.beginPath(); ctx.moveTo(px-1,py+TILE*0.4);
+      ctx.lineTo(px+TILE/2,py); ctx.lineTo(px+TILE+1,py+TILE*0.4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#5a3a22'; ctx.fillRect(px+TILE*0.4,py+TILE*0.6,TILE*0.2,TILE*0.4);
+      break;
+    case 'F': // fence
+      ctx.fillStyle='#6d8a4a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#7a5230'; ctx.fillRect(px+2,py+TILE*0.3,TILE-4,3);
+      ctx.fillRect(px+TILE*0.2,py+TILE*0.2,3,TILE*0.6);
+      ctx.fillRect(px+TILE*0.6,py+TILE*0.2,3,TILE*0.6);
+      break;
+    case 'P': // path
+      ctx.fillStyle='#d9c38f'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='rgba(150,120,70,.3)'; ctx.fillRect(px+3,py+6,4,4); ctx.fillRect(px+18,py+16,5,4);
+      break;
+    case '~': // sand
+      ctx.fillStyle='#e6d7a0'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='rgba(190,170,110,.4)'; ctx.fillRect(px+6,py+10,3,3); ctx.fillRect(px+20,py+20,3,3);
+      break;
+    case ',': // tall grass
+      ctx.fillStyle='#4c9a3a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#3c7d2c';
+      for(let i=0;i<4;i++){ const gx=px+4+i*7; ctx.fillRect(gx,py+TILE*0.5,3,TILE*0.5); }
+      ctx.fillStyle='#5fb54a';
+      const sway=Math.sin((animTick+px)*0.06)*2;
+      for(let i=0;i<4;i++){ const gx=px+5+i*7+sway; ctx.fillRect(gx,py+TILE*0.45,2,TILE*0.4); }
+      break;
+    case 'N': // healer NPC
+      ctx.fillStyle='#8bc34a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#e91e63'; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE*0.5,TILE*0.28,0,7); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.fillRect(px+TILE*0.45,py+TILE*0.32,TILE*0.1,TILE*0.36);
+      ctx.fillRect(px+TILE*0.32,py+TILE*0.45,TILE*0.36,TILE*0.1);
+      break;
+    case 'S': // sign
+      ctx.fillStyle='#8bc34a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#8d6e3a'; ctx.fillRect(px+TILE*0.44,py+TILE*0.5,TILE*0.12,TILE*0.4);
+      ctx.fillStyle='#c9a15a'; ctx.fillRect(px+TILE*0.2,py+TILE*0.25,TILE*0.6,TILE*0.35);
+      break;
+    case 'B': // berry bush
+      ctx.fillStyle='#6d8a4a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#2e7d32'; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE*0.55,TILE*0.3,0,7); ctx.fill();
+      ctx.fillStyle='#e53935';
+      ctx.beginPath(); ctx.arc(px+TILE*0.4,py+TILE*0.5,3,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+TILE*0.62,py+TILE*0.6,3,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+TILE*0.5,py+TILE*0.66,3,0,7); ctx.fill();
+      break;
+    default: // grass
+      ctx.fillStyle='#6db54a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='rgba(60,140,50,.5)';
+      const h=(px*13+py*7)%23;
+      if(h<8){ ctx.fillRect(px+6,py+8,2,4); ctx.fillRect(px+9,py+7,2,5); }
+  }
+}
+
+function drawPlayer(sx,sy){
+  const px=sx+TILE/2, py=sy+TILE/2;
+  ctx.fillStyle='rgba(0,0,0,.2)';
+  ctx.beginPath(); ctx.ellipse(px,sy+TILE*0.86,TILE*0.32,TILE*0.14,0,0,7); ctx.fill();
+  // body
+  ctx.fillStyle='#c0392b'; ctx.fillRect(sx+TILE*0.3,sy+TILE*0.42,TILE*0.4,TILE*0.4);
+  // head
+  ctx.fillStyle='#f1c27d'; ctx.beginPath(); ctx.arc(px,sy+TILE*0.38,TILE*0.2,0,7); ctx.fill();
+  // cap
+  ctx.fillStyle='#2c3e88'; ctx.beginPath(); ctx.arc(px,sy+TILE*0.32,TILE*0.21,Math.PI,0); ctx.fill();
+  ctx.fillRect(sx+TILE*0.5,sy+TILE*0.3,TILE*0.24,TILE*0.06);
+  // eyes based on dir
+  ctx.fillStyle='#222';
+  const d=G.dir;
+  if(d==='down'){ ctx.fillRect(px-5,sy+TILE*0.38,2,2); ctx.fillRect(px+3,sy+TILE*0.38,2,2); }
+  else if(d==='up'){ /* back of head */ }
+  else if(d==='left'){ ctx.fillRect(px-6,sy+TILE*0.38,2,2); }
+  else { ctx.fillRect(px+4,sy+TILE*0.38,2,2); }
+}
+
+/* ---------- Camera + render loop ---------- */
+function render(){
+  animTick++;
+  const camX = Math.max(0, Math.min(G.px - VIEW_W/2, MAP_W - VIEW_W));
+  const camY = Math.max(0, Math.min(G.py - VIEW_H/2, MAP_H - VIEW_H));
+  const ox = camX*TILE, oy = camY*TILE;
+  for(let y=Math.floor(camY); y<camY+VIEW_H+1 && y<MAP_H; y++){
+    for(let x=Math.floor(camX); x<camX+VIEW_W+1 && x<MAP_W; x++){
+      drawTile(tileAt(x,y), x*TILE-ox, y*TILE-oy);
+    }
+  }
+  drawPlayer(G.px*TILE-ox, G.py*TILE-oy);
+  updateHud();
+}
+
+/* ---------- HUD ---------- */
+function updateHud(){
+  document.getElementById('mHunger').style.width = clamp(G.hunger)+'%';
+  document.getElementById('mEnergy').style.width = clamp(G.energy)+'%';
+  const lead = firstAlive() || G.party[0];
+  document.getElementById('leadName').textContent = lead.species;
+  document.getElementById('mHp').style.width = clamp(lead.hp/lead.maxHp*100)+'%';
+}
+function clamp(v){ return Math.max(0,Math.min(100,v)); }
+function firstAlive(){ return G.party.find(c=>c.hp>0); }
+
+/* ---------- Toast + dialog ---------- */
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.opacity='1'; el.style.top='52px';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ el.style.opacity='0'; el.style.top='44px'; },1600);
+}
+let dialogCb=null;
+function dialog(msg, cb){
+  const el=document.getElementById('dialog');
+  el.style.display='block';
+  el.innerHTML=msg+'<small>▸ press Space / tap A</small>';
+  dialogCb=cb||closeDialog;
+}
+function closeDialog(){
+  document.getElementById('dialog').style.display='none';
+  const cb=dialogCb; dialogCb=null;
+  if(cb && cb!==closeDialog) cb();
+}
+
+/* ---------- Movement + survival ---------- */
+let mode='title'; // title | world | battle | panel | dialog
+function tryMove(dx,dy){
+  if(mode!=='world') return;
+  if(dialogCb) return;
+  const nx=G.px+dx, ny=G.py+dy;
+  G.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
+  const t=tileAt(nx,ny);
+  // interactions on bump
+  if(t==='N'){ healParty(); return; }
+  if(t==='S'){ dialog("<b>Sign:</b> Wild critters lurk in the tall grass to the north and south. Rest at home to recover energy. The nurse (♥) heals your team."); return; }
+  if(t==='B'){ pickBerry(nx,ny); return; }
+  if(t==='H'){ restAtHome(); return; }
+  if(isBlocked(nx,ny)) return;
+  G.px=nx; G.py=ny; G.steps++;
+  // survival drain
+  G.hunger = Math.max(0, G.hunger - 0.5);
+  G.energy = Math.max(0, G.energy - 0.35);
+  if(G.hunger<=0 || G.energy<=0){
+    const lead=firstAlive();
+    if(lead){ lead.hp=Math.max(0,lead.hp-1);
+      if(G.steps%6===0) toast(G.hunger<=0?'Starving! HP draining':'Exhausted! HP draining'); }
+  }
+  // encounter check
+  if(ENCOUNTER.has(t) && Math.random()<0.16 && firstAlive()){
+    startBattle();
+  }
+  if(G.steps%12===0) save();
+}
+
+function healParty(){
+  G.party.forEach(c=>{ c.hp=c.maxHp; });
+  G.energy=100;
+  dialog("<b>Nurse:</b> Your critters are fully healed and you feel rested. Come back any time!");
+  toast('Team healed · energy restored');
+  save();
+}
+function restAtHome(){
+  G.energy=100; G.day++;
+  const lead=firstAlive(); if(lead) lead.hp=Math.min(lead.maxHp, lead.hp+Math.floor(lead.maxHp*0.3));
+  dialog("<b>Home sweet home.</b> You sleep soundly. Energy restored (Day "+G.day+").");
+  toast('Rested · energy full');
+  save();
+}
+function pickBerry(nx,ny){
+  G.berries++;
+  grid[ny][nx]='.'; // bush consumed
+  G.hunger=Math.min(100,G.hunger+4);
+  dialog("You picked a <b>Berry</b>! (Berries: "+G.berries+"). Eat them from your Bag to restore hunger and heal a critter.");
+  toast('+1 Berry');
+  save();
+}
+
+/* ---------- Battle system ---------- */
+let B=null;
+function startBattle(){
+  const lvl = Math.max(2, G.party[0].level + (Math.floor(Math.random()*3)-1));
+  const sp = WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)];
+  const foe = makeCritter(sp, lvl);
+  B = { foe, ally:firstAlive(), turn:'player', busy:false, caught:false, ran:false };
+  mode='battle';
+  document.getElementById('battle').style.display='flex';
+  renderBattle();
+  setBMsg(`A wild <b>${foe.species}</b> (Lv.${foe.level}) appeared!`);
+}
+function typeChip(t){ return `<span class="typechip" style="background:${TYPES[t].color}">${t}</span>`; }
+function plate(c){
+  const pct=Math.max(0,c.hp/c.maxHp*100);
+  const col = pct>50?'#4caf50':pct>20?'#f2c14e':'#e74c3c';
+  return `<div class="row"><b>${c.species}</b> ${typeChip(c.type)} <span>Lv.${c.level}</span></div>
+    <div class="hpwrap"><i style="width:${pct}%;background:${col}"></i></div>
+    <div style="font-size:11px;text-align:right;margin-top:2px">${Math.max(0,Math.ceil(c.hp))}/${c.maxHp}</div>`;
+}
+function renderBattle(){
+  const foeMon=document.getElementById('foeMon'), allyMon=document.getElementById('allyMon');
+  foeMon.innerHTML=''; allyMon.innerHTML='';
+  const fc=spriteCanvas(B.foe.species,120).cloneNode(true);
+  fc.getContext('2d').drawImage(spriteCanvas(B.foe.species,120),0,0);
+  foeMon.appendChild(fc);
+  const ac=document.createElement('canvas'); ac.width=140; ac.height=140;
+  drawCritter(ac,140,B.ally.species); allyMon.appendChild(ac);
+  document.getElementById('foePlate').innerHTML=plate(B.foe);
+  document.getElementById('allyPlate').innerHTML=plate(B.ally);
+  const canCatch = G.orbs>0;
+  document.getElementById('bCatch').textContent = `Catch (${G.orbs})`;
+  document.getElementById('bCatch').disabled = !canCatch;
+  document.getElementById('bBag').textContent = `Berry (${G.berries})`;
+  document.getElementById('bBag').disabled = G.berries<=0;
+}
+function setBMsg(m){ document.getElementById('bmsg').innerHTML=m; }
+
+function calcDamage(att, def, move){
+  const m=MOVES[move];
+  const eff=effect(m.type, def.type);
+  const stab = att.type===m.type?1.2:1;
+  const base=(((2*att.level/5+2)*m.power*(att.atk/def.def))/25)+2;
+  const dmg=Math.max(1, Math.floor(base*eff*stab*(0.85+Math.random()*0.15)));
+  return {dmg, eff};
+}
+
+function playerMove(moveName){
+  if(B.busy) return;
+  B.busy=true;
+  const m=MOVES[moveName];
+  if(Math.random()>m.acc){
+    setBMsg(`${B.ally.species} used <b>${moveName}</b>… but it missed!`);
+    return setTimeout(foeTurn, 900);
+  }
+  const {dmg,eff}=calcDamage(B.ally,B.foe,moveName);
+  B.foe.hp-=dmg;
+  flashMon('foeMon');
+  let ex = eff>1?' It\'s super effective!':eff<1?' It\'s not very effective…':'';
+  setBMsg(`${B.ally.species} used <b>${moveName}</b>!${ex}`);
+  renderBattle();
+  setTimeout(()=>{
+    if(B.foe.hp<=0){ winBattle(); }
+    else foeTurn();
+  }, 850);
+}
+function foeTurn(){
+  if(B.foe.hp<=0) return winBattle();
+  const mv=B.foe.moves[Math.floor(Math.random()*B.foe.moves.length)];
+  const m=MOVES[mv];
+  if(Math.random()>m.acc){
+    setBMsg(`Wild ${B.foe.species} used <b>${mv}</b>… but missed!`);
+    return setTimeout(endPlayerTurn,900);
+  }
+  const {dmg,eff}=calcDamage(B.foe,B.ally,mv);
+  B.ally.hp-=dmg;
+  flashMon('allyMon');
+  let ex = eff>1?' Super effective!':eff<1?' Not very effective…':'';
+  setBMsg(`Wild ${B.foe.species} used <b>${mv}</b>!${ex}`);
+  renderBattle();
+  setTimeout(()=>{
+    if(B.ally.hp<=0){ faintAlly(); }
+    else endPlayerTurn();
+  },850);
+}
+function endPlayerTurn(){ B.busy=false; setBMsg('What will you do?'); }
+
+function faintAlly(){
+  B.ally.hp=0; renderBattle();
+  setBMsg(`${B.ally.species} fainted!`);
+  const next=firstAlive();
+  setTimeout(()=>{
+    if(next){ B.ally=next; renderBattle();
+      setBMsg(`Go, ${next.species}!`); B.busy=false; }
+    else{
+      setBMsg('All your critters have fainted!');
+      setTimeout(()=>{ endBattle(); dialog("<b>You blacked out…</b> A kind stranger carried you back to town. Your team was healed.", ()=>{
+        G.party.forEach(c=>c.hp=Math.max(1,Math.floor(c.maxHp*0.5)));
+        G.px=5; G.py=6; G.energy=Math.max(30,G.energy); save();
+      }); },900);
+    }
+  },900);
+}
+
+function winBattle(){
+  B.foe.hp=0; renderBattle();
+  const gain = 8 + B.foe.level*5;
+  setBMsg(`Wild ${B.foe.species} fainted! ${B.ally.species} gained ${gain} XP.`);
+  grantXp(B.ally, gain);
+  setTimeout(()=>{ endBattle(); }, 1200);
+}
+function grantXp(c, amt){
+  c.xp+=amt;
+  while(c.xp>=xpToNext(c.level) && c.level<50){
+    c.xp-=xpToNext(c.level); c.level++;
+    const before=c.maxHp; recalc(c); c.hp+=(c.maxHp-before);
+    toast(`${c.species} grew to Lv.${c.level}!`);
+  }
+  save();
+}
+
+function tryCatch(){
+  if(B.busy||G.orbs<=0) return;
+  B.busy=true; G.orbs--;
+  renderBattle();
+  const hpRatio=B.foe.hp/B.foe.maxHp;
+  const chance=Math.min(0.9, (1-hpRatio)*0.65 + 0.18 - B.foe.level*0.008);
+  setBMsg(`You threw an Orb at ${B.foe.species}…`);
+  document.getElementById('foeMon').classList.add('shake');
+  setTimeout(()=>{
+    document.getElementById('foeMon').classList.remove('shake');
+    if(Math.random()<chance){
+      B.caught=true;
+      if(G.party.length<6){ G.party.push(B.foe); }
+      G.caughtSpecies[B.foe.species]=true;
+      setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!` + (G.party.length>=6?' (Team full — sent to reserve.)':''));
+      save();
+      setTimeout(()=>{ endBattle(); },1300);
+    }else{
+      setBMsg(`Oh no! ${B.foe.species} broke free!`);
+      setTimeout(foeTurn,900);
+    }
+  },1100);
+}
+
+function useBerryInBattle(){
+  if(B.busy||G.berries<=0) return;
+  B.busy=true; G.berries--;
+  const heal=Math.floor(B.ally.maxHp*0.4);
+  B.ally.hp=Math.min(B.ally.maxHp, B.ally.hp+heal);
+  G.hunger=Math.min(100,G.hunger+10);
+  renderBattle();
+  setBMsg(`${B.ally.species} ate a Berry and recovered ${heal} HP!`);
+  setTimeout(foeTurn,900);
+}
+
+function tryRun(){
+  if(B.busy) return;
+  if(Math.random()<0.7){ B.ran=true; setBMsg('Got away safely!'); B.busy=true;
+    setTimeout(endBattle,800); }
+  else{ setBMsg("Couldn't escape!"); B.busy=true; setTimeout(foeTurn,900); }
+}
+
+function endBattle(){
+  document.getElementById('battle').style.display='none';
+  B=null; mode='world'; B===null;
+  updateHud(); save();
+}
+
+/* ---------- Fight submenu ---------- */
+function openFightMenu(){
+  if(B.busy) return;
+  const menu=document.getElementById('bmenu');
+  const moves=B.ally.moves;
+  let html='<div id="bmsg">Choose a move:</div>';
+  moves.forEach((mv,i)=>{
+    const m=MOVES[mv];
+    html+=`<button class="btn small movebtn" data-mv="${mv}">${mv}<br><small style="font-weight:normal">${m.type} · Pow ${m.power}</small></button>`;
+  });
+  html+='<button class="btn small wide" id="backBtn">◀ Back</button>';
+  menu.innerHTML=html;
+  menu.querySelectorAll('.movebtn').forEach(b=>{
+    b.onclick=()=>{ restoreBattleMenu(); playerMove(b.dataset.mv); };
+  });
+  document.getElementById('backBtn').onclick=restoreBattleMenu;
+}
+function restoreBattleMenu(){
+  const menu=document.getElementById('bmenu');
+  menu.innerHTML=`<div id="bmsg">What will you do?</div>
+    <button class="btn" id="bFight">Fight</button>
+    <button class="btn" id="bCatch">Catch</button>
+    <button class="btn" id="bBag">Berry</button>
+    <button class="btn" id="bRun">Run</button>`;
+  wireBattleButtons();
+  renderBattle();
+}
+function wireBattleButtons(){
+  document.getElementById('bFight').onclick=openFightMenu;
+  document.getElementById('bCatch').onclick=tryCatch;
+  document.getElementById('bBag').onclick=useBerryInBattle;
+  document.getElementById('bRun').onclick=tryRun;
+}
+
+function flashMon(id){
+  const el=document.getElementById(id);
+  el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),400);
+}
+
+/* ---------- Party / Bag panel ---------- */
+function openPanel(){
+  if(mode!=='world'||dialogCb) return;
+  mode='panel';
+  const p=document.getElementById('panel');
+  let html='<h2>Team & Bag</h2>';
+  html+=`<div style="text-align:center;color:#cfe0c4;font-size:13px">
+    Orbs: <b>${G.orbs}</b> · Berries: <b>${G.berries}</b> · Day ${G.day} · Caught species: ${Object.keys(G.caughtSpecies).length}/${Object.keys(SPECIES).length}</div>`;
+  html+='<div class="plist">';
+  G.party.forEach((c,i)=>{
+    const pct=Math.max(0,c.hp/c.maxHp*100);
+    html+=`<div class="pcard">
+      <canvas class="mini" width="40" height="40" data-sp="${c.species}"></canvas>
+      <div style="flex:1">
+        <div><b>${c.species}</b> ${typeChip(c.type)} <span class="lv">Lv.${c.level}</span></div>
+        <div class="hpwrap"><i style="width:${pct}%"></i></div>
+        <small style="color:#5a4">${Math.ceil(c.hp)}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}</small>
+      </div>
+      ${i>0?`<button class="btn small" data-lead="${i}">Lead</button>`:'<span class="lv">Lead</span>'}
+    </div>`;
+  });
+  html+='</div>';
+  html+=`<button class="btn small" id="eatBerry" ${G.berries<=0?'disabled':''}>Eat Berry (restore hunger + heal lead)</button>`;
+  html+='<button class="btn small close" id="closePanel">Close</button>';
+  p.innerHTML=html; p.style.display='flex';
+  p.querySelectorAll('canvas.mini').forEach(cv=>drawCritter(cv,40,cv.dataset.sp));
+  p.querySelectorAll('[data-lead]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.lead; const c=G.party.splice(i,1)[0]; G.party.unshift(c); save(); openPanel();
+  });
+  document.getElementById('eatBerry').onclick=()=>{
+    if(G.berries<=0) return;
+    G.berries--; G.hunger=Math.min(100,G.hunger+25);
+    const lead=firstAlive()||G.party[0];
+    lead.hp=Math.min(lead.maxHp, lead.hp+Math.floor(lead.maxHp*0.35));
+    toast('Ate a Berry · +hunger, +HP'); save(); openPanel();
+  };
+  document.getElementById('closePanel').onclick=closePanel;
+}
+function closePanel(){ document.getElementById('panel').style.display='none'; mode='world'; }
+
+/* ---------- Input ---------- */
+const held={};
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+  if(mode==='title'||mode==='starter') return;
+  if(dialogCb && (k===' '||k==='e'||k==='enter')){ closeDialog(); return; }
+  if(mode==='battle') return;
+  if(mode==='panel'){ if(k==='p'||k==='escape'||k==='b') closePanel(); return; }
+  if(k==='p'){ openPanel(); return; }
+  if(k==='b'){ openPanel(); return; }
+  if(held[k]) return; held[k]=true;
+  if(k==='arrowup'||k==='w') stepMove(0,-1);
+  else if(k==='arrowdown'||k==='s') stepMove(0,1);
+  else if(k==='arrowleft'||k==='a') stepMove(-1,0);
+  else if(k==='arrowright'||k==='d') stepMove(1,0);
+  else if(k==='e'||k===' ') interact();
+});
+document.addEventListener('keyup',e=>{ held[e.key.toLowerCase()]=false; });
+
+let moveLock=false;
+function stepMove(dx,dy){
+  if(moveLock) return; moveLock=true;
+  tryMove(dx,dy);
+  setTimeout(()=>{moveLock=false;}, 110);
+}
+function interact(){
+  if(dialogCb){ closeDialog(); return; }
+  // interact with tile in front
+  const d=G.dir; let dx=0,dy=0;
+  if(d==='up')dy=-1; else if(d==='down')dy=1; else if(d==='left')dx=-1; else dx=1;
+  const t=tileAt(G.px+dx,G.py+dy);
+  if(t==='N') healParty();
+  else if(t==='S') tryMove(dx,dy);
+  else if(t==='B') pickBerry(G.px+dx,G.py+dy);
+  else if(t==='H') restAtHome();
+}
+
+/* touch dpad */
+function bindTouch(){
+  document.querySelectorAll('#dpad [data-dir]').forEach(el=>{
+    const dir=el.dataset.dir;
+    const map={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+    const handler=(e)=>{ e.preventDefault(); if(mode==='world') stepMove(...map[dir]); };
+    el.addEventListener('touchstart',handler,{passive:false});
+    el.addEventListener('mousedown',handler);
+  });
+  const a=document.getElementById('btnA');
+  const aH=(e)=>{ e.preventDefault();
+    if(dialogCb) closeDialog();
+    else if(mode==='world') interact();
+  };
+  a.addEventListener('touchstart',aH,{passive:false}); a.addEventListener('mousedown',aH);
+  const m=document.getElementById('btnMenu');
+  const mH=(e)=>{ e.preventDefault(); if(mode==='world') openPanel(); else if(mode==='panel') closePanel(); };
+  m.addEventListener('touchstart',mH,{passive:false}); m.addEventListener('mousedown',mH);
+}
+
+/* ---------- Boot ---------- */
+function showTouchIfNeeded(){
+  if('ontouchstart' in window || navigator.maxTouchPoints>0){
+    document.getElementById('touch').style.display='flex';
+    document.getElementById('hint').style.display='none';
+  }
+}
+function startWorld(){
+  document.getElementById('title').style.display='none';
+  document.getElementById('starterSel').style.display='none';
+  mode='world';
+}
+function buildStarterSel(){
+  const wrap=document.getElementById('starterCards');
+  wrap.innerHTML='';
+  STARTERS.forEach(sp=>{
+    const s=SPECIES[sp];
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<canvas width="64" height="64"></canvas><b>${sp}</b>
+      <small>${s.type} type</small>`;
+    const cv=card.querySelector('canvas'); drawCritter(cv,64,sp);
+    card.onclick=()=>{ newGame(sp); startWorld();
+      dialog(`<b>${sp}</b> joins your team! Head into the tall grass to find more critters. Good luck out there!`); };
+    wrap.appendChild(card);
+  });
+}
+
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('title').style.display='none';
+  document.getElementById('starterSel').style.display='flex';
+  mode='starter';
+  buildStarterSel();
+};
+
+function init(){
+  buildGrid();
+  showTouchIfNeeded();
+  bindTouch();
+  wireBattleButtons();
+  if(load()){
+    // resume
+    document.getElementById('title').innerHTML=
+      '<h1>Critter Wilds</h1><p>Saved adventure found.</p>'+
+      '<button class="btn" id="resumeBtn">Continue</button>'+
+      '<button class="btn" id="newBtn" style="background:#555">New Game</button>';
+    document.getElementById('resumeBtn').onclick=()=>{ startWorld(); };
+    document.getElementById('newBtn').onclick=()=>{
+      document.getElementById('starterSel').style.display='flex';
+      document.getElementById('title').style.display='none';
+      mode='starter'; buildStarterSel();
+    };
+  }
+  requestAnimationFrame(loop);
+}
+function loop(){
+  if(mode==='world'||mode==='panel') render();
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>
