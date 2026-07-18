@@ -1,6 +1,6 @@
 # 🌿 Critter Wilds — A Survival RPG
 
-A tiny **action survival RPG** that runs entirely in your browser — think Pokémon meets Brawl Stars, with Harry Potter-style spellcasting. No installs, no build step, no dependencies — just open `index.html` and play. Roam the wild with a joystick, blast roaming critters in real time by drawing spell gestures, keep your **hunger** and **energy** up, and build a team of six.
+A tiny **isometric action survival RPG** that runs entirely in your browser — think Pokémon meets Brawl Stars, with Harry Potter-style spellcasting, all under a moody campfire-lit night. No installs, no build step, no dependencies — just open `index.html` and play. Roam the wild with a joystick, blast roaming critters in real time by drawing spell gestures, keep your **hunger** and **energy** up, and build a team of six.
 
 ![Made with vanilla JS](https://img.shields.io/badge/made%20with-vanilla%20JS-f7df1e) ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen) ![Playable in browser](https://img.shields.io/badge/play-in%20browser-5aa02c)
 
@@ -15,8 +15,8 @@ A tiny **action survival RPG** that runs entirely in your browser — think Pok�
 - **Coins & a shop** — defeat enemies for coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
 - **Team of six** — level up from kills, swap your lead (which changes your spell element!), and manage a full item bag.
 - **Auto-save** — progress is saved in your browser (localStorage), with Continue / New Game on the title screen.
-- **Touch-first, Brawl Stars-style** — landscape layout, chunky outlined art, drop shadows, cel-shaded critters, depth-sorted props, and particle effects (dust, grass rustle, spell impacts, sparkles). Keyboard still works on desktop (WASD + J/K/L/U/O to cast).
-- **Zero assets** — every critter, tile, spell, and effect is drawn procedurally with the Canvas API, so the whole game is a single HTML file.
+- **Isometric, moody atmosphere** — a 3/4 isometric world under a dusk/night sky with real **dynamic lighting**: a glowing campfire and lantern-lit shop/nurse cast warm pools of light in the dark, spell projectiles glow, enemies shimmer faintly so you can spot them, and embers & fireflies drift by. Landscape, touch-first. Keyboard still works on desktop (WASD + J/K/L/U/O to cast).
+- **Zero assets** — every tile, critter, spell, light, and effect is drawn procedurally with the Canvas API, so the whole game is a single HTML file. (Drop in a pixel-art tileset later and it can be swapped onto the same engine.)
 
 ## 🛍️ Items & the shop
 
