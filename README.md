@@ -16,8 +16,8 @@ A tiny **Pokémon-style survival RPG** that runs entirely in your browser. No in
 - **Coins & a shop** — win battles to earn coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
 - **Team of six** — level up, learn how stats grow, swap your lead, and manage a full item bag.
 - **Auto-save** — progress is saved in your browser (localStorage), with Continue / New Game on the title screen.
-- **Works on desktop and mobile** — keyboard controls on desktop, on-screen D-pad + buttons on touch devices.
-- **Zero assets** — every critter and tile is drawn procedurally with the Canvas API, so the whole game is a single HTML file.
+- **Touch-first, Brawl Stars-style** — landscape layout, a floating 360° joystick with smooth acceleration and camera, chunky outlined art, drop shadows, cel-shaded critters, depth-sorted props, and particle effects (dust, grass rustle, sparkles). Keyboard still works on desktop.
+- **Zero assets** — every critter, tile, and effect is drawn procedurally with the Canvas API, so the whole game is a single HTML file.
 
 ## 🛍️ Items & the shop
 
@@ -36,11 +36,15 @@ Use Berries, Potions, Super Orbs, and Revives mid-battle from the **Bag** button
 
 ## 🎮 Controls
 
-| Action | Desktop | Mobile |
+Built **touch-first for landscape phones**, with a Brawl Stars-style look — chunky outlined art, soft shadows, cel-shaded critters, depth-sorted buildings, and particle effects.
+
+| Action | Touch | Desktop |
 |---|---|---|
-| Move | Arrow keys / WASD | D-pad |
-| Interact / confirm | Space or E | **A** button |
-| Team & Bag | P or B | **☰** button |
+| Move | **Floating joystick** — press and drag anywhere on the left; 360° smooth movement | Arrow keys / WASD |
+| Interact / confirm | **A** button (also advances dialog) | Space or E |
+| Team & Bag | **☰** button | P or B |
+
+Walk up to the nurse, shop, a berry bush, a house, or a sign and a little label (Heal / Shop / Pick / Rest / Read) pops up — tap **A** to use it. Hold your phone sideways for the best view.
 
 **Tips**
 - Walk into the tall grass (the darker, textured patches to the north and south) to find wild critters.
