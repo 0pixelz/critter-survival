@@ -20,6 +20,7 @@ A tiny **isometric action survival RPG** that runs entirely in your browser — 
 - **Explore a tile world** — a town, paths, water, beaches, and tall grass, with a floating 360° joystick and a smooth follow camera.
 - **Survival mechanics** — hunger and energy drain as you move; let them bottom out and your lead loses HP. Enemies that touch you deal contact damage. Eat berries, rest at home, and visit the nurse to recover.
 - **Snipe or duel** — pick off roaming critters from range with spells, *or* let one reach you and it pulls you into a **turn-based Pokémon-style battle** (its wounded HP carries over, so softening it first helps). Catch on the map by weakening a critter until it glows and tapping **A**, or catch it in battle.
+- **Draw-to-cast in battle** — in a battle, **draw a spell gesture right on the arena** (a flick, a **V**, a **Z**, or a **◯**) to attack Harry Potter-style, with a glowing trail — or use the classic **Moves** menu instead.
 - **20 critters** — a roster spanning every type, each with its own stats and procedurally-drawn sprite.
 - **Coins & a shop** — defeat enemies for coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
 - **Team of six** — level up from kills, swap your lead (which changes your spell element!), and manage a full item bag.

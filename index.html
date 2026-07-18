@@ -97,26 +97,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
 /* ---------- Battle ---------- */
 #battle{position:fixed;inset:0;z-index:15;display:none;flex-direction:column;
   background:linear-gradient(165deg,#bfe8f7,#e4f2d4 55%,#c4e79a);color:var(--ink);}
-#bfield{position:relative;flex:1;overflow:hidden;}
-.mon{position:absolute;text-align:center;}
-.foe{bottom:6%;right:11%;} .ally{bottom:6%;left:11%;}
-.plate{position:absolute;background:var(--panel);border:4px solid var(--outline);border-radius:16px;
-  padding:8px 12px;min-width:170px;box-shadow:0 5px 0 rgba(0,0,0,.22);font-weight:600;}
-.foeplate{top:6%;right:5%;} .allyplate{top:6%;left:5%;}
-.plate .row{display:flex;align-items:center;gap:7px;font-size:15px;}
-.plate .hpwrap{height:10px;background:#6a5a44;border-radius:6px;margin-top:5px;overflow:hidden;}
+#bfield{position:relative;flex:1;overflow:hidden;display:flex;justify-content:space-around;
+  align-items:stretch;padding:8px 10px;gap:10px;min-height:0;}
+.bside{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-start;}
+.mon{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%;}
+.mon canvas{max-height:100%;max-width:100%;height:auto;width:auto;}
+.plate{background:var(--panel);border:4px solid var(--outline);border-radius:14px;width:100%;max-width:210px;
+  padding:6px 10px;box-shadow:0 4px 0 rgba(0,0,0,.22);font-weight:600;}
+.plate .row{display:flex;align-items:center;gap:6px;font-size:14px;}
+.plate .hpwrap{height:9px;background:#6a5a44;border-radius:6px;margin-top:4px;overflow:hidden;}
 .plate .hpwrap>i{display:block;height:100%;background:#54c23a;transition:width .3s;}
-.chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;color:#fff;
+#drawFx{position:absolute;inset:0;z-index:5;pointer-events:none;}
+.chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;color:#fff;
   text-transform:uppercase;letter-spacing:.4px;}
-#bmenu{background:var(--panel);border-top:5px solid var(--outline);padding:12px;
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:150px;
-  padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+#bmenu{background:var(--panel);border-top:5px solid var(--outline);padding:10px;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));}
 #bmsg{grid-column:1/3;font-size:17px;color:var(--ink);font-weight:600;min-height:24px;}
 .cbtn{background:linear-gradient(#fff,#ffedd0);border:4px solid var(--outline);border-radius:16px;
   padding:16px;font-size:18px;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;
   box-shadow:0 5px 0 rgba(0,0,0,.2);transition:transform .06s,box-shadow .06s;}
 .cbtn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.2);}
-.cbtn.small{padding:12px;font-size:15px;}
+.cbtn{padding:13px;font-size:17px;}
+.cbtn.small{padding:11px;font-size:15px;}
 .cbtn.wide{grid-column:1/3;}
 .cbtn:disabled{opacity:.45;}
 .cbtn small{font-weight:500;font-size:12px;color:#8a6d3a;}
@@ -141,7 +144,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
 #rotate .ph{font-size:56px;animation:spin 2s ease-in-out infinite;}
 @keyframes spin{0%,40%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
 
-#spellName{position:fixed;top:38%;left:50%;transform:translateX(-50%);z-index:8;font-size:34px;
+#spellName{position:fixed;top:30%;left:50%;transform:translateX(-50%);z-index:19;font-size:34px;
   font-weight:700;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.4);opacity:0;pointer-events:none;letter-spacing:1px;}
 @keyframes spellPop{0%{opacity:0;transform:translateX(-50%) scale(.6)}30%{opacity:1;transform:translateX(-50%) scale(1.1)}100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-20px)}}
 #castHint{position:fixed;bottom:calc(6px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:5;
@@ -176,10 +179,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
 <!-- Battle -->
 <div id="battle">
   <div id="bfield">
-    <div class="mon foe" id="foeMon"></div>
-    <div class="mon ally" id="allyMon"></div>
-    <div class="plate foeplate" id="foePlate"></div>
-    <div class="plate allyplate" id="allyPlate"></div>
+    <div class="bside"><div class="plate" id="allyPlate"></div><div class="mon" id="allyMon"></div></div>
+    <div class="bside"><div class="plate" id="foePlate"></div><div class="mon" id="foeMon"></div></div>
+    <canvas id="drawFx"></canvas>
   </div>
   <div id="bmenu">
     <div id="bmsg"></div>
@@ -856,7 +858,7 @@ function foeTurn(){if(!B)return;if(B.foe.hp<=0)return winBattle();
   if(m.power>0){const{dmg,eff}=calcDamage(B.foe,B.ally,mv);B.ally.hp-=dmg;flashMon('allyMon');msg+=eff>1?' Super effective!':eff<1?' Not very effective…':'';}
   if(m.status&&!B.ally.status&&B.ally.hp>0&&Math.random()<(m.schance||0)){applyStatus(B.ally,m.status);msg+=' '+sMsg(B.ally.species,m.status);}
   setBMsg(msg);renderBattle();setTimeout(()=>{if(B.ally.hp<=0)faintAlly();else endPlayerTurn();},850);}
-function endPlayerTurn(){if(!B)return;B.busy=false;setBMsg('What will you do?');}
+function endPlayerTurn(){if(!B)return;B.busy=false;setBMsg('✎ Draw a spell above — or use the buttons.');}
 function faintAlly(){if(!B)return;B.ally.hp=0;renderBattle();setBMsg(`${B.ally.species} fainted!`);const next=firstAlive();
   setTimeout(()=>{if(next){B.ally=next;renderBattle();setBMsg(`Go, ${next.species}!`);B.busy=false;}
     else{setBMsg('All your critters have fainted!');setTimeout(()=>{endBattle();
@@ -904,12 +906,22 @@ function openFightMenu(){if(B.busy)return;const menu=document.getElementById('bm
   menu.querySelectorAll('.movebtn').forEach(b=>b.onclick=()=>{restoreBattleMenu();playerMove(b.dataset.mv);});
   document.getElementById('backBtn').onclick=restoreBattleMenu;}
 function restoreBattleMenu(){const menu=document.getElementById('bmenu');
-  menu.innerHTML=`<div id="bmsg">What will you do?</div>
-    <button class="cbtn" id="bFight">Fight</button><button class="cbtn" id="bCatch">Catch</button>
+  menu.innerHTML=`<div id="bmsg">✎ Draw a spell above (flick · V · Z · ◯) — or…</div>
+    <button class="cbtn" id="bFight">Moves</button><button class="cbtn" id="bCatch">Catch</button>
     <button class="cbtn" id="bBag">Bag</button><button class="cbtn" id="bRun">Run</button>`;wireBattle();renderBattle();}
 function wireBattle(){document.getElementById('bFight').onclick=openFightMenu;
   document.getElementById('bCatch').onclick=()=>throwOrb(false);
   document.getElementById('bBag').onclick=openBagMenu;document.getElementById('bRun').onclick=tryRun;}
+/* draw-a-spell attack in battle (Harry Potter style) */
+function battleCast(spell){if(!B||B.busy)return;B.busy=true;const sp=SPELLS[spell]||SPELLS.bolt,M=mods();
+  const s=statusTick(B.ally);if(s.dmg){B.ally.hp-=s.dmg;flashMon('allyMon');}renderBattle();
+  if(B.ally.hp<=0){setBMsg(s.note);return setTimeout(faintAlly,900);}
+  if(!s.canAct){setBMsg(s.note);return setTimeout(foeTurn,1000);}
+  const eff=effect(B.ally.type,B.foe.type),col=TYPES[B.ally.type].color;
+  const dmg=Math.max(1,Math.floor(B.ally.atk*sp.mult*M.dmg*eff*2.0*(0.9+Math.random()*0.2)));
+  B.foe.hp-=dmg;flashMon('foeMon');spellFlash(sp.name,col);
+  setBMsg(`Cast <b>${sp.name}</b>!`+(eff>1?' Super effective!':eff<1?' Not very effective…':''));renderBattle();
+  setTimeout(()=>{if(B.foe.hp<=0)winBattle();else foeTurn();},850);}
 function flashMon(id){const el=document.getElementById(id);el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),400);}
 
 /* ===================================================================
@@ -1191,6 +1203,23 @@ function bindBtn(el,fn){el.addEventListener('click',e=>{e.preventDefault();fn();
 bindBtn(document.getElementById('btnA'),()=>{if(mode==='world')doInteract();else if(dialogCb)closeDialog();});
 bindBtn(document.getElementById('btnMenu'),()=>{if(mode==='world')openPanel();else if(mode==='panel')closePanel();});
 bindBtn(document.getElementById('btnSuper'),()=>{if(mode==='world')unleashSuper();});
+/* --- draw-to-cast inside battle --- */
+(function(){const bf=document.getElementById('bfield'),fx=document.getElementById('drawFx'),dfx=fx.getContext('2d');
+  const bd={active:false,id:null,pts:[]};
+  function rel(e){const r=bf.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+  function redraw(){const col=B&&B.ally?TYPES[B.ally.type].color:'#fff';
+    dfx.clearRect(0,0,fx.width,fx.height);if(bd.pts.length<2)return;
+    dfx.strokeStyle=col;dfx.lineWidth=7;dfx.lineJoin='round';dfx.lineCap='round';dfx.shadowColor=col;dfx.shadowBlur=16;dfx.globalAlpha=0.9;
+    dfx.beginPath();dfx.moveTo(bd.pts[0].x,bd.pts[0].y);for(const p of bd.pts)dfx.lineTo(p.x,p.y);dfx.stroke();
+    dfx.shadowBlur=0;dfx.globalAlpha=1;}
+  bf.addEventListener('pointerdown',e=>{if(mode!=='battle'||!B||B.busy)return;
+    fx.width=bf.clientWidth;fx.height=bf.clientHeight;bd.active=true;bd.id=e.pointerId;bd.pts=[rel(e)];});
+  bf.addEventListener('pointermove',e=>{if(!bd.active||e.pointerId!==bd.id)return;const p=rel(e),l=bd.pts[bd.pts.length-1];
+    if(Math.hypot(p.x-l.x,p.y-l.y)>4){bd.pts.push(p);redraw();}});
+  function end(e){if(!bd.active||e.pointerId!==bd.id)return;bd.active=false;bd.id=null;
+    dfx.clearRect(0,0,fx.width,fx.height);if(bd.pts.length>1){const sp=classifyGesture(bd.pts);battleCast(sp);}bd.pts=[];}
+  bf.addEventListener('pointerup',end);bf.addEventListener('pointercancel',end);
+})();
 
 /* ===================================================================
    BOOT
