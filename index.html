@@ -666,6 +666,7 @@ function update(dt){
   castCD=Math.max(0,castCD-dt);
   hurtFlash=Math.max(0,hurtFlash-dt*2);
   shakeT=Math.max(0,shakeT-dt);
+  engageCD=Math.max(0,engageCD-dt);
   updateEnemies(dt);updateShots(dt);updateWaves(dt);updateFloats(dt);
   // survival
   surv+=dt;if(surv>0.5){surv=0;
@@ -739,12 +740,21 @@ function closeDialog(){document.getElementById('dialog').style.display='none';co
    BATTLE
    =================================================================== */
 let B=null;
-function startBattle(){
-  const lvl=Math.max(2,G.party[0].level+(Math.floor(Math.random()*3)-1));
-  const foe=makeCritter(WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],lvl);
-  B={foe,ally:firstAlive(),busy:false,caught:false,ran:false};mode='battle';
+function startBattle(src){
+  let foe, alpha=false, srcEnemy=null;
+  if(src){ // engaged by a roaming enemy on the map
+    foe=makeCritter(src.sp,src.level);
+    foe.hp=Math.max(1,Math.min(foe.maxHp,Math.round((src.hp/src.maxHp)*foe.maxHp))); // carry over how hurt it is
+    alpha=!!src.alpha; foe.level=src.level; srcEnemy=src;
+    const i=enemies.indexOf(src);if(i>=0)enemies.splice(i,1);
+  } else {
+    const lvl=Math.max(2,G.party[0].level+(Math.floor(Math.random()*3)-1));
+    foe=makeCritter(WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],lvl);
+  }
+  foe.alpha=alpha;
+  B={foe,ally:firstAlive(),busy:false,caught:false,ran:false,srcEnemy,alpha};mode='battle';
   document.getElementById('battle').style.display='flex';restoreBattleMenu();
-  setBMsg(`A wild <b>${foe.species}</b> (Lv.${foe.level}) appeared!`);
+  setBMsg(`${alpha?'⭐ An <b>ALPHA</b> ':'A wild '}<b>${foe.species}</b> (Lv.${foe.level}) ${src?'engaged you':'appeared'}!`);
 }
 function typeChip(t){return `<span class="chip" style="background:${TYPES[t].color}">${t}</span>`;}
 const STATUS_COL={burn:'#e8613c',poison:'#8e44ad',para:'#f1c40f',sleep:'#607d8b',chill:'#4aa8d8'};
@@ -832,7 +842,11 @@ function useBattleItem(k){const it=G.items;
   if(k==='revive'){const f=G.party.find(c=>c.hp<=0);if(it.revive<=0||!f)return;it.revive--;f.hp=Math.floor(f.maxHp*0.5);f.status=null;return afterItem(`${f.species} was revived!`);}}
 function afterItem(m){restoreBattleMenu();B.busy=true;setBMsg(m);renderBattle();save();setTimeout(foeTurn,1000);}
 function tryRun(){if(B.busy)return;if(Math.random()<0.7){B.ran=true;setBMsg('Got away safely!');B.busy=true;setTimeout(endBattle,800);}else{setBMsg("Couldn't escape!");B.busy=true;setTimeout(foeTurn,900);}}
-function endBattle(){if(B&&B.ally){B.ally.status=null;B.ally.statusT=0;}document.getElementById('battle').style.display='none';B=null;mode='world';encAccum=0;updateHud();save();}
+function endBattle(){
+  if(B){if(B.ally){B.ally.status=null;B.ally.statusT=0;}
+    if(B.ran&&B.srcEnemy&&enemies.length<MAX_ENEMIES){const e=B.srcEnemy,a=Math.atan2(e.y-P.y,e.x-P.x)||0;
+      e.x=P.x+Math.cos(a)*TILE*2.4;e.y=P.y+Math.sin(a)*TILE*2.4;e.hp=Math.max(1,Math.floor(e.maxHp*0.6));e.touchCD=0;enemies.push(e);}}
+  engageCD=2;document.getElementById('battle').style.display='none';B=null;mode='world';encAccum=0;updateHud();save();}
 function openFightMenu(){if(B.busy)return;const menu=document.getElementById('bmenu');let h='<div id="bmsg">Choose a move:</div>';
   B.ally.moves.forEach(mv=>{const m=MOVES[mv];h+=`<button class="cbtn small movebtn" data-mv="${mv}">${mv}<br><small>${m.type} · Pow ${m.power}</small></button>`;});
   h+='<button class="cbtn small wide" id="backBtn">◀ Back</button>';menu.innerHTML=h;
@@ -895,7 +909,7 @@ function openShop(){if(mode!=='world'||dialogCb)return;mode='panel';const p=docu
    REAL-TIME COMBAT — roaming enemies, projectiles, gesture casting
    =================================================================== */
 const enemies=[], shots=[], floats=[], waves=[];
-let castCD=0, hurtFlash=0, respawnT=0, superC=0, shakeT=0, shX=0, shY=0;
+let castCD=0, hurtFlash=0, respawnT=0, superC=0, shakeT=0, shX=0, shY=0, engageCD=0;
 function addSuper(a){superC=Math.min(100,superC+a);}
 function superReady(){return superC>=100;}
 function unleashSuper(){const lead=firstAlive();if(!lead||!superReady())return;superC=0;
@@ -947,8 +961,8 @@ function updateEnemies(dt){
     let nx=e.x+e.vx*dt,ny=e.y+e.vy*dt;
     if(!SOLID.has(tileAtWorld(nx,e.y)))e.x=nx;else{e.vx*=-0.5;e.wdir=Math.random()*6.28;}
     if(!SOLID.has(tileAtWorld(e.x,ny)))e.y=ny;else{e.vy*=-0.5;e.wdir=Math.random()*6.28;}
-    if(dl<PR+15&&e.touchCD<=0){e.touchCD=1.0;const l=firstAlive();
-      if(l){l.hp=Math.max(0,l.hp-Math.max(2,Math.floor(e.atk*0.45)));flashHurt();burst(P.x,P.y-8,'#ff5b4a');if(l.hp<=0)onLeadFaint();}}
+    // enemy reaches you → engage a turn-based battle (Pokémon-style)
+    if(dl<PR+16 && engageCD<=0 && mode==='world' && firstAlive()){ engageCD=1.5; startBattle(e); return; }
   }
 }
 function drawEnemy(e){const s=w2s(e.x,e.y),sx=s.x,sy=s.y,bob=Math.sin(e.bob*3)*2;const sc=e.scale||1,sz=48*sc;
@@ -1117,6 +1131,11 @@ function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const w=window.inne
   ctx.setTransform(DPR,0,0,DPR,0,0);VIEW.w=w;VIEW.h=h;
   document.getElementById('rotate').style.display=(h>w&&w<560)?'flex':'none';}
 window.addEventListener('resize',resize);window.addEventListener('orientationchange',resize);
+// --- block pinch / double-tap zoom (two-thumb play must not zoom the page) ---
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+window.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
 function startWorld(){document.getElementById('title').style.display='none';document.getElementById('starterSel').style.display='none';mode='world';seedEnemies();}
 function buildStarters(){const wrap=document.getElementById('starterCards');wrap.innerHTML='';
   STARTERS.forEach(sp=>{const s=SPECIES[sp];const card=document.createElement('div');card.className='scard';

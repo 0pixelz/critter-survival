@@ -17,7 +17,7 @@ A tiny **isometric action survival RPG** that runs entirely in your browser — 
 - **Element matchups** — your shots take on your **lead critter's type**, so the 6-type chart (Leaf, Ember, Aqua, Spark, Stone, Gale) still decides what's super effective. Floating damage numbers show the hits.
 - **Explore a tile world** — a town, paths, water, beaches, and tall grass, with a floating 360° joystick and a smooth follow camera.
 - **Survival mechanics** — hunger and energy drain as you move; let them bottom out and your lead loses HP. Enemies that touch you deal contact damage. Eat berries, rest at home, and visit the nurse to recover.
-- **Catch on the map** — weaken a roaming critter until it glows, walk up, and tap **A** to throw an Orb and add it to your team. No separate battle screen.
+- **Snipe or duel** — pick off roaming critters from range with spells, *or* let one reach you and it pulls you into a **turn-based Pokémon-style battle** (its wounded HP carries over, so softening it first helps). Catch on the map by weakening a critter until it glows and tapping **A**, or catch it in battle.
 - **20 critters** — a roster spanning every type, each with its own stats and procedurally-drawn sprite.
 - **Coins & a shop** — defeat enemies for coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
 - **Team of six** — level up from kills, swap your lead (which changes your spell element!), and manage a full item bag.
