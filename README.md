@@ -1,23 +1,22 @@
 # 🌿 Critter Wilds — A Survival RPG
 
-A tiny **Pokémon-style survival RPG** that runs entirely in your browser. No installs, no build step, no dependencies — just open `index.html` and play. Explore the wild, befriend critters, keep your **hunger** and **energy** up, and build a team of six.
+A tiny **action survival RPG** that runs entirely in your browser — think Pokémon meets Brawl Stars, with Harry Potter-style spellcasting. No installs, no build step, no dependencies — just open `index.html` and play. Roam the wild with a joystick, blast roaming critters in real time by drawing spell gestures, keep your **hunger** and **energy** up, and build a team of six.
 
 ![Made with vanilla JS](https://img.shields.io/badge/made%20with-vanilla%20JS-f7df1e) ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen) ![Playable in browser](https://img.shields.io/badge/play-in%20browser-5aa02c)
 
 ## ✨ Features
 
-- **Explore a tile world** — a town, paths, water, beaches, and tall grass to wander through.
-- **Survival mechanics** — hunger and energy drain as you walk. Let them hit zero and your lead critter starts losing HP. Eat berries, rest at home, and visit the nurse to recover.
-- **Wild encounters** — step into tall grass and random critters appear.
-- **Turn-based battles** — a full 6-type effectiveness chart (Leaf, Ember, Aqua, Spark, Stone, Gale), STAB bonuses, accuracy, and level scaling.
-- **Status effects** — moves can **burn** or **poison** (damage over time), **paralyze** (chance to skip a turn), put a foe to **sleep**, or **chill** them (lowered attack). Status chips show on the nameplates, and a statused wild critter is easier to catch.
-- **20 critters** — a roster spanning every type, each with its own stats, moves, and procedurally-drawn sprite.
-- **Catch 'em** — throw Orbs (or Super Orbs for a big bonus) to catch wild critters. Catch rate scales with how low their HP is and whether they're affected by a status.
-- **Coins & a shop** — win battles to earn coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
-- **Team of six** — level up, learn how stats grow, swap your lead, and manage a full item bag.
+- **Real-time gesture combat** — roaming enemy critters wander the map; blast them with your **right thumb**. Flick for a quick **Bolt**, or draw a shape for a bigger spell — a **V** (Power Blast), a **Z**/zigzag (Chain Bolt, pierces), or a **circle** (Nova, 3-way). Spells auto-aim the nearest enemy, fly as glowing projectiles, and are blocked by walls.
+- **Element matchups** — your shots take on your **lead critter's type**, so the 6-type chart (Leaf, Ember, Aqua, Spark, Stone, Gale) still decides what's super effective. Floating damage numbers show the hits.
+- **Explore a tile world** — a town, paths, water, beaches, and tall grass, with a floating 360° joystick and a smooth follow camera.
+- **Survival mechanics** — hunger and energy drain as you move; let them bottom out and your lead loses HP. Enemies that touch you deal contact damage. Eat berries, rest at home, and visit the nurse to recover.
+- **Catch on the map** — weaken a roaming critter until it glows, walk up, and tap **A** to throw an Orb and add it to your team. No separate battle screen.
+- **20 critters** — a roster spanning every type, each with its own stats and procedurally-drawn sprite.
+- **Coins & a shop** — defeat enemies for coins, then spend them at the **Trader's Mart** on Orbs, Super Orbs, Berries, Potions, Revives, and Rations.
+- **Team of six** — level up from kills, swap your lead (which changes your spell element!), and manage a full item bag.
 - **Auto-save** — progress is saved in your browser (localStorage), with Continue / New Game on the title screen.
-- **Touch-first, Brawl Stars-style** — landscape layout, a floating 360° joystick with smooth acceleration and camera, chunky outlined art, drop shadows, cel-shaded critters, depth-sorted props, and particle effects (dust, grass rustle, sparkles). Keyboard still works on desktop.
-- **Zero assets** — every critter, tile, and effect is drawn procedurally with the Canvas API, so the whole game is a single HTML file.
+- **Touch-first, Brawl Stars-style** — landscape layout, chunky outlined art, drop shadows, cel-shaded critters, depth-sorted props, and particle effects (dust, grass rustle, spell impacts, sparkles). Keyboard still works on desktop (WASD + J/K/L/U/O to cast).
+- **Zero assets** — every critter, tile, spell, and effect is drawn procedurally with the Canvas API, so the whole game is a single HTML file.
 
 ## 🛍️ Items & the shop
 
@@ -32,7 +31,7 @@ Beat wild critters to earn **coins**, then walk into the **Mart** (the building 
 | Revive | 70c | Revives a fainted critter (to 50%) |
 | Ration | 25c | Fully restores hunger |
 
-Use Berries, Potions, Super Orbs, and Revives mid-battle from the **Bag** button, or from the Team & Bag panel out in the world.
+Use Berries, Potions, Rations, and Revives any time from the **Team & Bag** panel (the ☰ button). Orbs are thrown with **A** when you're next to a weakened enemy.
 
 ## 🎮 Controls
 
@@ -40,11 +39,14 @@ Built **touch-first for landscape phones**, with a Brawl Stars-style look — ch
 
 | Action | Touch | Desktop |
 |---|---|---|
-| Move | **Floating joystick** — press and drag anywhere on the left; 360° smooth movement | Arrow keys / WASD |
-| Interact / confirm | **A** button (also advances dialog) | Space or E |
+| Move | **Left thumb** — press and drag anywhere on the left half; 360° smooth movement | Arrow keys / WASD |
+| Cast a spell | **Right thumb** — flick or draw a shape on the right half | J = Bolt, K = Twin, L = Power, U = Chain, O = Nova |
+| Interact / confirm / catch | **A** button (also advances dialog) | Space or E |
 | Team & Bag | **☰** button | P or B |
 
-Walk up to the nurse, shop, a berry bush, a house, or a sign and a little label (Heal / Shop / Pick / Rest / Read) pops up — tap **A** to use it. Hold your phone sideways for the best view.
+**Spell gestures** (right thumb): a quick flick = **Bolt**, a gentle bend = **Twin**, a sharp **V** = **Power Blast**, a **Z** zigzag = **Chain Bolt** (pierces), a **circle** = **Nova** (3-way). The spell's name flashes when you cast, and it uses your lead critter's element.
+
+Walk up to the nurse, shop, a berry bush, a house, or a weakened enemy and a label (Heal / Shop / Pick / Rest / **Catch**) pops up — tap **A**. Hold your phone sideways for the best view.
 
 **Tips**
 - Walk into the tall grass (the darker, textured patches to the north and south) to find wild critters.
