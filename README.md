@@ -1,8 +1,12 @@
 # 🌿 Critter Wilds — A Survival RPG
 
+### ▶️ [**Play now → 0pixelz.github.io/critter-survival**](https://0pixelz.github.io/critter-survival/)
+
+*Best on a phone held sideways (landscape). Left thumb moves · right thumb casts spells · tap the ✦ button when it glows to unleash your Super.*
+
 A tiny **isometric action survival RPG** that runs entirely in your browser — think Pokémon meets Brawl Stars, with Harry Potter-style spellcasting, all under a moody campfire-lit night. No installs, no build step, no dependencies — just open `index.html` and play. Roam the wild with a joystick, blast roaming critters in real time by drawing spell gestures, keep your **hunger** and **energy** up, and build a team of six.
 
-![Made with vanilla JS](https://img.shields.io/badge/made%20with-vanilla%20JS-f7df1e) ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen) ![Playable in browser](https://img.shields.io/badge/play-in%20browser-5aa02c)
+[![Play in browser](https://img.shields.io/badge/▶%20play-0pixelz.github.io%2Fcritter--survival-5aa02c)](https://0pixelz.github.io/critter-survival/) ![Made with vanilla JS](https://img.shields.io/badge/made%20with-vanilla%20JS-f7df1e) ![No dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 
 ## ✨ Features
 
