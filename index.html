@@ -33,6 +33,10 @@
   .b-energy > i{background:linear-gradient(90deg,#2b8ce6,#4ec3f2);}
   .b-hp > i{background:linear-gradient(90deg,#c0392b,#e74c3c);}
 
+  #coinBadge{position:absolute;top:44px;right:8px;background:rgba(10,18,12,.82);
+    color:#e6b422;border:2px solid #0c130d;border-radius:14px;padding:3px 10px;
+    font-size:12px;font-weight:bold;pointer-events:none;}
+
   /* bottom controls hint */
   #hint{position:absolute;bottom:6px;left:8px;right:8px;text-align:center;
     font-size:11px;color:#cfe0c4;text-shadow:0 1px 2px #000;pointer-events:none;}
@@ -130,6 +134,7 @@
       <div class="meter"><b>Energy</b><div class="bar b-energy"><i id="mEnergy"></i></div></div>
       <div class="meter"><b id="leadName">Lead</b><div class="bar b-hp"><i id="mHp"></i></div></div>
     </div>
+    <div id="coinBadge">◉ 0</div>
     <div id="hint">Move: arrows / WASD · Interact: Space/E · Party: P · Bag: B</div>
     <div id="dialog"></div>
     <div class="toast" id="toast"></div>
@@ -159,7 +164,7 @@
         <div id="bmsg"></div>
         <button class="btn" id="bFight">Fight</button>
         <button class="btn" id="bCatch">Catch</button>
-        <button class="btn" id="bBag">Berry</button>
+        <button class="btn" id="bBag">Bag</button>
         <button class="btn" id="bRun">Run</button>
       </div>
     </div>
@@ -225,6 +230,19 @@ const MOVES = {
   Thunder:  {type:'Spark', power:65, acc:.75},
   Boulder:  {type:'Stone', power:62, acc:.78},
   Cyclone:  {type:'Gale',  power:58, acc:.82},
+  // --- status-inflicting & extra moves (v2) ---
+  Leafblade:{type:'Leaf',  power:46, acc:.92},
+  Toxvine:  {type:'Leaf',  power:42, acc:.9,  status:'poison', schance:.35},
+  Firefang: {type:'Ember', power:45, acc:.9,  status:'burn',   schance:.35},
+  Flareburst:{type:'Ember',power:64, acc:.78, status:'burn',   schance:.2},
+  Aquajet:  {type:'Aqua',  power:44, acc:.95},
+  Frostjet: {type:'Aqua',  power:45, acc:.9,  status:'chill',  schance:.35},
+  Static:   {type:'Spark', power:44, acc:.9,  status:'para',   schance:.35},
+  Voltcrash:{type:'Spark', power:66, acc:.75, status:'para',   schance:.2},
+  Quill:    {type:'Gale',  power:44, acc:.92},
+  Rocktoss: {type:'Stone', power:42, acc:.9},
+  Sandslam: {type:'Stone', power:46, acc:.88},
+  Lullwind: {type:'Gale',  power:0,  acc:.75, status:'sleep',  schance:1},
 };
 
 /* ---------- Critter species ---------- */
@@ -238,11 +256,36 @@ const SPECIES = {
   Zephlet: {type:'Gale', hp:43, atk:12, def:10, spd:14, color:'#a99cf2', accent:'#6b5cc0', shape:'bird',  moves:['Gust','Tackle','Cyclone']},
   Mosslet: {type:'Leaf', hp:50, atk:11, def:13, spd:9,  color:'#7cc26a', accent:'#3e7d34', shape:'blob',  moves:['Vinelash','Tackle']},
   Emburr:  {type:'Ember',hp:47, atk:15, def:10, spd:12, color:'#e2542e', accent:'#9c2f13', shape:'blob',  moves:['Emberpuff','Pebble','Scorch']},
+  // --- expanded roster (v2) ---
+  Thornip: {type:'Leaf', hp:46, atk:14, def:11, spd:12, color:'#66bb3a', accent:'#33691e', shape:'fox',   moves:['Leafblade','Toxvine','Leafstorm']},
+  Fernbud: {type:'Leaf', hp:54, atk:11, def:14, spd:8,  color:'#9ccc65', accent:'#558b2f', shape:'round', moves:['Vinelash','Toxvine']},
+  Blazehog:{type:'Ember',hp:55, atk:16, def:12, spd:9,  color:'#e64a19', accent:'#8d2408', shape:'blob',  moves:['Firefang','Pebble','Flareburst']},
+  Ashmoth: {type:'Ember',hp:44, atk:13, def:9,  spd:15, color:'#ff8a65', accent:'#bf360c', shape:'bird',  moves:['Emberpuff','Quill','Firefang']},
+  Finewt:  {type:'Aqua', hp:47, atk:13, def:11, spd:12, color:'#29b6f6', accent:'#0277bd', shape:'fox',   moves:['Aquajet','Frostjet','Torrent']},
+  Coralux: {type:'Aqua', hp:52, atk:11, def:14, spd:9,  color:'#4dd0e1', accent:'#00838f', shape:'round', moves:['Bubble','Frostjet']},
+  Voltail: {type:'Spark',hp:43, atk:14, def:9,  spd:16, color:'#ffd54f', accent:'#f9a825', shape:'bird',  moves:['Static','Quill','Voltcrash']},
+  Ionfox:  {type:'Spark',hp:45, atk:15, def:10, spd:14, color:'#fff176', accent:'#fbc02d', shape:'fox',   moves:['Zap','Static','Thunder']},
+  Craggle: {type:'Stone',hp:56, atk:13, def:16, spd:6,  color:'#a1887f', accent:'#5d4037', shape:'blob',  moves:['Rocktoss','Sandslam','Boulder']},
+  Boulderbeast:{type:'Stone',hp:62,atk:15,def:17,spd:5, color:'#8d6e63', accent:'#4e342e', shape:'blob',  moves:['Sandslam','Pebble','Boulder']},
+  Breezle: {type:'Gale', hp:44, atk:12, def:10, spd:15, color:'#b39ddb', accent:'#5e35b1', shape:'round', moves:['Gust','Lullwind','Cyclone']},
+  Nimbling:{type:'Gale', hp:48, atk:13, def:11, spd:13, color:'#9fa8da', accent:'#3949ab', shape:'blob',  moves:['Quill','Lullwind','Cyclone']},
 };
 delete SPECIES['Cindパウ'];
 
 const STARTERS = ['Sproutle','Cindnip','Puddlet'];
-const WILD_POOL = ['Sproutle','Cindnip','Puddlet','Sparkit','Pebblo','Zephlet','Mosslet','Emburr'];
+const WILD_POOL = ['Sproutle','Cindnip','Puddlet','Sparkit','Pebblo','Zephlet','Mosslet','Emburr',
+  'Thornip','Fernbud','Blazehog','Ashmoth','Finewt','Coralux','Voltail','Ionfox','Craggle','Boulderbeast','Breezle','Nimbling'];
+
+/* ---------- Shop catalog ---------- */
+const SHOP = [
+  {key:'orb',      name:'Orb',       price:20, desc:'Catches wild critters.'},
+  {key:'superorb', name:'Super Orb', price:65, desc:'Far better catch rate.'},
+  {key:'berry',    name:'Berry',     price:15, desc:'Heals 40% HP + hunger.'},
+  {key:'potion',   name:'Potion',    price:30, desc:'Restores 60 HP.'},
+  {key:'revive',   name:'Revive',    price:70, desc:'Revives a fainted critter.'},
+  {key:'ration',   name:'Ration',    price:25, desc:'Fully restores hunger.'},
+];
+const ITEM_KEYS = ['orb','superorb','berry','potion','revive','ration'];
 
 /* ---------- Critter factory ---------- */
 function makeCritter(speciesName, level){
@@ -250,6 +293,7 @@ function makeCritter(speciesName, level){
   const c = {
     species: speciesName, type: s.type, level,
     xp: 0, moves: s.moves.slice(0,4),
+    status: null, statusT: 0,
     _s: s,
   };
   recalc(c);
@@ -297,7 +341,7 @@ const MAP_STR = [
 ];
 const MAP_W = MAP_STR[0].length, MAP_H = MAP_STR.length;
 let grid = [];             // walkable/tile info
-const BLOCKED = new Set(['T','W','H','F']);
+const BLOCKED = new Set(['T','W','H','F','M']);
 const ENCOUNTER = new Set([',']);
 
 function buildGrid(){
@@ -308,6 +352,17 @@ function buildGrid(){
       row.push(MAP_STR[y][x]);
     }
     grid.push(row);
+  }
+  placeMerchant();
+}
+/* place the shop (M) next to the nurse (N), on a walkable neighbour */
+function placeMerchant(){
+  let nx=-1, ny=-1;
+  for(let y=0;y<MAP_H;y++) for(let x=0;x<MAP_W;x++) if(grid[y][x]==='N'){ nx=x; ny=y; }
+  if(nx<0) return;
+  const cand=[[nx+2,ny],[nx-2,ny],[nx,ny-2],[nx,ny+2],[nx+1,ny],[nx-1,ny]];
+  for(const [x,y] of cand){
+    if(x>0&&y>0&&x<MAP_W-1&&y<MAP_H-1 && grid[y][x]==='.' && !(x===5&&y===6)){ grid[y][x]='M'; return; }
   }
 }
 function tileAt(x,y){
@@ -323,14 +378,15 @@ function newGame(starter){
     px:5, py:6, dir:'down', steps:0,
     hunger:100, energy:100,
     party:[ makeCritter(starter, 5) ],
-    orbs:5, berries:3, caughtSpecies:{[starter]:true},
+    items:{orb:5, superorb:0, berry:3, potion:0, revive:0, ration:1},
+    coins:60, caughtSpecies:{[starter]:true},
     day:1, playtime:0,
   };
   save();
 }
 
 /* ---------- Persistence (guarded; degrades if unavailable) ---------- */
-const SAVE_KEY = 'critter-wilds-save-v1';
+const SAVE_KEY = 'critter-wilds-save-v2';
 function save(){
   try{
     const data = JSON.stringify(G, (k,v)=> k==='_s'?undefined:v);
@@ -342,9 +398,20 @@ function load(){
     const raw = localStorage.getItem(SAVE_KEY);
     if(!raw) return false;
     G = JSON.parse(raw);
+    migrate();
     G.party.forEach(recalc);
     return true;
   }catch(e){ return false; }
+}
+/* backfill any missing fields so older/partial saves still load */
+function migrate(){
+  if(!G.items){
+    G.items = {orb:(G.orbs||5), superorb:0, berry:(G.berries||3), potion:0, revive:0, ration:0};
+  }
+  ITEM_KEYS.forEach(k=>{ if(G.items[k]===undefined) G.items[k]=0; });
+  if(G.coins===undefined) G.coins=60;
+  delete G.orbs; delete G.berries;
+  (G.party||[]).forEach(c=>{ if(c.status===undefined){ c.status=null; c.statusT=0; } });
 }
 
 /* ---------- Sprite drawing (procedural, no assets) ---------- */
@@ -460,6 +527,14 @@ function drawTile(t,px,py){
       ctx.fillStyle='#8d6e3a'; ctx.fillRect(px+TILE*0.44,py+TILE*0.5,TILE*0.12,TILE*0.4);
       ctx.fillStyle='#c9a15a'; ctx.fillRect(px+TILE*0.2,py+TILE*0.25,TILE*0.6,TILE*0.35);
       break;
+    case 'M': // merchant / shop
+      ctx.fillStyle='#8bc34a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='#eceff1'; ctx.fillRect(px+3,py+TILE*0.42,TILE-6,TILE*0.58); // building
+      ctx.fillStyle='#1565c0'; ctx.fillRect(px+1,py+TILE*0.28,TILE-2,TILE*0.16);  // awning
+      ctx.fillStyle='#0d47a1'; ctx.fillRect(px+1,py+TILE*0.24,TILE-2,TILE*0.06);  // roof
+      ctx.fillStyle='#fdd835'; ctx.fillRect(px+TILE*0.42,py+TILE*0.62,TILE*0.2,TILE*0.38); // door
+      ctx.fillStyle='#90caf9'; ctx.fillRect(px+TILE*0.14,py+TILE*0.5,TILE*0.16,TILE*0.16);  // window
+      break;
     case 'B': // berry bush
       ctx.fillStyle='#6d8a4a'; ctx.fillRect(px,py,TILE,TILE);
       ctx.fillStyle='#2e7d32'; ctx.beginPath(); ctx.arc(px+TILE/2,py+TILE*0.55,TILE*0.3,0,7); ctx.fill();
@@ -518,6 +593,7 @@ function updateHud(){
   const lead = firstAlive() || G.party[0];
   document.getElementById('leadName').textContent = lead.species;
   document.getElementById('mHp').style.width = clamp(lead.hp/lead.maxHp*100)+'%';
+  document.getElementById('coinBadge').textContent = '◉ ' + (G.coins||0);
 }
 function clamp(v){ return Math.max(0,Math.min(100,v)); }
 function firstAlive(){ return G.party.find(c=>c.hp>0); }
@@ -553,7 +629,8 @@ function tryMove(dx,dy){
   const t=tileAt(nx,ny);
   // interactions on bump
   if(t==='N'){ healParty(); return; }
-  if(t==='S'){ dialog("<b>Sign:</b> Wild critters lurk in the tall grass to the north and south. Rest at home to recover energy. The nurse (♥) heals your team."); return; }
+  if(t==='M'){ openShop(); return; }
+  if(t==='S'){ dialog("<b>Sign:</b> Wild critters lurk in the tall grass to the north and south. Rest at home for energy, heal at the nurse (♥), and buy gear at the Mart (blue awning)."); return; }
   if(t==='B'){ pickBerry(nx,ny); return; }
   if(t==='H'){ restAtHome(); return; }
   if(isBlocked(nx,ny)) return;
@@ -574,10 +651,10 @@ function tryMove(dx,dy){
 }
 
 function healParty(){
-  G.party.forEach(c=>{ c.hp=c.maxHp; });
+  G.party.forEach(c=>{ c.hp=c.maxHp; c.status=null; c.statusT=0; });
   G.energy=100;
-  dialog("<b>Nurse:</b> Your critters are fully healed and you feel rested. Come back any time!");
-  toast('Team healed · energy restored');
+  dialog("<b>Nurse:</b> Your critters are fully healed and cured. Come back any time!");
+  toast('Team healed · status cured');
   save();
 }
 function restAtHome(){
@@ -588,10 +665,10 @@ function restAtHome(){
   save();
 }
 function pickBerry(nx,ny){
-  G.berries++;
+  G.items.berry++;
   grid[ny][nx]='.'; // bush consumed
   G.hunger=Math.min(100,G.hunger+4);
-  dialog("You picked a <b>Berry</b>! (Berries: "+G.berries+"). Eat them from your Bag to restore hunger and heal a critter.");
+  dialog("You picked a <b>Berry</b>! (Berries: "+G.items.berry+"). Eat them from your Bag to restore hunger and heal a critter.");
   toast('+1 Berry');
   save();
 }
@@ -609,10 +686,15 @@ function startBattle(){
   setBMsg(`A wild <b>${foe.species}</b> (Lv.${foe.level}) appeared!`);
 }
 function typeChip(t){ return `<span class="typechip" style="background:${TYPES[t].color}">${t}</span>`; }
+const STATUS_COL={burn:'#e8613c',poison:'#8e44ad',para:'#f1c40f',sleep:'#607d8b',chill:'#4aa8d8'};
+function statusChip(c){
+  if(!c.status) return '';
+  return `<span class="typechip" style="background:${STATUS_COL[c.status]||'#555'}">${c.status.toUpperCase()}</span>`;
+}
 function plate(c){
   const pct=Math.max(0,c.hp/c.maxHp*100);
   const col = pct>50?'#4caf50':pct>20?'#f2c14e':'#e74c3c';
-  return `<div class="row"><b>${c.species}</b> ${typeChip(c.type)} <span>Lv.${c.level}</span></div>
+  return `<div class="row"><b>${c.species}</b> ${typeChip(c.type)}${statusChip(c)} <span>Lv.${c.level}</span></div>
     <div class="hpwrap"><i style="width:${pct}%;background:${col}"></i></div>
     <div style="font-size:11px;text-align:right;margin-top:2px">${Math.max(0,Math.ceil(c.hp))}/${c.maxHp}</div>`;
 }
@@ -626,11 +708,10 @@ function renderBattle(){
   drawCritter(ac,140,B.ally.species); allyMon.appendChild(ac);
   document.getElementById('foePlate').innerHTML=plate(B.foe);
   document.getElementById('allyPlate').innerHTML=plate(B.ally);
-  const canCatch = G.orbs>0;
-  document.getElementById('bCatch').textContent = `Catch (${G.orbs})`;
-  document.getElementById('bCatch').disabled = !canCatch;
-  document.getElementById('bBag').textContent = `Berry (${G.berries})`;
-  document.getElementById('bBag').disabled = G.berries<=0;
+  const bc=document.getElementById('bCatch');
+  if(bc){ bc.textContent = `Catch (${G.items.orb})`; bc.disabled = G.items.orb<=0; }
+  const bb=document.getElementById('bBag');
+  if(bb){ bb.textContent = 'Bag'; bb.disabled = false; }
 }
 function setBMsg(m){ document.getElementById('bmsg').innerHTML=m; }
 
@@ -638,25 +719,65 @@ function calcDamage(att, def, move){
   const m=MOVES[move];
   const eff=effect(m.type, def.type);
   const stab = att.type===m.type?1.2:1;
-  const base=(((2*att.level/5+2)*m.power*(att.atk/def.def))/25)+2;
+  let atk = att.atk;
+  if(att.status==='burn'||att.status==='chill') atk*=0.8; // weakened attacker
+  const base=(((2*att.level/5+2)*m.power*(atk/def.def))/25)+2;
   const dmg=Math.max(1, Math.floor(base*eff*stab*(0.85+Math.random()*0.15)));
   return {dmg, eff};
+}
+
+/* ---------- status effects ---------- */
+function statusTick(mon){
+  let dmg=0, canAct=true, note='';
+  const st=mon.status;
+  if(st==='burn'){ dmg=Math.max(2,Math.floor(mon.maxHp/16)); note=`${mon.species} is hurt by its burn!`; }
+  else if(st==='poison'){ dmg=Math.max(3,Math.floor(mon.maxHp/9)); note=`${mon.species} is hurt by poison!`; }
+  else if(st==='sleep'){
+    mon.statusT=(mon.statusT||0)-1;
+    if(mon.statusT<=0){ mon.status=null; note=`${mon.species} woke up!`; }
+    else { canAct=false; note=`${mon.species} is fast asleep…`; }
+  }
+  else if(st==='para'){ if(Math.random()<0.25){ canAct=false; note=`${mon.species} is paralyzed! It can't move!`; } }
+  else if(st==='chill'){ mon.statusT=(mon.statusT||0)-1; if(mon.statusT<=0) mon.status=null; }
+  return {dmg, canAct, note};
+}
+function applyStatus(mon, kind){
+  mon.status=kind;
+  if(kind==='sleep') mon.statusT=1+Math.floor(Math.random()*3);
+  else if(kind==='chill') mon.statusT=4;
+  else mon.statusT=0;
+}
+function statusInflictMsg(name, kind){
+  return kind==='burn'?`${name} was burned!`:kind==='poison'?`${name} was poisoned!`:
+    kind==='para'?`${name} was paralyzed!`:kind==='sleep'?`${name} fell asleep!`:
+    kind==='chill'?`${name} was chilled!`:'';
 }
 
 function playerMove(moveName){
   if(B.busy) return;
   B.busy=true;
+  // start-of-turn status (damage / can't act)
+  const s=statusTick(B.ally);
+  if(s.dmg){ B.ally.hp-=s.dmg; flashMon('allyMon'); }
+  renderBattle();
+  if(B.ally.hp<=0){ setBMsg(s.note); return setTimeout(faintAlly,900); }
+  if(!s.canAct){ setBMsg(s.note); return setTimeout(foeTurn,1000); }
+
   const m=MOVES[moveName];
   if(Math.random()>m.acc){
     setBMsg(`${B.ally.species} used <b>${moveName}</b>… but it missed!`);
     return setTimeout(foeTurn, 900);
   }
-  const {dmg,eff}=calcDamage(B.ally,B.foe,moveName);
-  B.foe.hp-=dmg;
-  flashMon('foeMon');
-  let ex = eff>1?' It\'s super effective!':eff<1?' It\'s not very effective…':'';
-  setBMsg(`${B.ally.species} used <b>${moveName}</b>!${ex}`);
-  renderBattle();
+  let msg=`${B.ally.species} used <b>${moveName}</b>!`;
+  if(m.power>0){
+    const {dmg,eff}=calcDamage(B.ally,B.foe,moveName);
+    B.foe.hp-=dmg; flashMon('foeMon');
+    msg += eff>1?' It\'s super effective!':eff<1?' It\'s not very effective…':'';
+  }
+  if(m.status && !B.foe.status && B.foe.hp>0 && Math.random()<(m.schance||0)){
+    applyStatus(B.foe, m.status); msg += ' ' + statusInflictMsg(B.foe.species, m.status);
+  }
+  setBMsg(msg); renderBattle();
   setTimeout(()=>{
     if(B.foe.hp<=0){ winBattle(); }
     else foeTurn();
@@ -664,18 +785,29 @@ function playerMove(moveName){
 }
 function foeTurn(){
   if(B.foe.hp<=0) return winBattle();
+  // start-of-turn status for foe
+  const s=statusTick(B.foe);
+  if(s.dmg){ B.foe.hp-=s.dmg; flashMon('foeMon'); }
+  renderBattle();
+  if(B.foe.hp<=0){ setBMsg(s.note); return setTimeout(winBattle,900); }
+  if(!s.canAct){ setBMsg(s.note); return setTimeout(endPlayerTurn,1000); }
+
   const mv=B.foe.moves[Math.floor(Math.random()*B.foe.moves.length)];
   const m=MOVES[mv];
   if(Math.random()>m.acc){
     setBMsg(`Wild ${B.foe.species} used <b>${mv}</b>… but missed!`);
     return setTimeout(endPlayerTurn,900);
   }
-  const {dmg,eff}=calcDamage(B.foe,B.ally,mv);
-  B.ally.hp-=dmg;
-  flashMon('allyMon');
-  let ex = eff>1?' Super effective!':eff<1?' Not very effective…':'';
-  setBMsg(`Wild ${B.foe.species} used <b>${mv}</b>!${ex}`);
-  renderBattle();
+  let msg=`Wild ${B.foe.species} used <b>${mv}</b>!`;
+  if(m.power>0){
+    const {dmg,eff}=calcDamage(B.foe,B.ally,mv);
+    B.ally.hp-=dmg; flashMon('allyMon');
+    msg += eff>1?' Super effective!':eff<1?' Not very effective…':'';
+  }
+  if(m.status && !B.ally.status && B.ally.hp>0 && Math.random()<(m.schance||0)){
+    applyStatus(B.ally, m.status); msg += ' ' + statusInflictMsg(B.ally.species, m.status);
+  }
+  setBMsg(msg); renderBattle();
   setTimeout(()=>{
     if(B.ally.hp<=0){ faintAlly(); }
     else endPlayerTurn();
@@ -703,9 +835,11 @@ function faintAlly(){
 function winBattle(){
   B.foe.hp=0; renderBattle();
   const gain = 8 + B.foe.level*5;
-  setBMsg(`Wild ${B.foe.species} fainted! ${B.ally.species} gained ${gain} XP.`);
+  const coins = 6 + B.foe.level*3 + Math.floor(Math.random()*6);
+  G.coins += coins;
+  setBMsg(`Wild ${B.foe.species} fainted! ${B.ally.species} gained ${gain} XP · +${coins} coins.`);
   grantXp(B.ally, gain);
-  setTimeout(()=>{ endBattle(); }, 1200);
+  setTimeout(()=>{ endBattle(); }, 1300);
 }
 function grantXp(c, amt){
   c.xp+=amt;
@@ -717,21 +851,27 @@ function grantXp(c, amt){
   save();
 }
 
-function tryCatch(){
-  if(B.busy||G.orbs<=0) return;
-  B.busy=true; G.orbs--;
-  renderBattle();
+function throwOrb(sup){
+  if(B.busy) return;
+  const it=G.items;
+  if(sup){ if(it.superorb<=0) return; it.superorb--; } else { if(it.orb<=0) return; it.orb--; }
+  B.busy=true; renderBattle();
   const hpRatio=B.foe.hp/B.foe.maxHp;
-  const chance=Math.min(0.9, (1-hpRatio)*0.65 + 0.18 - B.foe.level*0.008);
-  setBMsg(`You threw an Orb at ${B.foe.species}…`);
+  let chance = (1-hpRatio)*0.6 + 0.16 - B.foe.level*0.006;
+  if(B.foe.status) chance += 0.12;      // status makes catching easier
+  if(sup) chance = chance*1.7 + 0.1;    // super orb bonus
+  chance = Math.min(0.95, Math.max(0.03, chance));
+  setBMsg(`You threw ${sup?'a <b>Super Orb</b>':'an <b>Orb</b>'} at ${B.foe.species}…`);
   document.getElementById('foeMon').classList.add('shake');
   setTimeout(()=>{
     document.getElementById('foeMon').classList.remove('shake');
     if(Math.random()<chance){
       B.caught=true;
-      if(G.party.length<6){ G.party.push(B.foe); }
+      B.foe.status=null; B.foe.statusT=0;
+      const reserve = G.party.length>=6;
+      if(!reserve){ G.party.push(B.foe); }
       G.caughtSpecies[B.foe.species]=true;
-      setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!` + (G.party.length>=6?' (Team full — sent to reserve.)':''));
+      setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!` + (reserve?' (Team full — released.)':''));
       save();
       setTimeout(()=>{ endBattle(); },1300);
     }else{
@@ -741,15 +881,44 @@ function tryCatch(){
   },1100);
 }
 
-function useBerryInBattle(){
-  if(B.busy||G.berries<=0) return;
-  B.busy=true; G.berries--;
-  const heal=Math.floor(B.ally.maxHp*0.4);
-  B.ally.hp=Math.min(B.ally.maxHp, B.ally.hp+heal);
-  G.hunger=Math.min(100,G.hunger+10);
-  renderBattle();
-  setBMsg(`${B.ally.species} ate a Berry and recovered ${heal} HP!`);
-  setTimeout(foeTurn,900);
+/* battle bag submenu */
+function openBagMenu(){
+  if(B.busy) return;
+  const it=G.items;
+  const fainted=G.party.some(c=>c.hp<=0);
+  const menu=document.getElementById('bmenu');
+  menu.innerHTML=`<div id="bmsg">Use which item?</div>
+    <button class="btn small" data-use="berry"    ${it.berry<=0?'disabled':''}>Berry (${it.berry})</button>
+    <button class="btn small" data-use="potion"   ${it.potion<=0?'disabled':''}>Potion (${it.potion})</button>
+    <button class="btn small" data-use="superorb" ${it.superorb<=0?'disabled':''}>Super Orb (${it.superorb})</button>
+    <button class="btn small" data-use="revive"   ${(it.revive<=0||!fainted)?'disabled':''}>Revive (${it.revive})</button>
+    <button class="btn small wide" id="backBag">◀ Back</button>`;
+  menu.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>useBattleItem(b.dataset.use));
+  document.getElementById('backBag').onclick=restoreBattleMenu;
+}
+function useBattleItem(key){
+  const it=G.items;
+  if(key==='superorb'){ if(it.superorb<=0) return; restoreBattleMenu(); return throwOrb(true); }
+  if(key==='berry'){
+    if(it.berry<=0) return; it.berry--;
+    const h=Math.floor(B.ally.maxHp*0.4); B.ally.hp=Math.min(B.ally.maxHp,B.ally.hp+h);
+    G.hunger=Math.min(100,G.hunger+10);
+    return afterBattleItem(`${B.ally.species} ate a Berry and recovered ${h} HP!`);
+  }
+  if(key==='potion'){
+    if(it.potion<=0) return; it.potion--;
+    const h=Math.min(60, B.ally.maxHp-B.ally.hp); B.ally.hp+=h;
+    return afterBattleItem(`${B.ally.species} was healed by a Potion! +${h} HP.`);
+  }
+  if(key==='revive'){
+    const f=G.party.find(c=>c.hp<=0); if(it.revive<=0||!f) return; it.revive--;
+    f.hp=Math.floor(f.maxHp*0.5); f.status=null;
+    return afterBattleItem(`${f.species} was revived!`);
+  }
+}
+function afterBattleItem(msg){
+  restoreBattleMenu(); B.busy=true; setBMsg(msg); renderBattle();
+  save(); setTimeout(foeTurn,1000);
 }
 
 function tryRun(){
@@ -760,8 +929,9 @@ function tryRun(){
 }
 
 function endBattle(){
+  if(B && B.ally){ B.ally.status=null; B.ally.statusT=0; } // status clears after battle
   document.getElementById('battle').style.display='none';
-  B=null; mode='world'; B===null;
+  B=null; mode='world';
   updateHud(); save();
 }
 
@@ -787,15 +957,15 @@ function restoreBattleMenu(){
   menu.innerHTML=`<div id="bmsg">What will you do?</div>
     <button class="btn" id="bFight">Fight</button>
     <button class="btn" id="bCatch">Catch</button>
-    <button class="btn" id="bBag">Berry</button>
+    <button class="btn" id="bBag">Bag</button>
     <button class="btn" id="bRun">Run</button>`;
   wireBattleButtons();
   renderBattle();
 }
 function wireBattleButtons(){
   document.getElementById('bFight').onclick=openFightMenu;
-  document.getElementById('bCatch').onclick=tryCatch;
-  document.getElementById('bBag').onclick=useBerryInBattle;
+  document.getElementById('bCatch').onclick=()=>throwOrb(false);
+  document.getElementById('bBag').onclick=openBagMenu;
   document.getElementById('bRun').onclick=tryRun;
 }
 
@@ -809,37 +979,76 @@ function openPanel(){
   if(mode!=='world'||dialogCb) return;
   mode='panel';
   const p=document.getElementById('panel');
+  const it=G.items;
   let html='<h2>Team & Bag</h2>';
   html+=`<div style="text-align:center;color:#cfe0c4;font-size:13px">
-    Orbs: <b>${G.orbs}</b> · Berries: <b>${G.berries}</b> · Day ${G.day} · Caught species: ${Object.keys(G.caughtSpecies).length}/${Object.keys(SPECIES).length}</div>`;
+    <span style="color:#e6b422">◉ ${G.coins} coins</span> · Day ${G.day} · Caught ${Object.keys(G.caughtSpecies).length}/${Object.keys(SPECIES).length}</div>`;
   html+='<div class="plist">';
   G.party.forEach((c,i)=>{
     const pct=Math.max(0,c.hp/c.maxHp*100);
     html+=`<div class="pcard">
       <canvas class="mini" width="40" height="40" data-sp="${c.species}"></canvas>
       <div style="flex:1">
-        <div><b>${c.species}</b> ${typeChip(c.type)} <span class="lv">Lv.${c.level}</span></div>
+        <div><b>${c.species}</b> ${typeChip(c.type)}${statusChip(c)} <span class="lv">Lv.${c.level}</span></div>
         <div class="hpwrap"><i style="width:${pct}%"></i></div>
-        <small style="color:#5a4">${Math.ceil(c.hp)}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}</small>
+        <small style="color:#5a4">${Math.ceil(Math.max(0,c.hp))}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}</small>
       </div>
       ${i>0?`<button class="btn small" data-lead="${i}">Lead</button>`:'<span class="lv">Lead</span>'}
     </div>`;
   });
   html+='</div>';
-  html+=`<button class="btn small" id="eatBerry" ${G.berries<=0?'disabled':''}>Eat Berry (restore hunger + heal lead)</button>`;
+  html+=`<div style="text-align:center;color:#cfe0c4;font-size:12px;margin-top:2px">Bag —
+    Orbs ${it.orb} · Super ${it.superorb} · Berry ${it.berry} · Potion ${it.potion} · Revive ${it.revive} · Ration ${it.ration}</div>`;
+  const fainted=G.party.some(c=>c.hp<=0);
+  html+=`<button class="btn small" data-item="berry"  ${it.berry<=0?'disabled':''}>Eat Berry (+hunger, heal lead)</button>`;
+  html+=`<button class="btn small" data-item="potion" ${it.potion<=0?'disabled':''}>Use Potion (+60 HP lead)</button>`;
+  html+=`<button class="btn small" data-item="ration" ${it.ration<=0?'disabled':''}>Eat Ration (fill hunger)</button>`;
+  html+=`<button class="btn small" data-item="revive" ${(it.revive<=0||!fainted)?'disabled':''}>Use Revive (revive fainted)</button>`;
   html+='<button class="btn small close" id="closePanel">Close</button>';
   p.innerHTML=html; p.style.display='flex';
   p.querySelectorAll('canvas.mini').forEach(cv=>drawCritter(cv,40,cv.dataset.sp));
   p.querySelectorAll('[data-lead]').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.lead; const c=G.party.splice(i,1)[0]; G.party.unshift(c); save(); openPanel();
   });
-  document.getElementById('eatBerry').onclick=()=>{
-    if(G.berries<=0) return;
-    G.berries--; G.hunger=Math.min(100,G.hunger+25);
-    const lead=firstAlive()||G.party[0];
-    lead.hp=Math.min(lead.maxHp, lead.hp+Math.floor(lead.maxHp*0.35));
-    toast('Ate a Berry · +hunger, +HP'); save(); openPanel();
-  };
+  p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>usePanelItem(b.dataset.item));
+  document.getElementById('closePanel').onclick=closePanel;
+}
+function usePanelItem(key){
+  const it=G.items;
+  const lead=firstAlive()||G.party[0];
+  if(key==='berry'){ if(it.berry<=0)return; it.berry--; G.hunger=Math.min(100,G.hunger+25);
+    lead.hp=Math.min(lead.maxHp, lead.hp+Math.floor(lead.maxHp*0.35)); toast('Ate a Berry'); }
+  else if(key==='potion'){ if(it.potion<=0)return; it.potion--;
+    lead.hp=Math.min(lead.maxHp, lead.hp+60); toast('Used a Potion'); }
+  else if(key==='ration'){ if(it.ration<=0)return; it.ration--; G.hunger=100; toast('Hunger restored'); }
+  else if(key==='revive'){ const f=G.party.find(c=>c.hp<=0); if(it.revive<=0||!f)return; it.revive--;
+    f.hp=Math.floor(f.maxHp*0.5); f.status=null; toast(`${f.species} revived`); }
+  save(); openPanel();
+}
+
+/* ---------- Shop ---------- */
+function openShop(){
+  if(mode!=='world'||dialogCb) return;
+  mode='panel';
+  const p=document.getElementById('panel');
+  let html='<h2>🛒 Trader\'s Mart</h2>';
+  html+=`<div style="text-align:center;color:#e6b422;font-size:15px;margin-bottom:2px">◉ ${G.coins} coins</div>`;
+  html+='<div class="plist">';
+  SHOP.forEach(s=>{
+    const own=G.items[s.key];
+    html+=`<div class="pcard"><div style="flex:1">
+        <div><b>${s.name}</b> <span style="color:#e6b422">${s.price}c</span> <span class="lv">owned ${own}</span></div>
+        <small style="color:#6b5d47">${s.desc}</small>
+      </div>
+      <button class="btn small" data-buy="${s.key}" ${G.coins<s.price?'disabled':''}>Buy</button></div>`;
+  });
+  html+='</div><button class="btn small close" id="closePanel">Leave shop</button>';
+  p.innerHTML=html; p.style.display='flex';
+  p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
+    const s=SHOP.find(x=>x.key===b.dataset.buy);
+    if(!s||G.coins<s.price) return;
+    G.coins-=s.price; G.items[s.key]++; toast(`Bought ${s.name}`); save(); openShop();
+  });
   document.getElementById('closePanel').onclick=closePanel;
 }
 function closePanel(){ document.getElementById('panel').style.display='none'; mode='world'; }
@@ -877,6 +1086,7 @@ function interact(){
   if(d==='up')dy=-1; else if(d==='down')dy=1; else if(d==='left')dx=-1; else dx=1;
   const t=tileAt(G.px+dx,G.py+dy);
   if(t==='N') healParty();
+  else if(t==='M') openShop();
   else if(t==='S') tryMove(dx,dy);
   else if(t==='B') pickBerry(G.px+dx,G.py+dy);
   else if(t==='H') restAtHome();
