@@ -283,6 +283,15 @@ const SPECIES={
 };
 const STARTERS=['Sproutle','Cindnip','Puddlet'];
 const WILD_POOL=Object.keys(SPECIES);
+/* ---------- evolution chains (species → stronger form at level) ---------- */
+const EVOLVE={
+  Sproutle:{into:'Mosslet',lvl:14}, Mosslet:{into:'Fernbud',lvl:30}, Thornip:{into:'Fernbud',lvl:16},
+  Cindnip:{into:'Emburr',lvl:14},   Emburr:{into:'Blazehog',lvl:30},  Ashmoth:{into:'Blazehog',lvl:16},
+  Puddlet:{into:'Finewt',lvl:14},   Finewt:{into:'Coralux',lvl:30},
+  Sparkit:{into:'Voltail',lvl:14},  Voltail:{into:'Ionfox',lvl:30},
+  Pebblo:{into:'Craggle',lvl:14},   Craggle:{into:'Boulderbeast',lvl:30},
+  Zephlet:{into:'Breezle',lvl:14},  Breezle:{into:'Nimbling',lvl:30},
+};
 const SHOP=[
   {key:'orb',name:'Orb',price:20,desc:'Catches wild critters.'},
   {key:'superorb',name:'Super Orb',price:65,desc:'Far better catch rate.'},
@@ -900,7 +909,16 @@ function winBattle(){if(!B)return;B.foe.hp=0;renderBattle();const am=B.alpha?3:1
   G.coins+=coins;setBMsg(`Wild ${B.foe.species} fainted! +${gain} XP · +${coins} coins.`);grantXp(B.ally,gain);
   setTimeout(endBattle,1300);}
 function grantXp(c,a){c.xp+=Math.round(a*mods().xp);while(c.xp>=xpToNext(c.level)&&c.level<50){c.xp-=xpToNext(c.level);c.level++;const b=c.maxHp;recalc(c);c.hp+=(c.maxHp-b);
-    if(G)G.skillPoints=(G.skillPoints||0)+1;sfx('level');toast(`${c.species} → Lv.${c.level}! +1 skill point ✦`);}save();}
+    if(G)G.skillPoints=(G.skillPoints||0)+1;sfx('level');toast(`${c.species} → Lv.${c.level}! +1 skill point ✦`);}
+  evolveCheck(c);save();}
+function evolveCheck(c){let ev=EVOLVE[c.species];
+  while(ev&&ev.into&&c.level>=ev.lvl){const from=c.species;c.species=ev.into;c._s=SPECIES[ev.into];c.type=SPECIES[ev.into].type;
+    c.moves=SPECIES[ev.into].moves.slice(0,4);const b=c.maxHp;recalc(c);c.hp=Math.min(c.maxHp,c.hp+(c.maxHp-b));
+    if(G)G.caughtSpecies[ev.into]=true;
+    spellFlash('EVOLVED!','#ffe86a');sfx('level');toast(`✨ ${from} evolved into ${ev.into}!`);
+    if(mode==='world')for(let k=0;k<24;k++)spawn(P.x,P.y,{vx:(Math.random()-.5)*180,vy:(Math.random()-.5)*180-30,g:120,max:.8,r:5,c:'#ffe86a'});
+    else if(mode==='battle')flashMon(c===((B&&B.ally))?'allyMon':'foeMon');
+    ev=EVOLVE[c.species];}}
 function throwOrb(sup){if(!B||B.busy)return;const it=G.items;
   if(sup){if(it.superorb<=0)return;it.superorb--;}else{if(it.orb<=0)return;it.orb--;}
   B.busy=true;renderBattle();const hr=B.foe.hp/B.foe.maxHp;
@@ -966,7 +984,7 @@ function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.
     h+=`<div class="pcard"><canvas class="mini" width="46" height="46" data-sp="${c.species}"></canvas>
       <div style="flex:1"><div><b>${c.species}</b> ${typeChip(c.type)}${statusChip(c)} <span class="lv">Lv.${c.level}</span></div>
         <div class="hpwrap"><i style="width:${pct}%"></i></div>
-        <small>${Math.ceil(Math.max(0,c.hp))}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}</small></div>
+        <small>${Math.ceil(Math.max(0,c.hp))}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}${EVOLVE[c.species]?` · <span style="color:#9a6cff">→ ${EVOLVE[c.species].into} @Lv.${EVOLVE[c.species].lvl}</span>`:''}</small></div>
       ${i>0?`<button class="cbtn small" data-lead="${i}">Lead</button>`:'<span class="lv">Lead</span>'}</div>`;});
   h+='</div>';
   h+=`<div class="subline">Bag — Orbs ${it.orb} · Super ${it.superorb} · Berry ${it.berry} · Potion ${it.potion} · Revive ${it.revive} · Ration ${it.ration}</div>`;
