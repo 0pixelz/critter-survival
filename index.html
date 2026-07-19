@@ -763,7 +763,8 @@ function drawHouseIso(cx,base,tx,ty,opts){
   const line='#12160f';ctx.lineJoin='round';ctx.lineCap='round';
   const v=hash(tx*3.7+1,ty*5.1+2);
   const roofCols=[['#b04030','#7c2a1c'],['#3f6fa0','#2c4f78'],['#5a7d3a','#41602a']];
-  const rc=roofCols[(opts&&opts.roofIdx!==undefined)?opts.roofIdx:Math.floor(v*3)%3];
+  const rc=(opts&&opts.roof)||roofCols[(opts&&opts.roofIdx!==undefined)?opts.roofIdx:Math.floor(v*3)%3];
+  const wallL=(opts&&opts.wallL)||'#bfa077', wallR=(opts&&opts.wallR)||'#e2c99e';
   const ex=(opts&&opts.ex)||27, h=(opts&&opts.h)||26, rh=(opts&&opts.rh)||24, ov=5;
   const b=base+6;
   const S={x:cx,y:b}, E={x:cx+ex,y:b-ex*0.5}, W={x:cx-ex,y:b-ex*0.5};
@@ -774,8 +775,8 @@ function drawHouseIso(cx,base,tx,ty,opts){
   shadow(cx,b-1,ex+7,ex*0.42);
   // walls (two faces, light/shade)
   ctx.strokeStyle=line;ctx.lineWidth=3.2;
-  ctx.fillStyle='#bfa077';quad(S,W,{x:W.x,y:W.y-h},{x:S.x,y:S.y-h});ctx.fill();ctx.stroke();
-  ctx.fillStyle='#e2c99e';quad(S,E,{x:E.x,y:E.y-h},{x:S.x,y:S.y-h});ctx.fill();ctx.stroke();
+  ctx.fillStyle=wallL;quad(S,W,{x:W.x,y:W.y-h},{x:S.x,y:S.y-h});ctx.fill();ctx.stroke();
+  ctx.fillStyle=wallR;quad(S,E,{x:E.x,y:E.y-h},{x:S.x,y:S.y-h});ctx.fill();ctx.stroke();
   // stone foundation strips
   ctx.fillStyle='rgba(96,92,82,.9)';
   quad(S,E,{x:E.x,y:E.y-5},{x:S.x,y:S.y-5});ctx.fill();
@@ -810,9 +811,26 @@ function drawHouseIso(cx,base,tx,ty,opts){
    ctx.strokeStyle='#6b4a2a';ctx.lineWidth=2;quad(w0,w1,w2,w3);ctx.stroke();
    const mA=pL(0.49,11),mB=pL(0.49,22),mC=pL(0.3,16.5),mD=pL(0.68,16.5);
    ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(mA.x,mA.y);ctx.lineTo(mB.x,mB.y);ctx.moveTo(mC.x,mC.y);ctx.lineTo(mD.x,mD.y);ctx.stroke();
-   const f0=pL(0.28,10),f1=pL(0.7,10),f2=pL(0.7,7),f3=pL(0.28,7);
-   ctx.fillStyle='#7a5230';quad(f0,f1,f2,f3);ctx.fill();ctx.strokeStyle=line;ctx.lineWidth=1.4;ctx.stroke();
-   ctx.fillStyle='#e5372f';for(const f of[0.35,0.5,0.63]){const p=pL(f,10.5);ctx.beginPath();ctx.arc(p.x,p.y,1.7,0,7);ctx.fill();}}
+   if(!(opts&&opts.noFlower)){
+     const f0=pL(0.28,10),f1=pL(0.7,10),f2=pL(0.7,7),f3=pL(0.28,7);
+     ctx.fillStyle='#7a5230';quad(f0,f1,f2,f3);ctx.fill();ctx.strokeStyle=line;ctx.lineWidth=1.4;ctx.stroke();
+     ctx.fillStyle='#e5372f';for(const f of[0.35,0.5,0.63]){const p=pL(f,10.5);ctx.beginPath();ctx.arc(p.x,p.y,1.7,0,7);ctx.fill();}}}
+  // striped awning over the door (shops)
+  if(opts&&opts.awning){const ac=opts.awnCol||'#3f6fa0';
+    const a0=pR(0.1,24),a1=pR(0.6,24);
+    const b0={x:a0.x+7,y:a0.y+9},b1={x:a1.x+7,y:a1.y+9};
+    const seg=5;
+    for(let i=0;i<seg;i++){const f0=i/seg,f1=(i+1)/seg;
+      const q0={x:a0.x+(a1.x-a0.x)*f0,y:a0.y+(a1.y-a0.y)*f0},q1={x:a0.x+(a1.x-a0.x)*f1,y:a0.y+(a1.y-a0.y)*f1};
+      const r0={x:b0.x+(b1.x-b0.x)*f0,y:b0.y+(b1.y-b0.y)*f0},r1={x:b0.x+(b1.x-b0.x)*f1,y:b0.y+(b1.y-b0.y)*f1};
+      ctx.fillStyle=i%2?'#efece2':ac;quad(q0,q1,r1,r0);ctx.fill();}
+    ctx.strokeStyle=line;ctx.lineWidth=2.2;quad(a0,a1,b1,b0);ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,.18)';quad(b0,b1,{x:b1.x,y:b1.y+3},{x:b0.x,y:b0.y+3});ctx.fill();}
+  // pillars flanking the door (registrar)
+  if(opts&&opts.pillars){ctx.strokeStyle=line;ctx.lineWidth=1.8;ctx.fillStyle='#efece2';
+    for(const t of[0.12,0.58]){const p0=pR(t,4),p1=pR(t,24);
+      ctx.beginPath();ctx.moveTo(p0.x-2.5,p0.y);ctx.lineTo(p0.x-2.5,p1.y);ctx.lineTo(p0.x+2.5,p1.y);ctx.lineTo(p0.x+2.5,p0.y);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.fillStyle='#d8d4ca';rr(p0.x-4,p1.y-3,8,3.5,1);ctx.fill();ctx.stroke();ctx.fillStyle='#efece2';}}
   // pyramid roof with overhang
   const A={x:cx,y:b-ex*0.5-h-rh};
   const Sr={x:S.x,y:S.y-h+ov*0.6}, Er={x:E.x+ov,y:E.y-h}, Wr={x:W.x-ov,y:W.y-h};
@@ -838,6 +856,24 @@ function drawHouseIso(cx,base,tx,ty,opts){
    for(let k=0;k<3;k++){const p=(t0+k*0.33)%1;
      ctx.fillStyle=`rgba(222,222,228,${((1-p)*0.35).toFixed(2)})`;
      ctx.beginPath();ctx.arc(chx+Math.sin(p*5+k*2)*3.5,chy-21-p*20,2.6+p*4,0,7);ctx.fill();}}
+  // hanging shop shingle (drawn last so it sits in front of the eave)
+  if(opts&&opts.sign){const sp2=pR(0.34,26);
+    ctx.save();ctx.translate(sp2.x+2,sp2.y);
+    ctx.strokeStyle='#6b4a2a';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(-4,-2);ctx.lineTo(-4,4);ctx.moveTo(4,-2);ctx.lineTo(4,4);ctx.stroke();
+    ctx.translate(0,11);
+    if(opts.sign==='cross'){ctx.fillStyle='#fff';ctx.strokeStyle=line;ctx.lineWidth=2;
+      rr(-7.5,-7.5,15,15,3);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#e0426f';rr(-2,-5.5,4,11,1);ctx.fill();rr(-5.5,-2,11,4,1);ctx.fill();}
+    else if(opts.sign==='coin'){ctx.fillStyle='#f2e6c8';ctx.strokeStyle=line;ctx.lineWidth=2;
+      rr(-8,-7,16,14,3);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.arc(0,0,5,0,7);ctx.fill();
+      ctx.strokeStyle='#c98b1e';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(0,0,3,0,7);ctx.stroke();}
+    else if(opts.sign==='scroll'){ctx.fillStyle='#f2e6c8';ctx.strokeStyle=line;ctx.lineWidth=2;
+      rr(-6.5,-8,13,16,2);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#a8895a';ctx.lineWidth=1.2;
+      for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-4,-4+i*4);ctx.lineTo(4,-4+i*4);ctx.stroke();}}
+    ctx.restore();}
 }
 /* ---- props (isometric, anchored at tile-center base) ---- */
 function drawPropIso(t,tx,ty,cx,cy){
@@ -853,15 +889,8 @@ function drawPropIso(t,tx,ty,cx,cy){
     ctx.fillStyle=c3;ctx.beginPath();ctx.arc(cx-4+sway,base-59,10,0,7);ctx.fill();
     ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.arc(cx+13+sway,base-39,10,0,7);ctx.fill();}
   else if(t==='H'){drawHouseIso(cx,base,tx,ty);}
-  else if(t==='M'){shadow(cx,base+2,30,10);ctx.strokeStyle=line;ctx.lineWidth=4;
-    ctx.fillStyle='#cfc7b3';rr(cx-22,base-32,44,34,4);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#2f6fa0';rr(cx-24,base-42,48,13,3);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#ffd23c';rr(cx-7,base-16,14,16,2);ctx.fill();
-    ctx.fillStyle='#0e1220';ctx.font='bold 15px Fredoka';ctx.textAlign='center';ctx.fillText('🛒',cx,base-34);}
-  else if(t==='N'){shadow(cx,base+2,26,9);ctx.strokeStyle=line;ctx.lineWidth=4;
-    ctx.fillStyle='#e6e8ea';rr(cx-18,base-30,36,32,4);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#ff6f9d';rr(cx-20,base-40,40,13,3);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#e0426f';rr(cx-3,base-24,6,16,2);ctx.fill();rr(cx-9,base-19,18,6,2);ctx.fill();}
+  else if(t==='M'){drawHouseIso(cx,base,tx,ty,{roof:['#3f6fa0','#2c4f78'],awning:1,awnCol:'#3f6fa0',sign:'coin',noFlower:1,ex:29});}
+  else if(t==='N'){drawHouseIso(cx,base,tx,ty,{wallL:'#d0ccc0',wallR:'#efece2',roof:['#d06a8a','#a84a68'],sign:'cross',noFlower:1});}
   else if(t==='S'){shadow(cx,base,14,6);ctx.strokeStyle=line;ctx.lineWidth=3;
     ctx.fillStyle='#4e341c';rr(cx-2,base-18,5,18,2);ctx.fill();ctx.stroke();
     ctx.fillStyle='#9c7638';rr(cx-14,base-30,28,16,3);ctx.fill();ctx.stroke();
@@ -872,11 +901,7 @@ function drawPropIso(t,tx,ty,cx,cy){
   else if(t==='F'){ctx.fillStyle='#4e341c';ctx.strokeStyle=line;ctx.lineWidth=3;
     rr(cx-16,base-20,6,22,2);ctx.fill();ctx.stroke();rr(cx+10,base-20,6,22,2);ctx.fill();ctx.stroke();
     rr(cx-18,base-16,36,6,2);ctx.fill();ctx.stroke();}
-  else if(t==='R'){shadow(cx,base+2,28,9);ctx.strokeStyle=line;ctx.lineWidth=4;
-    ctx.fillStyle='#d8d2c2';rr(cx-20,base-30,40,32,3);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#efe9da';for(const dx of[-13,-2,9]){rr(cx+dx,base-26,5,22,2);ctx.fill();ctx.stroke();}
-    ctx.fillStyle='#3f6fd6';ctx.beginPath();ctx.moveTo(cx-24,base-28);ctx.lineTo(cx,base-44);ctx.lineTo(cx+24,base-28);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.fillStyle='#ffd23c';ctx.font='bold 13px Fredoka';ctx.textAlign='center';ctx.fillText('🏛',cx,base-31);}
+  else if(t==='R'){drawHouseIso(cx,base,tx,ty,{wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll',pillars:1,noFlower:1});}
   else if(t==='V'){const bob=Math.sin((animT*0.06)+tx)*1.2;shadow(cx,base,10,4);
     ctx.strokeStyle=line;ctx.lineWidth=3;ctx.lineJoin='round';
     ctx.fillStyle='#8a6d3a';ctx.beginPath();ctx.moveTo(-8+cx,base);ctx.quadraticCurveTo(cx-9,base-16-bob,cx,base-18-bob);ctx.quadraticCurveTo(cx+9,base-16-bob,cx+8,base);ctx.closePath();ctx.fill();ctx.stroke();
@@ -1239,16 +1264,27 @@ function updateInteract(){
       else if(bld.t==='table'||bld.t==='forge'){bd=d;best={station:bld};label='Craft';}
       else if(TOWERS[bld.t]){bd=d;best={tower:bld};label=(bld.ammo||0)<=0?'Load Tower':'Tower';}
       else if(bld.hp<bld.maxHp){bd=d;best={fix:bld};label='Repair';}}}
+  // standing on a for-sale plot → offer to buy it right there
+  if(!best){const ptx=Math.floor(P.x/TILE),pty=Math.floor(P.y/TILE),pl=plotAt(ptx,pty);
+    if(pl&&!(G.plots&&G.plots[pl.id])){best={buyPlot:pl};
+      label=G.coins>=pl.price?`🏷 Buy this land · ${pl.price}c`:`🏷 Land costs ${pl.price}c (you have ${G.coins}c)`;}}
   interactTarget=best;
   const tag=document.getElementById('interactTag');
   if(best&&mode==='world'){const ps=w2s(P.x,P.y);tag.style.left=ps.x+'px';tag.style.top=(ps.y-46)+'px';
     tag.style.display='block';tag.innerHTML=label+' <b>▸ tap</b>';}else tag.style.display='none';
 }
+function buyPlot(pl){if(!pl||G.plots[pl.id])return;
+  if(G.coins<pl.price){toast(`Need ${pl.price}c — you have ${G.coins}c`);sfx('fail');return;}
+  G.coins-=pl.price;G.plots[pl.id]=true;sfx('catch');
+  spellFlash('LAND OWNED!','#54c23a');shakeT=0.2;
+  for(let k=0;k<26;k++)spawn(P.x,P.y,{vx:(Math.random()-.5)*280,vy:(Math.random()-.5)*280-30,g:60,max:.8,r:4,c:'#54c23a'});
+  toast('🎉 Plot purchased — green stakes mark your land. Build away!');save();}
 function doInteract(){
   if(dialogCb){closeDialog();return;}
   if(mode==='world'&&buildMode){placeBuild();return;}
   if(mode!=='world')return;
   if(!interactTarget){cast('bolt');return;}   // no prompt → swing your class weapon
+  if(interactTarget.buyPlot){buyPlot(interactTarget.buyPlot);return;}
   if(interactTarget.drop){pickupDrop(interactTarget.drop);return;}
   if(interactTarget.node){gatherNode(interactTarget.node);return;}
   if(interactTarget.tree){chopTree(interactTarget.tree.x,interactTarget.tree.y);return;}
