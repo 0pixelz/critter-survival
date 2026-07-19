@@ -320,6 +320,89 @@ const CLASS_BASE={
   ranger: {hp:52,atk:14,def:10},
   warrior:{hp:66,atk:16,def:14},
 };
+/* class perks for the new systems (Builder / Forager / Arcanist) */
+const CLASS_PERK={
+  warrior:{name:'Builder',  desc:'+25% building HP · 20% cheaper repairs'},
+  ranger: {name:'Forager',  desc:'+1 resource on every gather'},
+  mage:   {name:'Arcanist', desc:'+15% tower damage · +10% tower range'},
+};
+
+/* ===================================================================
+   DATA — world & content tables. Add new towns/recipes/towers here.
+   =================================================================== */
+const TOWNS=[
+  {name:'Oakvale',   cx:14, cy:12, size:6},
+  {name:'Emberport', cx:78, cy:16, size:6},
+  {name:'Mossholm',  cx:46, cy:52, size:6},
+];
+const RES_KEYS=['wood','stone','fiber','ore'];
+const RES_ICON={wood:'🪵',stone:'🪨',fiber:'🌿',ore:'⛏️'};
+const SELL_PRICE={wood:2,stone:2,fiber:2,ore:6};
+/* tool tiers — index 0 = tier 1. station: must stand near it to craft */
+const TOOLS={
+  axe:    {icon:'🪓',tiers:[{name:'Axe I',cost:{wood:3,stone:2}},{name:'Axe II',cost:{wood:5,ore:3},station:'forge'},{name:'Axe III',cost:{wood:8,ore:6},station:'forge'}]},
+  pickaxe:{icon:'⛏️',tiers:[{name:'Pickaxe I',cost:{wood:3,stone:3}},{name:'Pickaxe II',cost:{wood:5,ore:4},station:'forge'},{name:'Pickaxe III',cost:{wood:8,ore:7},station:'forge'}]},
+};
+/* buildable definitions — hp, solid (blocks you), eSolid (blocks enemies), light radius */
+const BUILD_DEF={
+  campfire:{name:'Campfire',hp:60, light:150},
+  torch:   {name:'Torch',   hp:40, light:150},
+  wall:    {name:'Wall',    hp:160,solid:1,eSolid:1},
+  door:    {name:'Door',    hp:120,eSolid:1},
+  floor:   {name:'Floor',   hp:40},
+  hut:     {name:'Hut',     hp:320,solid:1,eSolid:1,light:120},
+  chest:   {name:'Chest',   hp:120,eSolid:1},
+  table:   {name:'Craft Table',hp:100,eSolid:1},
+  forge:   {name:'Forge',   hp:160,eSolid:1,light:110},
+  banner:  {name:'Banner',  hp:40},
+  spike:   {name:'Spike Trap',hp:30,trap:1,uses:4},
+  snare:   {name:'Snare Trap',hp:20,trap:1,uses:3},
+  tarrow:  {name:'Arrow Tower',hp:200,solid:1,eSolid:1,tower:1},
+  tfrost:  {name:'Frost Tower',hp:180,solid:1,eSolid:1,tower:1,light:90},
+  tcata:   {name:'Catapult',   hp:220,solid:1,eSolid:1,tower:1},
+};
+/* towers — range in tiles; up = upgrade costs to tier 2 / tier 3 */
+const TOWERS={
+  tarrow:{name:'Arrow Tower',ammo:'wood', ammoPer:6,col:'#e8c464',
+    tiers:[{dmg:10,range:4.2,rate:0.7},{dmg:16,range:4.8,rate:0.55},{dmg:24,range:5.4,rate:0.4}],
+    up:[{wood:8,stone:4},{wood:12,ore:5}]},
+  tfrost:{name:'Frost Tower',ammo:'fiber',ammoPer:6,col:'#7ad0ff',
+    tiers:[{dmg:5,range:3.6,rate:0.9,slow:1.6},{dmg:8,range:4.2,rate:0.75,slow:2.2},{dmg:12,range:4.6,rate:0.6,slow:3}],
+    up:[{stone:8,fiber:6},{ore:6,fiber:8}]},
+  tcata:{name:'Catapult',ammo:'stone',ammoPer:4,col:'#d89a5a',
+    tiers:[{dmg:16,range:5.2,rate:1.8,aoe:1.2},{dmg:24,range:5.8,rate:1.5,aoe:1.4},{dmg:36,range:6.4,rate:1.2,aoe:1.6}],
+    up:[{wood:10,stone:10},{ore:8,stone:12}]},
+};
+const TRAPS={spike:{dmg:20,cd:0.8},snare:{root:2.5,cd:0.5}};
+/* recipes — build:1 places a BUILD_DEF; item:1 crafts an item.
+   plot:1 = must be placed on land you own; station = must stand near one */
+const RECIPES=[
+  {key:'campfire',build:1,cost:{wood:5},lvl:1,desc:'Warm light. Place anywhere.'},
+  {key:'torch',build:1,cost:{wood:2,fiber:2},lvl:1,desc:'Bright light post. Place anywhere.'},
+  {key:'wall',build:1,cost:{wood:2,stone:2},lvl:1,plot:1,desc:'Blocks enemies.'},
+  {key:'door',build:1,cost:{wood:4},lvl:1,plot:1,desc:'You pass through — enemies don\'t.'},
+  {key:'floor',build:1,cost:{wood:1},lvl:1,plot:1,desc:'Cozy wooden flooring.'},
+  {key:'chest',build:1,cost:{wood:6},lvl:1,plot:1,desc:'Bank materials — safe on death!'},
+  {key:'table',build:1,cost:{wood:6,stone:2},lvl:1,plot:1,desc:'Unlocks advanced recipes nearby.'},
+  {key:'banner',build:1,cost:{fiber:3},lvl:1,plot:1,desc:'A proud class banner.'},
+  {key:'forge',build:1,cost:{stone:10,wood:4},lvl:2,plot:1,station:'table',desc:'Smith tier-2+ tools nearby.'},
+  {key:'hut',build:1,cost:{wood:12,stone:6},lvl:2,plot:1,desc:'Rest, heal & save point.'},
+  {key:'spike',build:1,cost:{wood:3,stone:2},lvl:2,plot:1,station:'table',desc:'Wounds raiders (4 uses).'},
+  {key:'snare',build:1,cost:{fiber:4},lvl:2,plot:1,station:'table',desc:'Roots an enemy (3 uses).'},
+  {key:'tarrow',build:1,cost:{wood:10,stone:4},lvl:2,plot:1,station:'table',desc:'Auto-fires. Load wood as ammo.'},
+  {key:'tfrost',build:1,cost:{stone:8,fiber:6},lvl:3,plot:1,station:'forge',desc:'Slows enemies. Ammo: fiber.'},
+  {key:'tcata',build:1,cost:{wood:12,stone:12},lvl:3,plot:1,station:'forge',desc:'AoE boulders. Ammo: stone.'},
+  {key:'potion',name:'Potion',item:1,cost:{fiber:2,berry:1},lvl:1,desc:'Heals 60 HP.'},
+  {key:'ration',name:'Ration',item:1,cost:{fiber:3},lvl:1,desc:'Fills hunger.'},
+];
+const VILLAGER_LINES=[
+  'They say the deep wilds hold monsters over Lv.20… and richer ore.',
+  'Buy land from the 🏛 registrar and raiders WILL come for it. Build towers!',
+  'A chest keeps your materials safe — even if you fall out there.',
+  'The forge unlocks tier-2 tools. Better tools, bigger hauls.',
+  'Roads are safest. The further from town, the meaner the wilds.',
+  'I once saw an ALPHA with a golden crown. Ran straight home.',
+];
 /* ---------- skill tree (Diablo-style) ---------- */
 const SKILLS=[
   {branch:'Arcane',  key:'power',   name:'Spell Power',  max:5, eff:'+8% spell damage / rank'},
@@ -378,44 +461,73 @@ function recalc(c){const s=c._s||SPECIES[c.species];c._s=s;c.type=s.type;const L
   if(c.hp===undefined)c.hp=c.maxHp;if(c.hp>c.maxHp)c.hp=c.maxHp;}
 function xpToNext(l){return 16+l*l*4;}
 
-/* ---------- map ---------- */
-const MAP_STR=[
-"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-"T............TT........,,,,,,.T",
-"T..HH...HH...TT...T....,,,,,,.T",
-"T..HH...HH...........T.,,,,,,.T",
-"T..PP...PP...P........,,,,,,,.T",
-"T..PPPPPPPPPPP..T.....,,,,,,,.T",
-"T......N.....P.......T.,,,,,.TT",
-"T..S...PPPP..P..BB.....,,,,..TT",
-"T......P..P..P..BB......,,...FT",
-"T..HH..P..PPPP.........~~~~..FT",
-"T..HH..P.......T.....~~~~~~~..T",
-"T......P....B.......~WWWWW~~..T",
-"T..PPPPP...........~WWWWWWW~..T",
-"T..P.......TT.....~WWWWWWWWW..T",
-"T..P...,,,,.TT....~~WWWWWWW~..T",
-"T..P..,,,,,,......T.~~WWW~~...T",
-"T.....,,,,,,.......T..~~~....TT",
-"T......,,,,....BB......T.....TT",
-"T............................T",
-"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-];
-const MAP_W=MAP_STR[0].length, MAP_H=MAP_STR.length;
+/* ---------- world map (procedurally generated, deterministic) ---------- */
+const MAP_W=96, MAP_H=64;
 const WORLD_W=MAP_W*TILE, WORLD_H=MAP_H*TILE;
 let grid=[];
-const SOLID=new Set(['T','W','H','F','M','N','S','B']);
-const PROP=new Set(['T','H','F','M','N','S','B']); // depth-sorted tall things
-function buildGrid(){grid=[];for(let y=0;y<MAP_H;y++){const r=[];for(let x=0;x<MAP_W;x++)r.push(MAP_STR[y][x]);grid.push(r);}placeMerchant();}
-function placeMerchant(){let nx=-1,ny=-1;for(let y=0;y<MAP_H;y++)for(let x=0;x<MAP_W;x++)if(grid[y][x]==='N'){nx=x;ny=y;}
-  if(nx<0)return;for(const[x,y]of[[nx+2,ny],[nx-2,ny],[nx,ny-2],[nx,ny+2]]){if(x>0&&y>0&&x<MAP_W-1&&y<MAP_H-1&&grid[y][x]==='.'){grid[y][x]='M';return;}}}
+const SOLID=new Set(['T','W','H','F','M','N','S','B','R','V']);
+const PROP=new Set(['T','H','F','M','N','S','B','R','V']); // depth-sorted tall things
+const PLOTS=[];
+const SPAWN={x:0,y:0};
+function inb(x,y){return x>1&&y>1&&x<MAP_W-2&&y<MAP_H-2;}
+function buildGrid(){
+  grid=[];PLOTS.length=0;
+  for(let y=0;y<MAP_H;y++){const r=[];for(let x=0;x<MAP_W;x++){
+    let t='.';
+    if(x<2||y<2||x>=MAP_W-2||y>=MAP_H-2)t='T';                          // forest border
+    else if(hash(Math.floor(x/5)*2.1,Math.floor(y/5)*3.3)<0.28&&hash(x*1.7,y*1.9)<0.6)t=','; // tall-grass patches
+    if(t==='.'&&hash(x*3.7,y*5.3)<0.14)t='T';                            // scattered trees
+    if(t==='.'&&hash(x*9.4,y*8.8)<0.012)t='B';                           // wild berry bushes
+    r.push(t);}grid.push(r);}
+  // lakes
+  for(const L of [{x:32,y:32,rx:7,ry:4},{x:66,y:44,rx:5,ry:4}]){
+    for(let y=L.y-L.ry-1;y<=L.y+L.ry+1;y++)for(let x=L.x-L.rx-1;x<=L.x+L.rx+1;x++){if(!inb(x,y))continue;
+      const d=Math.hypot((x-L.x)/L.rx,(y-L.y)/L.ry);
+      if(d<0.85)grid[y][x]='W';else if(d<1.15)grid[y][x]='~';}}
+  // towns
+  TOWNS.forEach((t,i)=>stampTown(t,i));
+  // roads between towns
+  road(TOWNS[0],TOWNS[1]);road(TOWNS[0],TOWNS[2]);road(TOWNS[1],TOWNS[2]);
+  // land plots around each town
+  TOWNS.forEach((t,i)=>{const s=t.size;
+    const defs=[[-s-7,-2,5,4],[s+2,-5,6,5],[-2,s+2,6,4],[s+2,s+1,4,4]];
+    defs.forEach((d,j)=>{const px=t.cx+d[0],py=t.cy+d[1],w=d[2],h=d[3];
+      if(px<2||py<2||px+w>=MAP_W-2||py+h>=MAP_H-2)return;
+      PLOTS.push({id:'p'+i+j,town:t.name,x:px,y:py,w,h,price:Math.round(w*h*12*(1+i*0.3))});
+      for(let y=py;y<py+h;y++)for(let x=px;x<px+w;x++){if(grid[y][x]!=='P')grid[y][x]='.';}});});
+  const t0=TOWNS[0];SPAWN.x=(t0.cx+1.5)*TILE;SPAWN.y=(t0.cy+1.5)*TILE;
+  CF.x=(t0.cx-1.5)*TILE;CF.y=(t0.cy+1.5)*TILE;
+  indexPlots();
+}
+function stampTown(t,i){const{cx,cy}=t,s=t.size;
+  for(let y=cy-s;y<=cy+s;y++)for(let x=cx-s;x<=cx+s;x++){if(!inb(x,y))continue;
+    if(Math.hypot(x-cx,y-cy)<=s)grid[y][x]='.';}
+  for(let d=-s;d<=s;d++){if(inb(cx+d,cy))grid[cy][cx+d]='P';if(inb(cx,cy+d))grid[cy+d][cx]='P';}
+  const put=(dx,dy,ch)=>{if(inb(cx+dx,cy+dy))grid[cy+dy][cx+dx]=ch;};
+  put(-3,-3,'H');put(3,-3,'H');put(-4,3,'H');put(4,3,'H');
+  put(-2,-2,'N');put(2,-2,'M');put(-2,2,'R');put(3,1,'V');put(1,-4,'S');put(-4,-1,'B');put(4,-2,'B');
+}
+function road(a,b){let x=a.cx,y=a.cy,guard=0;
+  while((x!==b.cx||y!==b.cy)&&guard++<600){
+    const dx=b.cx-x,dy=b.cy-y;
+    if(Math.abs(dx)>Math.abs(dy))x+=Math.sign(dx);else y+=Math.sign(dy);
+    for(const[ox,oy]of[[0,0],[1,0],[0,1]]){const xx=x+ox,yy=y+oy;
+      if(inb(xx,yy)&&'T,.~W'.includes(grid[yy][xx]))grid[yy][xx]='P';}}}
+function townDist(wx,wy){let d=1e9;for(const t of TOWNS)d=Math.min(d,Math.hypot(wx/TILE-t.cx,wy/TILE-t.cy));return d;}
+function zoneLevel(wx,wy){return Math.max(1,1+Math.floor((townDist(wx,wy)-8)/5)*3);}
 function tileAt(x,y){if(x<0||y<0||x>=MAP_W||y>=MAP_H)return 'T';return grid[y][x];}
 function tileAtWorld(wx,wy){return tileAt(Math.floor(wx/TILE),Math.floor(wy/TILE));}
+/* ---- land plots ---- */
+let plotIndex={};
+function indexPlots(){plotIndex={};for(const p of PLOTS)for(let y=p.y;y<p.y+p.h;y++)for(let x=p.x;x<p.x+p.w;x++)plotIndex[x+','+y]=p;}
+function plotAt(x,y){return plotIndex[x+','+y]||null;}
+function ownsAt(x,y){const p=plotAt(x,y);return !!(p&&G&&G.plots&&G.plots[p.id]);}
 let buildAt={};
 function rebuildBuildIndex(){buildAt={};if(G&&G.builds)for(const b of G.builds)buildAt[b.x+','+b.y]=b;}
-const SOLID_BUILD=new Set(['wall','hut']);
-function solidWorld(wx,wy){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
-  if(SOLID.has(tileAt(tx,ty)))return true;const b=buildAt[tx+','+ty];return !!(b&&SOLID_BUILD.has(b.t));}
+function buildAtWorld(wx,wy){return buildAt[Math.floor(wx/TILE)+','+Math.floor(wy/TILE)]||null;}
+function solidWorld(wx,wy,forEnemy){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
+  if(SOLID.has(tileAt(tx,ty)))return true;const b=buildAt[tx+','+ty];if(!b)return false;
+  const d=BUILD_DEF[b.t]||{};return !!(forEnemy?(d.eSolid||d.solid):d.solid);}
 
 /* ---------- state ---------- */
 let G=null;
@@ -443,19 +555,21 @@ const HERO={isHero:true,
   get statusT(){return G.statusT||0;}, set statusT(v){G.statusT=v;},
 };
 function newGame(cls){
-  G={px:5.5*TILE,py:6.5*TILE,face:Math.PI/2,class:cls||'mage',
+  G={px:SPAWN.x,py:SPAWN.y,face:Math.PI/2,class:cls||'mage',
     level:1,xp:0,hp:0,maxHp:0,_atk:0,_def:0,status:null,statusT:0,
     hunger:100,energy:100,
     items:{berry:3,potion:0,ration:1},coins:40,
     day:1,skills:{},skillPoints:0,muted:false,
-    res:{wood:0,stone:0,fiber:0},builds:[],craftLvl:1,craftXp:0,time:0.35};
+    res:{wood:0,stone:0,fiber:0,ore:0},builds:[],craftLvl:1,craftXp:0,time:0.35,
+    plots:{},tools:{axe:0,pickaxe:0},bank:{wood:0,stone:0,fiber:0,ore:0},
+    nodeT:{},raid:null};
   recalcHero();G.hp=G.maxHp;
   syncPlayer();save();
 }
 function syncPlayer(){P.x=G.px;P.y=G.py;P.vx=P.vy=0;P.face=G.face||Math.PI/2;const p=projIso(P.x,P.y);cam.ix=p.x;cam.iy=p.y;rebuildBuildIndex();}
 
 /* ---------- persistence ---------- */
-const SAVE_KEY='critter-wilds-save-v4';
+const SAVE_KEY='critter-wilds-save-v5';
 function save(){try{if(G){G.px=P.x;G.py=P.y;G.face=P.face;}localStorage.setItem(SAVE_KEY,JSON.stringify(G,(k,v)=>k==='_s'?undefined:v));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);migrate();recalcHero();syncPlayer();return true;}catch(e){return false;}}
 function migrate(){
@@ -465,11 +579,20 @@ function migrate(){
   if(!G.items)G.items={};ITEM_KEYS.forEach(k=>{if(G.items[k]===undefined)G.items[k]=0;});
   if(G.coins===undefined)G.coins=40;
   if(!G.skills)G.skills={};if(G.skillPoints===undefined)G.skillPoints=0;if(G.muted===undefined)G.muted=false;
-  if(!G.res)G.res={wood:0,stone:0,fiber:0};if(!G.builds)G.builds=[];if(G.craftLvl===undefined)G.craftLvl=1;if(G.craftXp===undefined)G.craftXp=0;if(G.time===undefined)G.time=0.35;
+  if(!G.res)G.res={wood:0,stone:0,fiber:0};if(G.res.ore===undefined)G.res.ore=0;
+  if(!G.builds)G.builds=[];if(G.craftLvl===undefined)G.craftLvl=1;if(G.craftXp===undefined)G.craftXp=0;if(G.time===undefined)G.time=0.35;
+  if(!G.plots)G.plots={};if(!G.tools)G.tools={axe:0,pickaxe:0};
+  if(!G.bank)G.bank={wood:0,stone:0,fiber:0,ore:0};if(G.bank.ore===undefined)G.bank.ore=0;
+  if(!G.nodeT)G.nodeT={};if(G.raid===undefined)G.raid=null;
+  G.builds.forEach(b=>{const d=BUILD_DEF[b.t]||{hp:100};
+    if(b.maxHp===undefined)b.maxHp=Math.round(d.hp*(G.class==='warrior'?1.25:1));
+    if(b.hp===undefined)b.hp=b.maxHp;
+    if(d.tower&&b.tier===undefined){b.tier=1;b.ammo=0;}
+    if(d.trap&&b.uses===undefined)b.uses=d.uses;});
   delete G.party;delete G.caughtSpecies;
   recalcHero();
   if(G.hp===undefined||G.hp>G.maxHp)G.hp=G.maxHp;
-  if(G.px===undefined||G.px<MAP_W){G.px=5.5*TILE;G.py=6.5*TILE;}}
+  if(G.px===undefined){G.px=SPAWN.x;G.py=SPAWN.y;}}
 
 /* ===================================================================
    PARTICLES
@@ -593,6 +716,39 @@ function drawPropIso(t,tx,ty,cx,cy){
   else if(t==='F'){ctx.fillStyle='#4e341c';ctx.strokeStyle=line;ctx.lineWidth=3;
     rr(cx-16,base-20,6,22,2);ctx.fill();ctx.stroke();rr(cx+10,base-20,6,22,2);ctx.fill();ctx.stroke();
     rr(cx-18,base-16,36,6,2);ctx.fill();ctx.stroke();}
+  else if(t==='R'){shadow(cx,base+2,28,9);ctx.strokeStyle=line;ctx.lineWidth=4;
+    ctx.fillStyle='#d8d2c2';rr(cx-20,base-30,40,32,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#efe9da';for(const dx of[-13,-2,9]){rr(cx+dx,base-26,5,22,2);ctx.fill();ctx.stroke();}
+    ctx.fillStyle='#3f6fd6';ctx.beginPath();ctx.moveTo(cx-24,base-28);ctx.lineTo(cx,base-44);ctx.lineTo(cx+24,base-28);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd23c';ctx.font='bold 13px Fredoka';ctx.textAlign='center';ctx.fillText('🏛',cx,base-31);}
+  else if(t==='V'){const bob=Math.sin((animT*0.06)+tx)*1.2;shadow(cx,base,10,4);
+    ctx.strokeStyle=line;ctx.lineWidth=3;ctx.lineJoin='round';
+    ctx.fillStyle='#8a6d3a';ctx.beginPath();ctx.moveTo(-8+cx,base);ctx.quadraticCurveTo(cx-9,base-16-bob,cx,base-18-bob);ctx.quadraticCurveTo(cx+9,base-16-bob,cx+8,base);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f0c090';ctx.beginPath();ctx.arc(cx,base-24-bob,8,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#6a4a26';ctx.beginPath();ctx.arc(cx,base-27-bob,8,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#1a1a1a';for(const dx of[-3,3]){ctx.beginPath();ctx.arc(cx+dx,base-23-bob,1.3,0,7);ctx.fill();}}
+}
+
+/* ---- land plot boundaries ---- */
+function drawPlotEdge(pl,x,y,cx,cy){
+  const own=G&&G.plots&&G.plots[pl.id];
+  ctx.strokeStyle=own?'rgba(84,194,58,0.75)':'rgba(255,210,60,0.65)';ctx.lineWidth=2.5;
+  const N=[cx,cy-IH/2],E=[cx+IW/2,cy],S=[cx,cy+IH/2],W=[cx-IW/2,cy];
+  ctx.beginPath();
+  if(x===pl.x){ctx.moveTo(N[0],N[1]);ctx.lineTo(W[0],W[1]);}
+  if(x===pl.x+pl.w-1){ctx.moveTo(E[0],E[1]);ctx.lineTo(S[0],S[1]);}
+  if(y===pl.y){ctx.moveTo(N[0],N[1]);ctx.lineTo(E[0],E[1]);}
+  if(y===pl.y+pl.h-1){ctx.moveTo(W[0],W[1]);ctx.lineTo(S[0],S[1]);}
+  ctx.stroke();
+  // corner stakes
+  if((x===pl.x||x===pl.x+pl.w-1)&&(y===pl.y||y===pl.y+pl.h-1)){
+    ctx.fillStyle=own?'#54c23a':'#ffd23c';ctx.strokeStyle='#12160f';ctx.lineWidth=2;
+    rr(cx-2.5,cy-14,5,14,2);ctx.fill();ctx.stroke();}
+  // price sign in the middle of unowned plots
+  if(!own&&x===pl.x+Math.floor(pl.w/2)&&y===pl.y+Math.floor(pl.h/2)){
+    ctx.fillStyle='rgba(12,22,14,.75)';rr(cx-34,cy-24,68,16,7);ctx.fill();
+    ctx.fillStyle='#ffd23c';ctx.font='bold 11px Fredoka';ctx.textAlign='center';
+    ctx.fillText(`FOR SALE ${pl.price}c`,cx,cy-12);}
 }
 
 /* ---- deterministic environmental decoration (grass tiles, non-colliding) ---- */
@@ -762,17 +918,19 @@ function renderWorld(){
   for(let sum=x0+y0;sum<=x1+y1;sum++)for(let x=x0;x<=x1;x++){const y=sum-x;if(y<y0||y>y1)continue;
     const c=w2s((x+0.5)*TILE,(y+0.5)*TILE);
     if(c.x<-IW||c.x>VIEW.w+IW||c.y<-IH*3||c.y>VIEW.h+IH*4)continue;
-    const t=tileAt(x,y);drawGroundIso(PROP.has(t)?'.':t,x,y,c.x,c.y);}
+    const t=tileAt(x,y);drawGroundIso(PROP.has(t)?'.':t,x,y,c.x,c.y);
+    const pl=plotAt(x,y);if(pl)drawPlotEdge(pl,x,y,c.x,c.y);}
   // depth-sorted entities
   const list=[];
   for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const t=tileAt(x,y);
     if(PROP.has(t))list.push({t,x,y,d:x+y});
-    else if(t==='.'){const dec=decorAt(x,y);if(dec)list.push({dec,x,y,d:x+y-0.01});}}
+    else if(t==='.'){const nd=nodeSpec(x,y);
+      if(nd&&nodeReady(x,y))list.push({node:nd,d:x+y});
+      else{const dec=decorAt(x,y);if(dec)list.push({dec,x,y,d:x+y-0.01});}}}
   list.push({hero:true,d:(P.x+P.y)/TILE});
   list.push({campfire:true,d:(CF.x+CF.y)/TILE});
   for(const e of enemies)list.push({enemy:e,d:(e.x+e.y)/TILE});
-  for(const nd of nodes)list.push({node:nd,d:(nd.x+nd.y)/TILE});
-  for(const b of G.builds)list.push({build:b,d:b.x+b.y+0.2});
+  for(const b of G.builds)list.push({build:b,d:b.x+b.y+(b.t==='floor'?-0.4:0.2)});
   if(buildMode){const bt=buildTargetTile();if(bt)list.push({ghost:bt,d:bt.x+bt.y+0.25});}
   list.sort((a,b)=>a.d-b.d);
   for(const it of list){
@@ -780,8 +938,15 @@ function renderWorld(){
     else if(it.enemy)drawEnemy(it.enemy);
     else if(it.campfire)drawCampfire();
     else if(it.node)drawNode(it.node);
-    else if(it.build){const c=w2s((it.build.x+0.5)*TILE,(it.build.y+0.5)*TILE);drawBuild(it.build.t,c.x,c.y);}
-    else if(it.ghost){const c=w2s((it.ghost.x+0.5)*TILE,(it.ghost.y+0.5)*TILE);ctx.globalAlpha=0.5;drawBuild(buildMode,c.x,c.y,it.ghost.ok);ctx.globalAlpha=1;}
+    else if(it.build){const c=w2s((it.build.x+0.5)*TILE,(it.build.y+0.5)*TILE);drawBuild(it.build.t,c.x,c.y,undefined,it.build);}
+    else if(it.ghost){const c=w2s((it.ghost.x+0.5)*TILE,(it.ghost.y+0.5)*TILE);
+      const needPlot=buildRecipe&&buildRecipe.plot&&!ownsAt(it.ghost.x,it.ghost.y);
+      ctx.globalAlpha=0.5;drawBuild(buildMode,c.x,c.y,it.ghost.ok&&!needPlot);ctx.globalAlpha=1;
+      if(TOWERS[buildMode]){const T=TOWERS[buildMode],rng=T.tiers[0].range*TILE*(G.class==='mage'?1.1:1);
+        const wx=(it.ghost.x+0.5)*TILE,wy=(it.ghost.y+0.5)*TILE;
+        ctx.strokeStyle=T.col;ctx.globalAlpha=0.55;ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();
+        for(let a=0;a<=6.3;a+=0.22){const p=w2s(wx+Math.cos(a)*rng,wy+Math.sin(a)*rng);if(a===0)ctx.moveTo(p.x,p.y-6);else ctx.lineTo(p.x,p.y-6);}
+        ctx.closePath();ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;}}
     else if(it.dec){const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawDecor(it.dec,it.x,it.y,c.x,c.y);}
     else{const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawPropIso(it.t,it.x,it.y,c.x,c.y);}
   }
@@ -798,8 +963,8 @@ function renderWorld(){
       if(it.enemy.alpha)lights.push({x:c.x,y:c.y-18,r:130,col:'rgba(255,200,90,1)',glow:true});
       else lights.push({x:c.x,y:c.y-14,r:66,col:'rgba(140,160,220,1)',glow:false});}}
   for(const s of shots){const c=w2s(s.x,s.y);lights.push({x:c.x,y:c.y-6,r:80,col:s.col,glow:true});}
-  for(const b of G.builds){if(b.t==='campfire'||b.t==='torch'||b.t==='hut'){const c=w2s((b.x+0.5)*TILE,(b.y+0.5)*TILE);
-    lights.push({x:c.x,y:c.y-14,r:b.t==='hut'?120:150,col:'rgba(255,160,70,1)',glow:true});}}
+  for(const b of G.builds){const bd=BUILD_DEF[b.t];if(bd&&bd.light){const c=w2s((b.x+0.5)*TILE,(b.y+0.5)*TILE);
+    lights.push({x:c.x,y:c.y-14,r:bd.light,col:b.t==='tfrost'?'rgba(120,200,255,1)':'rgba(255,160,70,1)',glow:true});}}
   applyLighting();
   // vignette
   const g=ctx.createRadialGradient(VIEW.w/2,VIEW.h*0.45,VIEW.h*0.25,VIEW.w/2,VIEW.h/2,VIEW.h*0.9);
@@ -843,7 +1008,7 @@ function update(dt){
   engageCD=Math.max(0,engageCD-dt);
   // day/night clock
   G.time=(G.time||0)+dt/DAY_LEN; if(G.time>=1){G.time-=1;G.day=(G.day||1)+1;toast(`☀️ Day ${G.day}`);}
-  updateEnemies(dt);updateShots(dt);updateWaves(dt);updateSlashes(dt);updateNodes(dt);updateFloats(dt);
+  updateEnemies(dt);updateShots(dt);updateWaves(dt);updateSlashes(dt);updateTowers(dt);updateTraps(dt);updateRaid(dt);updateFloats(dt);
   // survival
   surv+=dt;if(surv>0.5){surv=0;
     G.hunger=Math.max(0,G.hunger-(P.moving?0.5:0.25));
@@ -861,17 +1026,23 @@ function collides(x,y){for(const[dx,dy]of[[PR,0],[-PR,0],[0,PR],[0,-PR],[PR*0.7,
 
 /* ---- interaction ---- */
 let interactTarget=null;
-const IL={N:'Heal',M:'Shop',S:'Read',B:'Pick',H:'Rest'};
+const IL={N:'Heal',M:'Shop',S:'Read',B:'Pick',H:'Rest',R:'Land Office',V:'Talk'};
 function updateInteract(){
   interactTarget=null;let best=null,bd=1e9,label='';
   if(buildMode){document.getElementById('interactTag').style.display='none';return;}
-  // resource nodes
-  for(const n of nodes){const d=Math.hypot(n.x-P.x,n.y-P.y);if(d<bd&&d<TILE*1.3){bd=d;best={node:n};label=NODE_KIND[n.k].label;}}
   const cx=Math.floor(P.x/TILE),cy=Math.floor(P.y/TILE);
   for(let y=cy-2;y<=cy+2;y++)for(let x=cx-2;x<=cx+2;x++){const t=tileAt(x,y);const bld=buildAt[x+','+y];
-    if(IL[t]){const d=Math.hypot((x+0.5)*TILE-P.x,(y+0.5)*TILE-P.y);if(d<bd&&d<TILE*1.15){bd=d;best={t,x,y};label=IL[t];}}
-    else if(t==='T'&&!((choppedCD[x+','+y]||0)>performance.now())){const d=Math.hypot((x+0.5)*TILE-P.x,(y+0.5)*TILE-P.y);if(d<bd&&d<TILE*1.25){bd=d;best={tree:{x,y}};label='Chop';}}
-    else if(bld&&bld.t==='hut'){const d=Math.hypot((x+0.5)*TILE-P.x,(y+0.5)*TILE-P.y);if(d<bd&&d<TILE*1.4){bd=d;best={hut:bld};label='Rest';}}}
+    const d=Math.hypot((x+0.5)*TILE-P.x,(y+0.5)*TILE-P.y);
+    if(IL[t]){if(d<bd&&d<TILE*1.15){bd=d;best={t,x,y};label=IL[t];}}
+    else if(t==='T'&&!((choppedCD[x+','+y]||0)>performance.now())){if(d<bd&&d<TILE*1.25){bd=d;best={tree:{x,y}};label='Chop';}}
+    else if(t==='.'&&!bld){const nd=nodeSpec(x,y);
+      if(nd&&nodeReady(x,y)&&d<bd&&d<TILE*1.3){bd=d;best={node:nd};label=NODE_KIND[nd.k].label;}}
+    if(bld&&d<bd&&d<TILE*1.4){
+      if(bld.t==='hut'){bd=d;best={hut:bld};label='Rest';}
+      else if(bld.t==='chest'){bd=d;best={chest:bld};label='Chest';}
+      else if(bld.t==='table'||bld.t==='forge'){bd=d;best={station:bld};label='Craft';}
+      else if(TOWERS[bld.t]){bd=d;best={tower:bld};label=(bld.ammo||0)<=0?'Load Tower':'Tower';}
+      else if(bld.hp<bld.maxHp){bd=d;best={fix:bld};label='Repair';}}}
   interactTarget=best;
   const tag=document.getElementById('interactTag');
   if(best&&mode==='world'){const ps=w2s(P.x,P.y);tag.style.left=ps.x+'px';tag.style.top=(ps.y-46)+'px';
@@ -884,10 +1055,16 @@ function doInteract(){
   if(interactTarget.node){gatherNode(interactTarget.node);return;}
   if(interactTarget.tree){chopTree(interactTarget.tree.x,interactTarget.tree.y);return;}
   if(interactTarget.hut){restAtHome();return;}
+  if(interactTarget.chest){openChest();return;}
+  if(interactTarget.station){openCraft();return;}
+  if(interactTarget.tower){openTower(interactTarget.tower);return;}
+  if(interactTarget.fix){repairBuild(interactTarget.fix);return;}
   const{t,x,y}=interactTarget;
   if(t==='N')healParty();else if(t==='M')openShop();else if(t==='B')pickBerry(x,y);
   else if(t==='H')restAtHome();
-  else if(t==='S')dialog("<b>Sign:</b> Gather 🪵🪨🌿 from logs, rocks & shrubs, then <b>Craft</b> from the ☰ menu to build a Campfire, Wall, or your own Hut. Cast spells with your right thumb!");
+  else if(t==='R')openRegistrar();
+  else if(t==='V')villagerTalk(x,y);
+  else if(t==='S')dialog("<b>Sign:</b> Gather 🪵🪨🌿⛏️ from logs, rocks, shrubs & ore veins. Buy <b>land</b> at the 🏛 registrar, then <b>Craft & Build</b> (☰) your base — walls, towers, traps. Raiders will come for it!");
 }
 function healParty(){G.hp=G.maxHp;G.status=null;G.statusT=0;G.energy=100;sfx('heal');
   dialog("<b>Nurse:</b> You're patched up — full health and energy!");toast('Fully healed');burst(P.x,P.y-10,'#ff9dc0');save();}
@@ -1008,15 +1185,17 @@ function grantXp(c,a){G.xp=(G.xp||0)+Math.round(a*mods().xp);
   save();}
 /* Hades-style death: lose loose loot & coins, keep skills/craft/builds/level */
 function heroDeath(){if(!G)return;
-  const lostRes=(G.res.wood||0)+(G.res.stone||0)+(G.res.fiber||0),lostCoins=G.coins||0;
-  G.res={wood:0,stone:0,fiber:0};G.coins=0;
+  const lostRes=RES_KEYS.reduce((a,k)=>a+(G.res[k]||0),0),lostCoins=G.coins||0;
+  G.res={wood:0,stone:0,fiber:0,ore:0};G.coins=0;
   G.status=null;G.statusT=0;recalcHero();G.hp=G.maxHp;
   G.hunger=Math.max(45,G.hunger);G.energy=Math.max(45,G.energy);
   superC=0;
-  P.x=5.5*TILE;P.y=6.5*TILE;P.vx=P.vy=0;syncPlayer();
+  if(G.raid&&G.raid.active){G.raid.active=0;G.raid.warned=0;G.raid.next=absDay()+1.5;}
+  G.px=SPAWN.x;G.py=SPAWN.y;syncPlayer();
   if(mode==='battle'){document.getElementById('battle').style.display='none';B=null;}
   mode='world';seedEnemies();sfx('fail');
-  dialog(`<b>You fell in the wild…</b> You wake at the town campfire. Your loose loot is gone${lostRes||lostCoins?` (−${lostRes} materials, −${lostCoins}c)`:''}, but your skills, crafting level and buildings remain. Rise and fight again!`);
+  const banked=RES_KEYS.reduce((a,k)=>a+(G.bank[k]||0),0);
+  dialog(`<b>You fell in the wild…</b> You wake at the Oakvale campfire. Your loose loot is gone${lostRes||lostCoins?` (−${lostRes} materials, −${lostCoins}c)`:''}, but your level, skills, land, buildings${banked?`, and <b>${banked} banked materials</b> in your chest`:''} remain. Rise and fight again!`);
   save();}
 function openBagMenu(){if(B.busy)return;const it=G.items,menu=document.getElementById('bmenu');
   menu.innerHTML=`<div id="bmsg">Use which item?</div>
@@ -1067,7 +1246,8 @@ function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.
   const styleName={warrior:'melee cleaves',ranger:'piercing arrows',mage:'arcane bolts'}[G.class]||'attacks';
   let h=`<h2>${C.icon} ${C.name}</h2>`;
   h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · ${typeChip(el)} ${styleName}</div>`;
-  h+=`<div class="subline">🪵 ${G.res.wood} · 🪨 ${G.res.stone} · 🌿 ${G.res.fiber} · 🔨 Craft Lv.${G.craftLvl}</div>`;
+  h+=`<div class="subline">🪵 ${G.res.wood} · 🪨 ${G.res.stone} · 🌿 ${G.res.fiber} · ⛏️ ${G.res.ore} · 🔨 Craft Lv.${G.craftLvl}</div>`;
+  h+=`<div class="subline">🪓 ${G.tools.axe?TOOLS.axe.tiers[G.tools.axe-1].name:'no axe'} · ⛏️ ${G.tools.pickaxe?TOOLS.pickaxe.tiers[G.tools.pickaxe-1].name:'no pickaxe'} · ⌂ ${Object.keys(G.plots).length} plot${Object.keys(G.plots).length===1?'':'s'} · <span style="color:#b39dff">${CLASS_PERK[G.class].name}: ${CLASS_PERK[G.class].desc}</span></div>`;
   h+='<div class="plist">';
   h+=`<div class="pcard"><canvas class="mini" width="56" height="56" id="heroCv"></canvas>
       <div style="flex:1"><div><b>${C.name}</b> ${typeChip(el)}${statusChip(HERO)} <span class="lv">Lv.${G.level}</span></div>
@@ -1137,18 +1317,24 @@ function usePanelItem(k){const it=G.items;
 function closePanel(){document.getElementById('panel').style.display='none';mode='world';}
 function openShop(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
   let h='<h2>🛒 Trader&#39;s Mart</h2>';h+=`<div class="subline" style="color:#ffd23c;font-size:16px">◉ ${G.coins} coins</div>`;
-  h+='<div class="plist">';
+  h+='<div class="subline" style="color:#f2c14e;font-weight:700">BUY</div><div class="plist">';
   SHOP.forEach(s=>{h+=`<div class="pcard"><div style="flex:1"><div><b>${s.name}</b> <span style="color:#c98b3a">${s.price}c</span> <span class="lv">owned ${G.items[s.key]}</span></div>
     <small style="color:#8a6d3a">${s.desc}</small></div><button class="cbtn small" data-buy="${s.key}" ${G.coins<s.price?'disabled':''}>Buy</button></div>`;});
+  h+='</div><div class="subline" style="color:#f2c14e;font-weight:700;margin-top:6px">SELL MATERIALS</div><div class="plist">';
+  RES_KEYS.forEach(k=>{const n=G.res[k]||0;
+    h+=`<div class="pcard" style="${n?'':'opacity:.55'}"><div style="flex:1"><b>${RES_ICON[k]} ${k}</b> <span class="lv">carrying ${n}</span></div>
+      <button class="cbtn small" data-sell="${k}" ${n?'':'disabled'}>Sell all +${n*SELL_PRICE[k]}c</button></div>`;});
   h+='</div><div class="prow"><button class="cbtn small" id="closePanel">Leave shop</button></div>';
   p.innerHTML=h;p.style.display='flex';
-  p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const s=SHOP.find(x=>x.key===b.dataset.buy);if(!s||G.coins<s.price)return;G.coins-=s.price;G.items[s.key]++;toast(`Bought ${s.name}`);save();openShop();});
+  p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const s=SHOP.find(x=>x.key===b.dataset.buy);if(!s||G.coins<s.price)return;G.coins-=s.price;G.items[s.key]++;toast(`Bought ${s.name}`);save();closePanel();openShop();});
+  p.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{const k=b.dataset.sell,n=G.res[k]||0;if(!n)return;
+    const c=n*SELL_PRICE[k];G.res[k]=0;G.coins+=c;sfx('coin');toast(`Sold ${n} ${k} for ${c}c`);save();closePanel();openShop();});
   document.getElementById('closePanel').onclick=closePanel;}
 
 /* ===================================================================
    REAL-TIME COMBAT — roaming enemies, projectiles, gesture casting
    =================================================================== */
-const enemies=[], shots=[], floats=[], waves=[], nodes=[];
+const enemies=[], shots=[], floats=[], waves=[];
 const DAY_LEN=150; // seconds per full day-night cycle
 /* darkness 0(bright)..1(dark) from time of day; 0.5=noon brightest, 0/1=midnight */
 function nightFactor(){return (1+Math.cos((G&&G.time||0)*6.2832))/2;}
@@ -1195,38 +1381,83 @@ const SPELLS={
   nova: {name:'Nova',        mult:0.75,speed:380, r:12, pierce:99,count:3, cd:0.9},
 };
 function openTileForSpawn(){
-  for(let t=0;t<50;t++){const x=1+Math.floor(Math.random()*(MAP_W-2)),y=1+Math.floor(Math.random()*(MAP_H-2));
-    if(SOLID.has(tileAt(x,y)))continue;const wx=(x+0.5)*TILE,wy=(y+0.5)*TILE;
-    if(Math.hypot(wx-P.x,wy-P.y)<TILE*5)continue; if(x<10&&y<9)continue; return{wx,wy};}
+  for(let t=0;t<60;t++){const a=Math.random()*6.283,d=(6+Math.random()*9)*TILE;
+    const wx=P.x+Math.cos(a)*d,wy=P.y+Math.sin(a)*d;
+    const x=Math.floor(wx/TILE),y=Math.floor(wy/TILE);
+    if(!inb(x,y))continue;
+    if(SOLID.has(tileAt(x,y)))continue;
+    if(townDist(wx,wy)<7)continue;                       // towns are safe
+    const pl=plotAt(x,y);if(pl&&G.plots&&G.plots[pl.id])continue; // not inside your base
+    return{wx:(x+0.5)*TILE,wy:(y+0.5)*TILE};}
   return null;}
-function spawnEnemy(){if(enemies.length>=MAX_ENEMIES)return;const pos=openTileForSpawn();if(!pos)return;
-  const base=(G&&G.level)||3;const alpha=Math.random()<0.08;
-  const lvl=Math.max(2,base+(Math.floor(Math.random()*5)-2))+(alpha?5:0);
+function mkEnemy(wx,wy,lvl,alpha,raider){
   const sp=WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],c=makeCritter(sp,lvl);
   const mhp=alpha?Math.floor(c.maxHp*2.2):c.maxHp;
-  enemies.push({sp,type:c.type,level:lvl,x:pos.wx,y:pos.wy,vx:0,vy:0,hp:mhp,maxHp:mhp,
-    atk:alpha?Math.floor(c.atk*1.4):c.atk,def:c.def,alpha,scale:alpha?1.5:1,
-    wander:Math.random()*3,wdir:Math.random()*6.28,flash:0,touchCD:0,bob:Math.random()*6});}
+  return {sp,type:c.type,level:lvl,x:wx,y:wy,vx:0,vy:0,hp:mhp,maxHp:mhp,
+    atk:alpha?Math.floor(c.atk*1.4):c.atk,def:c.def,alpha,raider:!!raider,scale:alpha?1.5:1,
+    wander:Math.random()*3,wdir:Math.random()*6.28,flash:0,touchCD:0,bob:Math.random()*6,slowT:0,rootT:0,atkCD:0};}
+function spawnEnemy(){if(enemies.filter(e=>!e.raider).length>=MAX_ENEMIES)return;const pos=openTileForSpawn();if(!pos)return;
+  const zl=zoneLevel(pos.wx,pos.wy);const alpha=Math.random()<0.08;
+  const lvl=Math.min(40,Math.max(2,zl+Math.floor(Math.random()*3)))+(alpha?4:0);
+  enemies.push(mkEnemy(pos.wx,pos.wy,lvl,alpha,false));}
 function seedEnemies(){enemies.length=0;shots.length=0;floats.length=0;for(let i=0;i<MAX_ENEMIES;i++)spawnEnemy();}
+function nearestOwnedBuild(wx,wy){let best=null,bd=1e9;
+  for(const b of G.builds){if(!ownsAt(b.x,b.y))continue;
+    const d=Math.hypot((b.x+0.5)*TILE-wx,(b.y+0.5)*TILE-wy);if(d<bd){bd=d;best=b;}}return best;}
 function updateEnemies(dt){
   respawnT+=dt;if(respawnT>3){respawnT=0;spawnEnemy();}
-  for(const e of enemies){e.flash=Math.max(0,e.flash-dt);e.touchCD=Math.max(0,e.touchCD-dt);e.bob+=dt;
+  for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];
+    e.flash=Math.max(0,e.flash-dt);e.touchCD=Math.max(0,e.touchCD-dt);e.bob+=dt;
+    e.slowT=Math.max(0,(e.slowT||0)-dt);e.rootT=Math.max(0,(e.rootT||0)-dt);
+    const sf=e.rootT>0?0:(e.slowT>0?0.45:1);
     const dx=P.x-e.x,dy=P.y-e.y,dl=Math.hypot(dx,dy)||1;
-    if(dl<AGGRO){e.vx+=(dx/dl*ENEMY_SPEED-e.vx)*Math.min(1,dt*3);e.vy+=(dy/dl*ENEMY_SPEED-e.vy)*Math.min(1,dt*3);}
+    // wandering enemies far away get recycled closer to the player (big world)
+    if(!e.raider&&dl>TILE*24){enemies.splice(i,1);spawnEnemy();continue;}
+    if(e.raider){raiderAI(e,dt,sf,dl);continue;}
+    if(dl<AGGRO){e.vx+=(dx/dl*ENEMY_SPEED*sf-e.vx)*Math.min(1,dt*3);e.vy+=(dy/dl*ENEMY_SPEED*sf-e.vy)*Math.min(1,dt*3);}
     else{e.wander-=dt;if(e.wander<=0){e.wander=1+Math.random()*2;e.wdir=Math.random()*6.28;}
-      const s=ENEMY_SPEED*0.35;e.vx+=(Math.cos(e.wdir)*s-e.vx)*Math.min(1,dt*2);e.vy+=(Math.sin(e.wdir)*s-e.vy)*Math.min(1,dt*2);}
+      const s=ENEMY_SPEED*0.35*sf;e.vx+=(Math.cos(e.wdir)*s-e.vx)*Math.min(1,dt*2);e.vy+=(Math.sin(e.wdir)*s-e.vy)*Math.min(1,dt*2);}
     let nx=e.x+e.vx*dt,ny=e.y+e.vy*dt;
-    if(!solidWorld(nx,e.y))e.x=nx;else{e.vx*=-0.5;e.wdir=Math.random()*6.28;}
-    if(!solidWorld(e.x,ny))e.y=ny;else{e.vy*=-0.5;e.wdir=Math.random()*6.28;}
-    // enemy reaches you → engage a turn-based battle (Pokémon-style)
+    if(!solidWorld(nx,e.y,true))e.x=nx;else{e.vx*=-0.5;e.wdir=Math.random()*6.28;}
+    if(!solidWorld(e.x,ny,true))e.y=ny;else{e.vy*=-0.5;e.wdir=Math.random()*6.28;}
+    // enemy reaches you → engage a turn-based battle (raiders never do)
     if(dl<PR+16 && engageCD<=0 && mode==='world' && firstAlive()){ engageCD=1.5; startBattle(e); return; }
+  }
+}
+/* raiders: march on your base, smash structures, brawl in real time */
+function raiderAI(e,dt,sf,pd){
+  let tx,ty,onPlayer=false;
+  if(pd<TILE*2.2){tx=P.x;ty=P.y;onPlayer=true;}
+  else{
+    if(!e.tgt||!G.builds.includes(e.tgt))e.tgt=nearestOwnedBuild(e.x,e.y);
+    if(e.tgt){tx=(e.tgt.x+0.5)*TILE;ty=(e.tgt.y+0.5)*TILE;}else{tx=P.x;ty=P.y;onPlayer=true;}
+  }
+  const dx=tx-e.x,dy=ty-e.y,dl=Math.hypot(dx,dy)||1;
+  if(dl>TILE*0.85){
+    const sp=ENEMY_SPEED*1.15*sf;
+    e.vx+=(dx/dl*sp-e.vx)*Math.min(1,dt*3);e.vy+=(dy/dl*sp-e.vy)*Math.min(1,dt*3);
+    let nx=e.x+e.vx*dt,ny=e.y+e.vy*dt;
+    if(!solidWorld(nx,e.y,true))e.x=nx;else{const bb=buildAtWorld(nx,e.y);if(bb&&ownsAt(bb.x,bb.y))e.tgt=bb;e.vx*=-0.3;}
+    if(!solidWorld(e.x,ny,true))e.y=ny;else{const bb=buildAtWorld(e.x,ny);if(bb&&ownsAt(bb.x,bb.y))e.tgt=bb;e.vy*=-0.3;}
+  }else{
+    e.vx=e.vy=0;e.atkCD=(e.atkCD||0)-dt;
+    if(e.atkCD<=0){e.atkCD=1.0;
+      if(onPlayer){const d=Math.max(2,Math.floor(e.atk*0.45));G.hp=Math.max(0,G.hp-d);flashHurt();sfx('hit');
+        floatText(P.x,P.y-46,'-'+d,'#ff8a7a');}
+      else if(e.tgt){damageBuild(e.tgt,6+Math.floor(e.level*1.2));sfx('hit');}}
   }
 }
 function drawEnemy(e){const s=w2s(e.x,e.y),sx=s.x,sy=s.y,bob=Math.sin(e.bob*3)*2;const sc=e.scale||1,sz=48*sc;
   shadow(sx,sy+2,17*sc,7*sc);
   if(e.alpha){const pr=24*sc+Math.sin(animT*0.15)*3;ctx.strokeStyle='rgba(255,205,90,'+(0.5+Math.sin(animT*0.15)*0.2).toFixed(2)+')';ctx.lineWidth=3;
     ctx.beginPath();ctx.arc(sx,sy-16*sc-bob,pr,0,7);ctx.stroke();}
+  if(e.raider){ctx.strokeStyle='rgba(232,72,58,0.8)';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.arc(sx,sy-16*sc-bob,23*sc,0,7);ctx.stroke();ctx.setLineDash([]);}
   const spr=spriteCanvas(e.sp,48);ctx.drawImage(spr,sx-sz/2,sy-42*sc-bob,sz,sz);
+  if(e.slowT>0){ctx.fillStyle='rgba(120,200,255,0.3)';ctx.beginPath();ctx.arc(sx,sy-20*sc-bob,18*sc,0,7);ctx.fill();
+    ctx.fillStyle='#bfeaff';ctx.font='bold 11px Fredoka';ctx.textAlign='center';ctx.fillText('❄',sx+14,sy-34*sc-bob);}
+  if(e.rootT>0){ctx.strokeStyle='#8a6d3a';ctx.lineWidth=2.5;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.ellipse(sx,sy+1,15,7,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(e.flash>0){ctx.fillStyle=`rgba(255,255,255,${e.flash*3})`;ctx.beginPath();ctx.arc(sx,sy-20*sc-bob,19*sc,0,7);ctx.fill();}
   if(e.alpha){const cy2=sy-52*sc-bob;ctx.fillStyle='#ffd23c';ctx.strokeStyle='#12160f';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(sx-9,cy2);ctx.lineTo(sx-9,cy2-7);ctx.lineTo(sx-4,cy2-3);ctx.lineTo(sx,cy2-8);ctx.lineTo(sx+4,cy2-3);ctx.lineTo(sx+9,cy2-7);ctx.lineTo(sx+9,cy2);ctx.closePath();ctx.fill();ctx.stroke();}
@@ -1272,6 +1503,122 @@ function meleeAttack(key,ang){const sp=SPELLS[key]||SPELLS.bolt,M=mods();
     if(e.hp<=0)defeatEnemy(e);}
   spellFlash(heavy?'Cleave!':'Slash',col);}
 function updateSlashes(dt){for(let i=slashes.length-1;i>=0;i--){const s=slashes[i];s.life+=dt;if(s.life>=s.max)slashes.splice(i,1);}}
+/* ---- towers: auto-fire at enemies in range, spend ammo ---- */
+function updateTowers(dt){if(!G)return;
+  for(const b of G.builds){const T=TOWERS[b.t];if(!T)continue;
+    b.cd=(b.cd||0)-dt;if(b.cd>0)continue;
+    if((b.ammo||0)<=0)continue;
+    const tier=T.tiers[(b.tier||1)-1];
+    const rng=tier.range*TILE*(G.class==='mage'?1.1:1);         // Arcanist perk
+    const bx=(b.x+0.5)*TILE,by=(b.y+0.5)*TILE;
+    const e=nearestEnemy(bx,by,rng);if(!e)continue;
+    b.cd=tier.rate;b.ammo--;
+    const dmg=Math.floor(tier.dmg*(G.class==='mage'?1.15:1));   // Arcanist perk
+    const spd=b.t==='tcata'?360:540;
+    // lead the target so moving enemies get hit
+    const t0=Math.hypot(e.x-bx,e.y-by)/spd;
+    const a=Math.atan2(e.y+e.vy*t0-by,e.x+e.vx*t0-bx);
+    shots.push({x:bx,y:by-6,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,el:'Neutral',col:T.col,
+      r:b.t==='tcata'?11:8,life:1.1,pierce:0,turret:true,arrow:b.t==='tarrow',
+      slow:tier.slow,aoe:tier.aoe,hit:new Set()});}}
+/* ---- traps: trigger on enemies stepping over them ---- */
+function updateTraps(dt){if(!G)return;
+  for(let i=G.builds.length-1;i>=0;i--){const b=G.builds[i];const TR=TRAPS[b.t];if(!TR)continue;
+    b.cd=(b.cd||0)-dt;if(b.cd>0)continue;
+    const bx=(b.x+0.5)*TILE,by=(b.y+0.5)*TILE;
+    for(const e of enemies){if(Math.hypot(e.x-bx,e.y-by)>TILE*0.62)continue;
+      b.cd=TR.cd;
+      if(b.t==='spike'){const d=TR.dmg;e.hp-=d;e.flash=0.2;floatText(e.x,e.y-40,''+d,'#ffb0a0');sfx('hit');
+        for(let k=0;k<5;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*140,vy:-Math.random()*90,g:180,max:.4,r:3,c:'#c9ced4'});
+        if(e.hp<=0)defeatEnemy(e);}
+      else{e.rootT=TR.root;floatText(e.x,e.y-40,'rooted!','#cdeb9a');}
+      b.uses=(b.uses||1)-1;
+      if(b.uses<=0){G.builds.splice(i,1);rebuildBuildIndex();toast(`${BUILD_DEF[b.t].name} used up`);save();}
+      break;}}}
+/* ---- raids: waves that march on your base and smash structures ---- */
+function structuresOnPlots(){let n=0;for(const b of G.builds)if(ownsAt(b.x,b.y))n++;return n;}
+function baseCenter(){let sx=0,sy=0,n=0;
+  for(const b of G.builds){if(!ownsAt(b.x,b.y))continue;sx+=(b.x+0.5)*TILE;sy+=(b.y+0.5)*TILE;n++;}
+  return n?{x:sx/n,y:sy/n}:null;}
+function updateRaid(dt){if(!G)return;
+  if(!G.raid)G.raid={next:absDay()+1.6,active:0,warned:0,num:0};
+  const R=G.raid;
+  if(R.active){
+    if(!enemies.some(e=>e.raider)){R.active=0;R.warned=0;R.next=absDay()+2+Math.random()*1.5;
+      const rw=Math.round((20+G.level*5)*mods().coins);G.coins+=rw;
+      toast(`🛡️ Raid repelled! +${rw}c`);sfx('level');save();}
+    return;}
+  if(structuresOnPlots()<3)return;              // no real base yet — no raids
+  if(!R.warned&&R.next-absDay()<0.1){R.warned=1;toast('⚠️ Raiders are gathering — they come for your base!');sfx('engage');}
+  if(absDay()>=R.next)spawnRaid();
+}
+function spawnRaid(){const R=G.raid,c=baseCenter();if(!c)return;
+  R.active=1;R.num=(R.num||0)+1;
+  const n=Math.min(10,2+R.num+Math.floor(G.level/4)+Math.floor(structuresOnPlots()/6));
+  const a0=Math.random()*6.283;
+  for(let i=0;i<n;i++){const a=a0+(Math.random()-.5)*1.2,d=TILE*(13+Math.random()*4);
+    let wx=c.x+Math.cos(a)*d,wy=c.y+Math.sin(a)*d;
+    wx=Math.max(3*TILE,Math.min((MAP_W-3)*TILE,wx));wy=Math.max(3*TILE,Math.min((MAP_H-3)*TILE,wy));
+    if(solidWorld(wx,wy,true))continue;
+    const lvl=Math.min(40,Math.max(2,G.level+R.num-1+Math.floor(Math.random()*3)-1));
+    enemies.push(mkEnemy(wx,wy,lvl,i===0&&R.num>2,true));}
+  shakeT=0.5;sfx('super');toast(`⚔️ RAID ${R.num}! Defend your base!`);save();}
+/* ---- tower interaction menu ---- */
+let towerRef=null;
+function openTower(b){if(mode!=='world'||dialogCb)return;mode='panel';towerRef=b;
+  const T=TOWERS[b.t],tier=T.tiers[(b.tier||1)-1],p=document.getElementById('panel');
+  const up=(b.tier||1)<3?T.up[(b.tier||1)-1]:null;
+  const dmg=Math.floor(tier.dmg*(G.class==='mage'?1.15:1));
+  let h=`<h2>${T.name} — Tier ${b.tier||1}</h2>`;
+  h+=`<div class="subline">💥 ${dmg} dmg · 📏 ${tier.range.toFixed(1)} tiles${tier.slow?' · ❄ slows':''}${tier.aoe?' · 💣 AoE':''} · ⏱ every ${tier.rate}s</div>`;
+  h+=`<div class="subline">Ammo: <b style="color:#ffd23c">${b.ammo||0}</b> (${RES_ICON[T.ammo]} ${T.ammo}) · HP ${Math.ceil(b.hp)}/${b.maxHp}</div>`;
+  h+='<div class="prow">';
+  h+=`<button class="cbtn small" id="twLoad" ${!(G.res[T.ammo]>0)?'disabled':''}>Load ammo (1 ${T.ammo} → ${T.ammoPer} shots) · have ${G.res[T.ammo]||0}</button>`;
+  if(up)h+=`<button class="cbtn small" id="twUp" ${haveCost(up)?'':'disabled'}>⬆ Upgrade to Tier ${(b.tier||1)+1} — ${costStr(up)}</button>`;
+  else h+=`<button class="cbtn small" disabled>⭐ Max tier</button>`;
+  h+=`<button class="cbtn small" id="twFix" ${b.hp>=b.maxHp?'disabled':''}>🔧 Repair (${repairCost(b)} wood)</button>`;
+  h+=`<button class="cbtn small" id="twClose">Close</button></div>`;
+  p.innerHTML=h;p.style.display='flex';
+  document.getElementById('twLoad').onclick=()=>{if(!(G.res[T.ammo]>0))return;G.res[T.ammo]--;b.ammo=(b.ammo||0)+T.ammoPer;sfx('coin');save();openTowerRefresh();};
+  const u=document.getElementById('twUp');if(u)u.onclick=()=>{if(!up||!haveCost(up))return;payCost(up);b.tier=(b.tier||1)+1;
+    b.maxHp=Math.round(b.maxHp*1.3);b.hp=b.maxHp;sfx('level');toast(`${T.name} → Tier ${b.tier}!`);save();openTowerRefresh();};
+  document.getElementById('twFix').onclick=()=>{repairBuild(b);openTowerRefresh();};
+  document.getElementById('twClose').onclick=closePanel;}
+function openTowerRefresh(){const b=towerRef;closePanel();if(b&&G.builds.includes(b))openTower(b);}
+/* ---- storage chest: banked materials survive death ---- */
+function openChest(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
+  let h='<h2>📦 Storage Chest</h2><div class="subline">Banked materials are <b>safe when you fall</b>.</div>';
+  h+='<div class="plist">';
+  for(const k of RES_KEYS)h+=`<div class="pcard"><div style="flex:1"><b>${RES_ICON[k]} ${k}</b></div><span class="lv">carrying ${G.res[k]||0} · banked ${G.bank[k]||0}</span></div>`;
+  h+='</div><div class="prow">';
+  h+=`<button class="cbtn small" id="chDep">⬇ Deposit all carried materials</button>`;
+  h+=`<button class="cbtn small" id="chTake">⬆ Withdraw everything</button>`;
+  h+=`<button class="cbtn small" id="chClose">Close</button></div>`;
+  p.innerHTML=h;p.style.display='flex';
+  document.getElementById('chDep').onclick=()=>{for(const k of RES_KEYS){G.bank[k]=(G.bank[k]||0)+(G.res[k]||0);G.res[k]=0;}sfx('coin');toast('Materials banked');save();closePanel();openChest();};
+  document.getElementById('chTake').onclick=()=>{for(const k of RES_KEYS){G.res[k]=(G.res[k]||0)+(G.bank[k]||0);G.bank[k]=0;}sfx('coin');toast('Materials withdrawn');save();closePanel();openChest();};
+  document.getElementById('chClose').onclick=closePanel;}
+/* ---- land registrar ---- */
+function openRegistrar(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
+  const sorted=PLOTS.slice().sort((a,b)=>{
+    const da=Math.hypot((a.x+a.w/2)*TILE-P.x,(a.y+a.h/2)*TILE-P.y);
+    const db=Math.hypot((b.x+b.w/2)*TILE-P.x,(b.y+b.h/2)*TILE-P.y);return da-db;});
+  let h='<h2>🏛 Land Registrar</h2><div class="subline">Own land to build on it. Boundaries are staked in the world — <span style="color:#ffd23c">gold</span> = for sale, <span style="color:#54c23a">green</span> = yours.</div>';
+  h+='<div class="plist">';
+  sorted.slice(0,8).forEach(pl=>{const own=G.plots[pl.id];
+    const d=Math.round(Math.hypot((pl.x+pl.w/2)*TILE-P.x,(pl.y+pl.h/2)*TILE-P.y)/TILE);
+    h+=`<div class="pcard"><div style="flex:1"><div><b>${pl.town} plot</b> <span class="lv">${pl.w}×${pl.h} · ${d} tiles away</span></div>
+      <small style="color:#8a6d3a">${own?'✅ Owned by you':`Price: <b>${pl.price}c</b>`}</small></div>
+      ${own?'':`<button class="cbtn small" data-plot="${pl.id}" ${G.coins<pl.price?'disabled':''}>Buy</button>`}</div>`;});
+  h+='</div><div class="prow"><button class="cbtn small" id="regClose">Leave</button></div>';
+  p.innerHTML=h;p.style.display='flex';
+  p.querySelectorAll('[data-plot]').forEach(b=>b.onclick=()=>{const pl=PLOTS.find(x=>x.id===b.dataset.plot);
+    if(!pl||G.coins<pl.price)return;G.coins-=pl.price;G.plots[pl.id]=true;sfx('catch');
+    toast(`🎉 Land purchased! Build on your plot (green stakes)`);save();closePanel();openRegistrar();});
+  document.getElementById('regClose').onclick=closePanel;}
+/* ---- villager chatter ---- */
+function villagerTalk(x,y){const i=(Math.floor(hash(x,y)*100)+(G.day||1))%VILLAGER_LINES.length;
+  dialog('<b>Villager:</b> '+VILLAGER_LINES[i]);}
 function drawSlashes(){for(const s of slashes){const k=1-s.life/s.max;ctx.save();ctx.globalAlpha=Math.max(0,k*0.85);
   ctx.strokeStyle=s.col;ctx.lineWidth=6*k+3;ctx.lineCap='round';ctx.shadowColor=s.col;ctx.shadowBlur=16;
   const steps=12;ctx.beginPath();
@@ -1289,11 +1636,16 @@ function drawShots(){for(const s of shots){const p=w2s(s.x,s.y),sx=p.x,sy=p.y-6;
   ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.arc(sx,sy,s.r*0.45,0,7);ctx.fill();ctx.shadowBlur=0;}}
 function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
   if(Math.random()<0.5)spawn(s.x,s.y,{vx:0,vy:0,g:0,max:.22,r:s.r*0.55,c:s.col});
-  if(s.life<=0||solidWorld(s.x,s.y)){shots.splice(i,1);continue;}
+  if(s.life<=0||(s.turret?SOLID.has(tileAtWorld(s.x,s.y)):solidWorld(s.x,s.y))){shots.splice(i,1);continue;}
   let gone=false;
   for(const e of enemies){if(s.hit.has(e))continue;
     if(Math.hypot(e.x-s.x,e.y-s.y)<ER*(e.scale||1)+s.r){const eff=effect(s.el,e.type);
-      const dmg=Math.max(1,Math.floor(s.dmg*eff*(0.9+Math.random()*0.2)));e.hp-=dmg;e.flash=0.18;s.hit.add(e);addSuper(dmg*0.35);sfx('hit');
+      const dmg=Math.max(1,Math.floor(s.dmg*eff*(0.9+Math.random()*0.2)));e.hp-=dmg;e.flash=0.18;s.hit.add(e);if(!s.turret)addSuper(dmg*0.35);sfx('hit');
+      if(s.slow)e.slowT=Math.max(e.slowT||0,s.slow);
+      if(s.aoe){for(const e2 of enemies){if(e2===e||s.hit.has(e2))continue;
+        if(Math.hypot(e2.x-s.x,e2.y-s.y)<s.aoe*TILE){const d2=Math.max(1,Math.floor(s.dmg*0.7));e2.hp-=d2;e2.flash=0.18;s.hit.add(e2);
+          floatText(e2.x,e2.y-40,''+d2,'#ffd8a0');if(e2.hp<=0)defeatEnemy(e2);}}
+        for(let k=0;k<10;k++)spawn(s.x,s.y,{vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*260,g:150,max:.5,r:5,c:s.col});}
       if(s.kb){const d=Math.hypot(s.vx,s.vy)||1;const nx=e.x+s.vx/d*s.kb,ny=e.y+s.vy/d*s.kb;if(!solidWorld(nx,e.y))e.x=nx;if(!solidWorld(e.x,ny))e.y=ny;}
       for(let k=0;k<7;k++)spawn(s.x,s.y,{vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,g:120,max:.4,r:4,c:eff>1?'#fff2a0':s.col});
       floatText(e.x,e.y-40,(eff>1?'✦':'')+dmg,eff>1?'#ffd23c':'#ffffff');
@@ -1348,16 +1700,26 @@ function classifyGesture(pts){
    SURVIVAL — resource nodes, gathering, crafting, building
    =================================================================== */
 const NODE_KIND={
-  wood: {give:'wood', amt:[1,2], label:'Chop',   col:'#6a4a26'},
-  stone:{give:'stone',amt:[1,2], label:'Mine',   col:'#7a7d72'},
-  fiber:{give:'fiber',amt:[1,3], label:'Gather', col:'#4c8f3a'},
+  wood: {give:'wood', amt:[1,2], label:'Gather', tool:null,      col:'#6a4a26'},
+  stone:{give:'stone',amt:[1,2], label:'Mine',   tool:null,      col:'#7a7d72'},
+  fiber:{give:'fiber',amt:[1,3], label:'Gather', tool:null,      col:'#4c8f3a'},
+  ore:  {give:'ore',  amt:[1,2], label:'Mine',   tool:'pickaxe', col:'#8fd0ff'},
 };
-const MAX_NODES=12; let nodeRespawn=0;
-function spawnNode(){if(nodes.length>=MAX_NODES)return;const pos=openTileForSpawn();if(!pos)return;
-  const kinds=['wood','wood','stone','fiber','fiber'];const k=kinds[Math.floor(Math.random()*kinds.length)];
-  nodes.push({k,x:pos.wx,y:pos.wy,bob:Math.random()*6});}
-function seedNodes(){nodes.length=0;for(let i=0;i<MAX_NODES;i++)spawnNode();}
-function updateNodes(dt){nodeRespawn+=dt;if(nodeRespawn>4){nodeRespawn=0;spawnNode();}}
+/* fixed, deterministic resource nodes with per-node respawn timers (saved) */
+function absDay(){return (G&&(G.day||1)+(G.time||0))||1;}
+const NODE_RESPAWN=0.3; // in days (~45s at DAY_LEN 150)
+function nodeSpec(tx,ty){
+  if(tileAt(tx,ty)!=='.')return null;
+  if(plotAt(tx,ty))return null;
+  const wx=(tx+0.5)*TILE,wy=(ty+0.5)*TILE;
+  if(townDist(wx,wy)<6.5)return null;
+  if(hash(tx*5.7+3,ty*9.1+7)>0.05)return null;
+  const r=hash(tx*2.3,ty*4.9),zl=zoneLevel(wx,wy);
+  let k=r<0.34?'wood':r<0.58?'stone':r<0.84?'fiber':'ore';
+  if(k==='ore'&&zl<4)k='stone';           // ore only in deeper wilderness
+  return {k,x:wx,y:wy,tx,ty};
+}
+function nodeReady(tx,ty){const t=(G&&G.nodeT||{})[tx+','+ty];return !t||absDay()>=t;}
 function drawNode(n){const s=w2s(n.x,n.y),sx=s.x,sy=s.y,base=sy+IH*0.28,line='#12160f';ctx.lineJoin='round';
   shadow(sx,base,16,6);
   if(n.k==='wood'){ctx.strokeStyle=line;ctx.lineWidth=3;ctx.fillStyle='#7a5230';
@@ -1366,33 +1728,43 @@ function drawNode(n){const s=w2s(n.x,n.y),sx=s.x,sy=s.y,base=sy+IH*0.28,line='#1
   else if(n.k==='stone'){ctx.fillStyle='#8a8d84';ctx.strokeStyle=line;ctx.lineWidth=3;
     ctx.beginPath();ctx.moveTo(sx-13,base);ctx.lineTo(sx-8,base-14);ctx.lineTo(sx+4,base-16);ctx.lineTo(sx+13,base-4);ctx.lineTo(sx+8,base+2);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.15)';ctx.beginPath();ctx.moveTo(sx-6,base-10);ctx.lineTo(sx-1,base-13);ctx.lineTo(sx+2,base-8);ctx.closePath();ctx.fill();}
+  else if(n.k==='ore'){ctx.fillStyle='#5a6470';ctx.strokeStyle=line;ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(sx-12,base);ctx.lineTo(sx-7,base-11);ctx.lineTo(sx+6,base-12);ctx.lineTo(sx+12,base-2);ctx.lineTo(sx+7,base+2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#8fd0ff';ctx.shadowColor='#8fd0ff';ctx.shadowBlur=8+Math.sin(animT*0.1+n.tx)*3;
+    for(const[dx,dy,r]of[[-4,-8,4],[3,-11,5],[7,-4,3]]){ctx.beginPath();ctx.moveTo(sx+dx,base+dy-r);ctx.lineTo(sx+dx+r*0.8,base+dy);ctx.lineTo(sx+dx,base+dy+r*0.6);ctx.lineTo(sx+dx-r*0.8,base+dy);ctx.closePath();ctx.fill();}
+    ctx.shadowBlur=0;ctx.strokeStyle=line;ctx.lineWidth=1.5;}
   else{const sw=Math.sin((animT+n.x)*0.06)*2;ctx.strokeStyle='#2e6d34';ctx.lineWidth=3;ctx.fillStyle='#4c8f3a';
     for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(sx+i*4,base);ctx.quadraticCurveTo(sx+i*4+sw,base-16,sx+i*5+sw,base-22);ctx.lineWidth=3;ctx.stroke();}
     ctx.fillStyle='#7cc26a';for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(sx+i*6+sw,base-20,3,5,i*0.4,0,7);ctx.fill();}}
 }
-function gatherNode(n){const idx=nodes.indexOf(n);if(idx<0)return;const K=NODE_KIND[n.k];
-  const amt=K.amt[0]+Math.floor(Math.random()*(K.amt[1]-K.amt[0]+1));
-  G.res[K.give]=(G.res[K.give]||0)+amt;nodes.splice(idx,1);sfx('coin');
-  floatText(n.x,n.y-30,'+'+amt+' '+K.give,'#cdeb9a');
+function gatherYield(K){let amt=K.amt[0]+Math.floor(Math.random()*(K.amt[1]-K.amt[0]+1));
+  const toolTier=K.give==='wood'?(G.tools.axe||0):(K.give==='stone'||K.give==='ore')?(G.tools.pickaxe||0):0;
+  amt+=Math.max(0,toolTier-1);              // tier 2+ tools add bonus yield
+  if(G.class==='ranger')amt+=1;             // Forager perk
+  return amt;}
+function gatherNode(n){const K=NODE_KIND[n.k];
+  if(K.tool&&!(G.tools[K.tool]>0)){toast(`Need a ${TOOLS[K.tool].icon} ${K.tool} — craft one (☰ → Craft)`);sfx('fail');return;}
+  const amt=gatherYield(K);
+  G.res[K.give]=(G.res[K.give]||0)+amt;
+  G.nodeT[n.tx+','+n.ty]=absDay()+NODE_RESPAWN;
+  sfx('coin');floatText(n.x,n.y-30,'+'+amt+' '+K.give,'#cdeb9a');
   for(let k=0;k<8;k++)spawn(n.x,n.y,{vx:(Math.random()-.5)*140,vy:(Math.random()-.5)*140-30,g:150,max:.5,r:4,c:K.col});
   toast(`+${amt} ${K.give}`);save();}
-/* chop real trees for wood (Age-of-Empires style), with a per-tree cooldown */
+/* chop real trees for wood — needs an axe; per-tree cooldown */
 const choppedCD={};
-function chopTree(x,y){const key=x+','+y;if((choppedCD[key]||0)>performance.now())return;
-  const amt=1+Math.floor(Math.random()*2);G.res.wood=(G.res.wood||0)+amt;choppedCD[key]=performance.now()+5000;
+function chopTree(x,y){
+  if(!(G.tools.axe>0)){toast('Need a 🪓 axe to chop trees — craft one (☰ → Craft)');sfx('fail');return;}
+  const key=x+','+y;if((choppedCD[key]||0)>performance.now())return;
+  const amt=gatherYield(NODE_KIND.wood);G.res.wood=(G.res.wood||0)+amt;choppedCD[key]=performance.now()+5000;
   const wx=(x+0.5)*TILE,wy=(y+0.5)*TILE;sfx('coin');floatText(wx,wy-38,'+'+amt+' wood','#cdeb9a');
   for(let k=0;k<9;k++)spawn(wx,wy-22,{vx:(Math.random()-.5)*150,vy:-Math.random()*130,g:220,max:.55,r:4,c:'#7a5230'});
   toast(`+${amt} wood`);save();}
 
-/* ---- crafting ---- */
-const RECIPES=[
-  {key:'campfire',name:'Campfire',build:true,cost:{wood:5},         lvl:1,desc:'Warm light in the dark.'},
-  {key:'torch',   name:'Torch',   build:true,cost:{wood:2,fiber:2}, lvl:1,desc:'A bright light post.'},
-  {key:'wall',    name:'Wall',    build:true,cost:{wood:2,stone:2}, lvl:1,desc:'Blocks enemies.'},
-  {key:'hut',     name:'Hut',     build:true,cost:{wood:12,stone:6},lvl:2,desc:'Rest, heal & save point + light.'},
-  {key:'potion',  name:'Potion',  item:true, cost:{fiber:2,berry:1},lvl:1,desc:'Heals 60 HP.'},
-  {key:'ration',  name:'Ration',  item:true, cost:{fiber:3},        lvl:1,desc:'Fills hunger.'},
-];
+/* ---- crafting (recipes live in the DATA section up top) ---- */
+function recipeName(r){return r.name||(BUILD_DEF[r.key]&&BUILD_DEF[r.key].name)||r.key;}
+function nearStation(kind){if(!G)return false;
+  for(const b of G.builds){if(b.t!==kind)continue;
+    if(Math.hypot((b.x+0.5)*TILE-P.x,(b.y+0.5)*TILE-P.y)<TILE*2.6)return true;}return false;}
 function craftXpToNext(lvl){return 4+lvl*3;}
 function haveCost(cost){for(const k in cost){const have=(k==='berry')?(G.items.berry||0):(G.res[k]||0);if(have<cost[k])return false;}return true;}
 function payCost(cost){for(const k in cost){if(k==='berry')G.items.berry-=cost[k];else G.res[k]-=cost[k];}}
@@ -1400,19 +1772,36 @@ function costStr(cost){return Object.entries(cost).map(([k,v])=>`${v} ${k}`).joi
 function gainCraftXp(){G.craftXp=(G.craftXp||0)+1;while(G.craftXp>=craftXpToNext(G.craftLvl)){G.craftXp-=craftXpToNext(G.craftLvl);G.craftLvl++;toast(`🔨 Crafting Lv.${G.craftLvl}!`);sfx('level');}}
 function craft(r){
   if((G.craftLvl||1)<r.lvl){toast('Crafting level too low');return;}
+  if(r.station&&!nearStation(r.station)){toast(`Stand near a ${BUILD_DEF[r.station].name} to craft this`);sfx('fail');return;}
   if(!haveCost(r.cost)){toast('Not enough materials');return;}
-  if(r.item){payCost(r.cost);G.items[r.key]=(G.items[r.key]||0)+1;gainCraftXp();sfx('coin');toast(`Crafted ${r.name}`);save();openCraft();}
-  else{buildMode=r.key;buildRecipe=r;closePanel();toast(`Placing ${r.name} — tap to place, ☰ to cancel`);}
+  if(r.item){payCost(r.cost);G.items[r.key]=(G.items[r.key]||0)+1;gainCraftXp();sfx('coin');toast(`Crafted ${recipeName(r)}`);save();openCraft();}
+  else{buildMode=r.key;buildRecipe=r;closePanel();toast(`Placing ${recipeName(r)} — tap to place, ☰ to cancel`);}
 }
+function craftTool(key){const T=TOOLS[key],tier=G.tools[key]||0,next=T.tiers[tier];
+  if(!next)return;
+  if(next.station&&!nearStation(next.station)){toast(`Stand near a ${BUILD_DEF[next.station].name} to smith this`);sfx('fail');return;}
+  if(!haveCost(next.cost)){toast('Not enough materials');return;}
+  payCost(next.cost);G.tools[key]=tier+1;gainCraftXp();sfx('level');
+  toast(`${T.icon} ${next.name} crafted!`);save();openCraft();}
 function openCraft(){mode='panel';const p=document.getElementById('panel');const R=G.res;
-  let h=`<h2>🔨 Crafting</h2><div class="subline">🔨 Lv.${G.craftLvl} (${G.craftXp}/${craftXpToNext(G.craftLvl)}) · 🪵 ${R.wood} wood · 🪨 ${R.stone} stone · 🌿 ${R.fiber} fiber</div><div class="plist">`;
-  for(const r of RECIPES){const ok=(G.craftLvl>=r.lvl)&&haveCost(r.cost);const lock=G.craftLvl<r.lvl;
-    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}"><div style="flex:1"><div><b>${r.build?'🏠 ':'🧪 '}${r.name}</b> ${lock?`<span style="color:#c0392b">🔒 Lv.${r.lvl}</span>`:''}</div>
+  let h=`<h2>🔨 Crafting</h2><div class="subline">🔨 Lv.${G.craftLvl} (${G.craftXp}/${craftXpToNext(G.craftLvl)}) · 🪵 ${R.wood} · 🪨 ${R.stone} · 🌿 ${R.fiber} · ⛏️ ${R.ore} ore</div>`;
+  // tools
+  h+='<div class="subline" style="margin-top:6px;color:#f2c14e;font-weight:700">TOOLS</div><div class="plist">';
+  for(const key of Object.keys(TOOLS)){const T=TOOLS[key],tier=G.tools[key]||0,next=T.tiers[tier];
+    const ok=next&&haveCost(next.cost)&&(!next.station||nearStation(next.station));
+    h+=`<div class="pcard"><div style="flex:1"><div><b>${T.icon} ${next?next.name:T.tiers[tier-1].name}</b> <span class="lv">${next?'tier '+(tier+1):'MAX'}</span></div>
+      <small style="color:#5a4">${next?`<span style="color:#8a6d3a">${costStr(next.cost)}</span>${next.station?` · near ${BUILD_DEF[next.station].name}`:''}`:'Top tier reached'}</small></div>
+      <button class="cbtn small" data-tool="${key}" ${ok?'':'disabled'} style="min-width:66px">${next?'Craft':'MAX'}</button></div>`;}
+  h+='</div><div class="subline" style="margin-top:6px;color:#f2c14e;font-weight:700">RECIPES</div><div class="plist">';
+  for(const r of RECIPES){const lock=G.craftLvl<r.lvl,noSt=r.station&&!nearStation(r.station);
+    const ok=!lock&&!noSt&&haveCost(r.cost);
+    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}"><div style="flex:1"><div><b>${r.build?'🏠 ':'🧪 '}${recipeName(r)}</b> ${lock?`<span style="color:#c0392b">🔒 Lv.${r.lvl}</span>`:''}${noSt?`<span style="color:#c0392b"> · near ${BUILD_DEF[r.station].name}</span>`:''}${r.plot?' <span style="color:#3f7d34">⌂ your land</span>':''}</div>
       <small style="color:#5a4">${r.desc} — <span style="color:#8a6d3a">${costStr(r.cost)}</span></small></div>
       <button class="cbtn small" data-craft="${r.key}" ${ok?'':'disabled'} style="min-width:66px">${r.build?'Build':'Craft'}</button></div>`;}
   h+='</div><div class="prow"><button class="cbtn small" id="backCraft">◀ Back</button></div>';
   p.innerHTML=h;p.style.display='flex';
   p.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>{const r=RECIPES.find(x=>x.key===b.dataset.craft);craft(r);});
+  p.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>craftTool(b.dataset.tool));
   document.getElementById('backCraft').onclick=openPanel;}
 
 /* ---- building placement ---- */
@@ -1424,15 +1813,83 @@ function buildTargetTile(){const dx=Math.round(Math.cos(P.face)),dy=Math.round(M
   return {x:tx,y:ty,ok};}
 function placeBuild(){if(!buildMode)return;const bt=buildTargetTile();
   if(!bt||!bt.ok){toast('Can\'t build there');return;}
-  const r=buildRecipe;if(!haveCost(r.cost)){toast('Not enough materials');buildMode=null;return;}
-  payCost(r.cost);G.builds.push({t:buildMode,x:bt.x,y:bt.y});rebuildBuildIndex();gainCraftXp();
+  const r=buildRecipe;
+  if(r.plot&&!ownsAt(bt.x,bt.y)){toast('You must own this land — see the 🏛 registrar in town');sfx('fail');return;}
+  if(!haveCost(r.cost)){toast('Not enough materials');buildMode=null;return;}
+  payCost(r.cost);
+  const def=BUILD_DEF[buildMode]||{hp:100};
+  const maxHp=Math.round(def.hp*(G.class==='warrior'?1.25:1)); // Builder perk
+  const b={t:buildMode,x:bt.x,y:bt.y,hp:maxHp,maxHp};
+  if(def.tower){b.tier=1;b.ammo=0;}
+  if(def.trap)b.uses=def.uses;
+  G.builds.push(b);rebuildBuildIndex();gainCraftXp();
   sfx('coin');for(let k=0;k<12;k++)spawn((bt.x+0.5)*TILE,(bt.y+0.5)*TILE,{vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160-20,g:140,max:.6,r:4,c:'#ffe0a0'});
   save();
-  if(haveCost(r.cost)){toast(`Built ${r.name}! Move & tap to place another · ☰ to stop`);}
-  else{toast(`Built ${r.name}!`);buildMode=null;buildRecipe=null;}}
+  if(def.tower)toast(`Built ${def.name}! Walk up to it to load ammo & upgrade`);
+  else if(haveCost(r.cost)){toast(`Built ${recipeName(r)}! Move & tap to place another · ☰ to stop`);return;}
+  else toast(`Built ${recipeName(r)}!`);
+  if(!haveCost(r.cost)){buildMode=null;buildRecipe=null;}}
+function repairCost(b){return Math.max(1,Math.ceil((b.maxHp-b.hp)/50*(G.class==='warrior'?0.8:1)));} // Builder perk
+function repairBuild(b){const c=repairCost(b);
+  if((G.res.wood||0)<c){toast(`Repair needs ${c} wood`);sfx('fail');return;}
+  G.res.wood-=c;b.hp=b.maxHp;sfx('heal');toast(`Repaired ${(BUILD_DEF[b.t]||{}).name||b.t} (−${c} wood)`);
+  burst((b.x+0.5)*TILE,(b.y+0.5)*TILE,'#ffe0a0');save();}
+function damageBuild(b,d){b.hp-=d;
+  const wx=(b.x+0.5)*TILE,wy=(b.y+0.5)*TILE;
+  for(let k=0;k<5;k++)spawn(wx,wy-14,{vx:(Math.random()-.5)*150,vy:-Math.random()*100,g:200,max:.45,r:3,c:'#c9a15a'});
+  if(b.hp<=0)destroyBuild(b);}
+function destroyBuild(b){const i=G.builds.indexOf(b);if(i<0)return;G.builds.splice(i,1);rebuildBuildIndex();
+  const wx=(b.x+0.5)*TILE,wy=(b.y+0.5)*TILE;noiseBurst(0.25,0.18);
+  for(let k=0;k<16;k++)spawn(wx,wy-10,{vx:(Math.random()-.5)*240,vy:-Math.random()*180,g:240,max:.7,r:4,c:'#9a7a52'});
+  toast(`💥 Your ${(BUILD_DEF[b.t]||{}).name||b.t} was destroyed!`);save();}
 function cancelBuild(){if(buildMode){buildMode=null;buildRecipe=null;toast('Build cancelled');}}
-function drawBuild(t,cx,cy,ghost){const base=cy+IH*0.28,line='#12160f';ctx.lineJoin='round';
+function drawBuild(t,cx,cy,ghost,b){const base=cy+IH*0.28,line='#12160f';ctx.lineJoin='round';
   const tint=ghost===false?'#c0392b':null;
+  if(t==='floor'){ctx.fillStyle=tint||'rgba(196,152,96,0.85)';diamond(cx,cy);ctx.fill();
+    ctx.strokeStyle='rgba(90,58,30,.5)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cx-IW/4,cy-IH/4);ctx.lineTo(cx+IW/4,cy+IH/4);ctx.moveTo(cx-IW/4,cy+IH/4);ctx.lineTo(cx+IW/4,cy-IH/4);ctx.stroke();return;}
+  if(t==='door'){shadow(cx,base+2,18,6);ctx.strokeStyle=line;ctx.lineWidth=4;
+    ctx.fillStyle=tint||'#9a7a52';rr(cx-18,base-26,7,28,2);ctx.fill();ctx.stroke();rr(cx+11,base-26,7,28,2);ctx.fill();ctx.stroke();
+    rr(cx-18,base-30,36,7,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle=tint||'#6a4a26';rr(cx-9,base-22,18,24,2);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,base-22);ctx.lineTo(cx,base+2);ctx.stroke();
+    ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.arc(cx+5,base-9,2,0,7);ctx.fill();}
+  else if(t==='chest'){shadow(cx,base,14,5);ctx.strokeStyle=line;ctx.lineWidth=3.5;
+    ctx.fillStyle=tint||'#8a5a2e';rr(cx-13,base-16,26,17,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle=tint||'#a8703a';rr(cx-13,base-21,26,8,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd23c';rr(cx-3,base-15,6,7,1);ctx.fill();ctx.strokeStyle=line;ctx.lineWidth=2;ctx.strokeRect(cx-3,base-15,6,7);}
+  else if(t==='table'){shadow(cx,base,17,6);ctx.strokeStyle=line;ctx.lineWidth=3.5;
+    ctx.fillStyle=tint||'#6a4a26';rr(cx-15,base-6,5,8,1);ctx.fill();ctx.stroke();rr(cx+10,base-6,5,8,1);ctx.fill();ctx.stroke();
+    ctx.fillStyle=tint||'#b48a5a';rr(cx-19,base-16,38,10,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#8a8d84';rr(cx-10,base-20,8,5,1);ctx.fill();ctx.fillStyle='#c9a15a';rr(cx+3,base-19,9,4,1);ctx.fill();}
+  else if(t==='forge'){shadow(cx,base+2,20,7);ctx.strokeStyle=line;ctx.lineWidth=4;
+    ctx.fillStyle=tint||'#6f7377';rr(cx-17,base-24,34,26,4);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#2a2a2e';rr(cx-8,base-14,16,12,2);ctx.fill();
+    const f=Math.sin(animT*0.4)*2;ctx.fillStyle=tint||'#ff7a1e';ctx.beginPath();ctx.moveTo(cx-6,base-3);ctx.quadraticCurveTo(cx,base-13-f,cx+6,base-3);ctx.closePath();ctx.fill();
+    ctx.fillStyle=tint||'#8a8d84';rr(cx-14,base-30,28,7,2);ctx.fill();ctx.stroke();}
+  else if(t==='banner'){shadow(cx,base,7,4);ctx.strokeStyle=line;ctx.lineWidth=3;
+    ctx.fillStyle='#5a3d20';rr(cx-2,base-34,4,36,2);ctx.fill();ctx.stroke();
+    const C=CLASSES[(G&&G.class)||'mage'];ctx.fillStyle=tint||C.robe;
+    ctx.beginPath();ctx.moveTo(cx+2,base-33);ctx.lineTo(cx+20,base-29);ctx.lineTo(cx+2,base-22);ctx.closePath();ctx.fill();ctx.stroke();}
+  else if(t==='spike'){shadow(cx,base,15,5);ctx.strokeStyle=line;ctx.lineWidth=2.5;
+    ctx.fillStyle=tint||'#b8bcc2';for(const dx of[-10,-3,4,11]){ctx.beginPath();ctx.moveTo(cx+dx-3,base);ctx.lineTo(cx+dx,base-11);ctx.lineTo(cx+dx+3,base);ctx.closePath();ctx.fill();ctx.stroke();}
+    ctx.fillStyle='rgba(90,58,30,.6)';rr(cx-15,base-2,30,4,2);ctx.fill();}
+  else if(t==='snare'){ctx.strokeStyle=tint||'#8a6d3a';ctx.lineWidth=3;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.ellipse(cx,base-2,14,7,0,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=tint||'#8a6d3a';ctx.beginPath();ctx.arc(cx+13,base-3,3,0,7);ctx.fill();}
+  else if(TOWERS[t]){const T=TOWERS[t],tier=(b&&b.tier)||1;shadow(cx,base+2,18,7);
+    ctx.strokeStyle=line;ctx.lineWidth=4;
+    ctx.fillStyle=tint||'#8a6a44';ctx.beginPath();ctx.moveTo(cx-14,base+2);ctx.lineTo(cx-9,base-34);ctx.lineTo(cx+9,base-34);ctx.lineTo(cx+14,base+2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle=tint||'#6a4a26';rr(cx-13,base-40,26,9,2);ctx.fill();ctx.stroke();
+    if(t==='tarrow'){ctx.strokeStyle='#3a2a16';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-8,base-44);ctx.lineTo(cx+8,base-44);ctx.stroke();
+      ctx.strokeStyle=T.col;ctx.shadowColor=T.col;ctx.shadowBlur=6;ctx.beginPath();ctx.moveTo(cx,base-50);ctx.lineTo(cx,base-40);ctx.stroke();ctx.shadowBlur=0;}
+    else if(t==='tfrost'){ctx.fillStyle=tint||'#7ad0ff';ctx.shadowColor='#7ad0ff';ctx.shadowBlur=10+Math.sin(animT*0.12)*4;
+      ctx.beginPath();ctx.moveTo(cx,base-58);ctx.lineTo(cx+6,base-44);ctx.lineTo(cx,base-40);ctx.lineTo(cx-6,base-44);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=line;ctx.lineWidth=2;ctx.stroke();}
+    else{ctx.strokeStyle='#5a4a30';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cx-6,base-40);ctx.lineTo(cx+9,base-52);ctx.stroke();
+      ctx.fillStyle=tint||'#8a8d84';ctx.beginPath();ctx.arc(cx+10,base-53,5,0,7);ctx.fill();ctx.strokeStyle=line;ctx.lineWidth=2;ctx.stroke();}
+    for(let s=0;s<tier;s++){ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.arc(cx-8+s*8,base-37,2.4,0,7);ctx.fill();}
+    if(b&&(b.ammo||0)<=0&&!ghost){ctx.fillStyle='#ff5b4a';ctx.font='bold 13px Fredoka';ctx.textAlign='center';ctx.fillText('!',cx,base-56);}
+  }
   if(t==='campfire'){ctx.fillStyle=tint||'#3a2a18';shadow(cx,base,16,6);ctx.strokeStyle='#2e2114';ctx.lineWidth=5;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(cx-11,base+1);ctx.lineTo(cx+11,base-2);ctx.moveTo(cx-11,base-2);ctx.lineTo(cx+11,base+1);ctx.stroke();
     {const f=Math.sin(animT*0.4)*2;ctx.fillStyle=tint||'#ff5a1e';ctx.beginPath();ctx.moveTo(cx-8,base);ctx.quadraticCurveTo(cx,base-24-f,cx+8,base);ctx.closePath();ctx.fill();
@@ -1449,6 +1906,10 @@ function drawBuild(t,cx,cy,ghost){const base=cy+IH*0.28,line='#12160f';ctx.lineJ
     ctx.fillStyle='rgba(0,0,0,.2)';rr(cx+3,base-32,19,32,3);ctx.fill();
     ctx.fillStyle=tint||'#5a7d3a';ctx.beginPath();ctx.moveTo(cx-27,base-32);ctx.lineTo(cx,base-56);ctx.lineTo(cx+27,base-32);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.fillStyle='#2a1a0f';rr(cx-6,base-16,12,16,2);ctx.fill();ctx.fillStyle=tint||'#ffcf6a';rr(cx-18,base-25,9,9,1);ctx.fill();rr(cx+9,base-25,9,9,1);ctx.fill();}
+  // HP bar on damaged buildings
+  if(b&&b.maxHp&&b.hp<b.maxHp&&ghost===undefined){const w=34,pct=Math.max(0,b.hp/b.maxHp);
+    ctx.fillStyle='rgba(0,0,0,.5)';rr(cx-w/2,base-52,w,5,3);ctx.fill();
+    ctx.fillStyle=pct>.5?'#54c23a':pct>.25?'#f2c14e':'#e8483a';rr(cx-w/2,base-52,w*pct,5,3);ctx.fill();}
 }
 
 /* ===================================================================
@@ -1542,7 +2003,7 @@ window.addEventListener('resize',resize);window.addEventListener('orientationcha
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
 window.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault();},{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault());
-function startWorld(){document.getElementById('title').style.display='none';document.getElementById('starterSel').style.display='none';document.getElementById('classSel').style.display='none';mode='world';rebuildBuildIndex();seedEnemies();seedNodes();}
+function startWorld(){document.getElementById('title').style.display='none';document.getElementById('starterSel').style.display='none';document.getElementById('classSel').style.display='none';mode='world';rebuildBuildIndex();seedEnemies();}
 let pendingClass='mage';
 function heroPreview(cv,cls){const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);const C=CLASSES[cls];
   const s=cv.width, x=s/2, y=s*0.78;
@@ -1561,11 +2022,11 @@ function heroPreview(cv,cls){const c=cv.getContext('2d');c.clearRect(0,0,cv.widt
 function rr2(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 function buildClasses(){const wrap=document.getElementById('classCards');wrap.innerHTML='';
   for(const key of Object.keys(CLASSES)){const C=CLASSES[key];const card=document.createElement('div');card.className='scard';card.style.width='150px';
-    card.innerHTML=`<canvas width="90" height="90"></canvas><b>${C.icon} ${C.name}</b><small style="color:#5a4;white-space:pre-line;font-size:11px">${C.blurb}</small>`;
+    card.innerHTML=`<canvas width="90" height="90"></canvas><b>${C.icon} ${C.name}</b><small style="color:#5a4;white-space:pre-line;font-size:11px">${C.blurb}</small><small style="color:#7a5cff;font-size:10px">★ ${CLASS_PERK[key].name}: ${CLASS_PERK[key].desc}</small>`;
     heroPreview(card.querySelector('canvas'),key);
     card.onclick=()=>{const atk=key==='warrior'?'swing your weapon in melee':(key==='ranger'?'loose piercing arrows':'cast arcane bolts');
       newGame(key);startWorld();
-      dialog(`<b>${C.name} ${C.icon}</b> — you set out alone into the wild! <b>You</b> are the fighter now (your own HP, level & XP). <b>Left thumb</b> moves, <b>right thumb</b> to ${atk} — flick or draw <b>V</b>, <b>Z</b>, or <b>◯</b> (see <b>✎ Spell Guide</b> in the ☰ menu). Fighting charges your <b>✦ Super</b> and earns <b>skill points</b>. Fall in battle and you respawn in town — you lose loose loot but keep your skills, crafting & buildings. Good luck!`);};
+      dialog(`<b>${C.name} ${C.icon}</b> — you set out alone into the wild! <b>Left thumb</b> moves, <b>right thumb</b> to ${atk} (draw <b>V</b>, <b>Z</b>, or <b>◯</b> for bigger attacks). Gather materials, then buy <b>land</b> at a town's 🏛 registrar and build a base — walls, <b>towers</b>, traps — because <b>raiders will come</b>. Three towns lie along the roads; the deeper the wilds, the deadlier (and richer). If you fall you keep your skills, land & buildings. Good luck!`);};
     wrap.appendChild(card);}}
 function toClassSelect(){document.getElementById('title').style.display='none';document.getElementById('classSel').style.display='flex';mode='class';buildClasses();}
 document.getElementById('startBtn').onclick=toClassSelect;
