@@ -57,7 +57,7 @@ Built **touch-first for landscape phones**, with a Brawl Stars-style look — ch
 
 **Spell gestures** (right thumb): a quick flick = **Bolt**, a gentle bend = **Twin**, a sharp **V** = **Power Blast**, a **Z** zigzag = **Chain Bolt** (pierces), a **circle** = **Nova** (3-way). The spell's name flashes when you cast, and it uses your lead critter's element.
 
-Walk up to the nurse, shop, a berry bush, a house, or a weakened enemy and a label (Heal / Shop / Pick / Rest / **Catch**) pops up — tap **A**. Hold your phone sideways for the best view.
+Walk up to the nurse, shop, a berry bush, a house, or a weakened enemy and a **tappable prompt** (Heal / Shop / Pick / Rest / **Catch**) floats above your head — tap the prompt (or **A**) to act. Dialog boxes advance when you tap them. A live **XP bar** with your level sits in the top HUD, and an in-game **Spell Guide** (☰ menu) shows every gesture. Hold your phone sideways for the best view.
 
 **Tips**
 - Walk into the tall grass (the darker, textured patches to the north and south) to find wild critters.

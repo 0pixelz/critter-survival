@@ -61,8 +61,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
 #btnSuper:active{transform:translateY(4px);}
 @keyframes superPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 #interactTag{position:fixed;z-index:7;transform:translate(-50%,-100%);background:#fff;color:var(--ink);
-  font-weight:700;font-size:14px;padding:6px 12px;border-radius:16px;border:3px solid var(--outline);
-  box-shadow:0 4px 0 rgba(0,0,0,.25);display:none;white-space:nowrap;pointer-events:none;}
+  font-weight:700;font-size:15px;padding:8px 15px;border-radius:16px;border:3px solid var(--outline);
+  box-shadow:0 4px 0 rgba(0,0,0,.25);display:none;white-space:nowrap;cursor:pointer;}
+#dialog{cursor:pointer;}
 #interactTag b{color:var(--accentDark);}
 
 /* ---------- Toast + dialog ---------- */
@@ -161,6 +162,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
   <div class="stat"><div class="ic" style="background:#f2a33a">🍖</div><div class="bar"><i id="mHunger" style="background:linear-gradient(90deg,#e6952b,#f2c14e)"></i></div></div>
   <div class="stat"><div class="ic" style="background:#2f8fe0">⚡</div><div class="bar"><i id="mEnergy" style="background:linear-gradient(90deg,#2b8ce6,#5fd0f5)"></i></div></div>
   <div class="stat"><div class="ic" id="leadIc" style="background:#54c23a">🐾</div><div class="bar"><i id="mHp" style="background:linear-gradient(90deg,#e8483a,#ff6b5b)"></i></div></div>
+  <div class="stat"><div class="ic" id="xpIc" style="background:#7a5cff;font-size:12px;font-weight:700">1</div><div class="bar" style="width:60px"><i id="mXp" style="background:linear-gradient(90deg,#8a6cff,#c9b8ff)"></i></div></div>
 </div>
 <div id="coinPill">◉ <span id="coinVal">0</span></div>
 
@@ -773,7 +775,7 @@ function updateInteract(){
   interactTarget=best;
   const tag=document.getElementById('interactTag');
   if(best&&mode==='world'){const ps=w2s(P.x,P.y);tag.style.left=ps.x+'px';tag.style.top=(ps.y-46)+'px';
-    tag.style.display='block';tag.innerHTML=(best.enemy?'Catch':IL[best.t])+' <b>Ⓐ</b>';}else tag.style.display='none';
+    tag.style.display='block';tag.innerHTML=(best.enemy?'Catch':IL[best.t])+' <b>▸ tap</b>';}else tag.style.display='none';
 }
 function doInteract(){
   if(dialogCb){closeDialog();return;}
@@ -800,6 +802,8 @@ function updateHud(){
   document.getElementById('mEnergy').style.width=clamp(G.energy)+'%';
   const l=firstAlive()||G.party[0];
   document.getElementById('mHp').style.width=clamp(l.hp/l.maxHp*100)+'%';
+  const nx=xpToNext(l.level);document.getElementById('mXp').style.width=clamp((l.xp/nx)*100)+'%';
+  document.getElementById('xpIc').textContent=l.level;
   document.getElementById('coinVal').textContent=G.coins||0;
   const sb=document.getElementById('btnSuper');const deg=Math.round(superC*3.6);
   sb.style.background=`conic-gradient(#ffd23c ${deg}deg, rgba(30,32,44,.9) ${deg}deg)`;
@@ -812,7 +816,7 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.style.opacity='0';el.style.top='56px';},1600);}
 let dialogCb=null;
 function dialog(m,cb){const el=document.getElementById('dialog');el.style.display='block';
-  el.innerHTML=m+'<small>▸ tap A to continue</small>';dialogCb=cb||closeDialog;}
+  el.innerHTML=m+'<small>▸ tap this box to continue</small>';dialogCb=cb||closeDialog;}
 function closeDialog(){document.getElementById('dialog').style.display='none';const cb=dialogCb;dialogCb=null;if(cb&&cb!==closeDialog)cb();}
 
 /* ===================================================================
@@ -973,6 +977,7 @@ function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.
   h+=`<button class="cbtn small" data-item="ration" ${it.ration<=0?'disabled':''}>Eat Ration (fill hunger)</button>`;
   h+=`<button class="cbtn small" data-item="revive" ${(it.revive<=0||!fn)?'disabled':''}>Use Revive</button>`;
   h+=`<button class="cbtn small" id="openSkills" style="background:linear-gradient(#efe0ff,#d9c2ff)">✦ Skill Tree${(G.skillPoints||0)>0?` (${G.skillPoints} pts!)`:''}</button>`;
+  h+=`<button class="cbtn small" id="spellGuide" style="background:linear-gradient(#e0f0ff,#c2e0ff)">✎ Spell Guide</button>`;
   h+=`<button class="cbtn small" id="muteBtn">${G.muted?'🔇 Sound: Off':'🔊 Sound: On'}</button>`;
   h+=`<button class="cbtn small" id="closePanel">Close</button></div>`;
   p.innerHTML=h;p.style.display='flex';
@@ -980,8 +985,30 @@ function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.
   p.querySelectorAll('[data-lead]').forEach(b=>b.onclick=()=>{const i=+b.dataset.lead;const c=G.party.splice(i,1)[0];G.party.unshift(c);save();openPanel();});
   p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>usePanelItem(b.dataset.item));
   document.getElementById('openSkills').onclick=openSkills;
+  document.getElementById('spellGuide').onclick=openSpellGuide;
   document.getElementById('muteBtn').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('menu');openPanel();};
   document.getElementById('closePanel').onclick=closePanel;}
+function drawGlyph(cv,kind,col){const c=cv.getContext('2d'),s=cv.width;c.clearRect(0,0,s,s);
+  c.strokeStyle=col;c.lineWidth=5;c.lineJoin='round';c.lineCap='round';c.shadowColor=col;c.shadowBlur=6;c.beginPath();
+  if(kind==='bolt'){c.moveTo(s*0.18,s*0.5);c.lineTo(s*0.82,s*0.5);c.moveTo(s*0.62,s*0.36);c.lineTo(s*0.82,s*0.5);c.lineTo(s*0.62,s*0.64);}
+  else if(kind==='power'){c.moveTo(s*0.24,s*0.24);c.lineTo(s*0.5,s*0.78);c.lineTo(s*0.76,s*0.24);}
+  else if(kind==='chain'){c.moveTo(s*0.2,s*0.28);c.lineTo(s*0.8,s*0.28);c.lineTo(s*0.2,s*0.72);c.lineTo(s*0.8,s*0.72);}
+  else if(kind==='nova'){c.arc(s*0.5,s*0.5,s*0.28,-0.4,6.0);}
+  c.stroke();c.shadowBlur=0;
+  if(kind==='nova'){c.fillStyle=col;c.beginPath();c.arc(s*0.5+Math.cos(6.0)*s*0.28,s*0.5+Math.sin(6.0)*s*0.28,3,0,7);c.fill();}}
+function openSpellGuide(){mode='panel';const p=document.getElementById('panel');
+  const rows=[['bolt','Flick (straight swipe)','Bolt','Quick single shot'],
+    ['power','Draw a V','Power Blast','Slow, heavy hit'],
+    ['chain','Draw a Z (zig-zag)','Chain Bolt','Fast — pierces through'],
+    ['nova','Draw a ◯ (circle)','Nova','Fires 3 ways at once']];
+  let h='<h2>✎ Spell Gestures</h2><div class="subline">Draw with your <b>right thumb</b> — on the map, or on the arena during battle. Spells take your <b>lead critter\'s element</b>, so type matchups matter.</div><div class="plist">';
+  rows.forEach(r=>{h+=`<div class="pcard"><canvas class="gly" width="56" height="56" data-k="${r[0]}" style="background:rgba(122,92,255,.08);border-radius:10px"></canvas>
+    <div style="flex:1"><div><b>${r[2]}</b> — <span style="color:#3f7d34">${r[1]}</span></div><small style="color:#8a6d3a">${r[3]}</small></div></div>`;});
+  h+='</div><div class="subline" style="color:#cfe6c2">Fill the ✦ Super bar by fighting, then tap the glowing ✦ button to unleash your class Super.</div>';
+  h+='<div class="prow"><button class="cbtn small" id="backGuide">◀ Back</button></div>';
+  p.innerHTML=h;p.style.display='flex';
+  p.querySelectorAll('canvas.gly').forEach(cv=>drawGlyph(cv,cv.dataset.k,'#7a5cff'));
+  document.getElementById('backGuide').onclick=openPanel;}
 function openSkills(){mode='panel';const p=document.getElementById('panel');
   let h=`<h2>✦ Skill Tree</h2><div class="subline">Skill points: <b style="color:#ffd23c">${G.skillPoints||0}</b> · Class: <b>${CLASSES[G.class].name}</b> ${CLASSES[G.class].icon}</div>`;
   for(const br of ['Arcane','Storm','Survival']){
@@ -1249,6 +1276,9 @@ function updKb(){kb.x=(keys['arrowright']||keys['d']?1:0)-(keys['arrowleft']||ke
 // buttons
 window.addEventListener('pointerdown',()=>actx(),{capture:true}); // unlock/resume audio on first touch
 function bindBtn(el,fn){el.addEventListener('click',e=>{e.preventDefault();actx();sfx('menu');fn();});}
+// tap the dialog box itself (or the floating prompt) to act — no need for the A button
+document.getElementById('dialog').addEventListener('click',()=>{if(dialogCb)closeDialog();});
+document.getElementById('interactTag').addEventListener('click',()=>{if(mode==='world')doInteract();});
 bindBtn(document.getElementById('btnA'),()=>{if(mode==='world')doInteract();else if(dialogCb)closeDialog();});
 bindBtn(document.getElementById('btnMenu'),()=>{if(mode==='world')openPanel();else if(mode==='panel')closePanel();});
 bindBtn(document.getElementById('btnSuper'),()=>{if(mode==='world')unleashSuper();});
@@ -1311,7 +1341,7 @@ function buildStarters(){const wrap=document.getElementById('starterCards');wrap
   STARTERS.forEach(sp=>{const s=SPECIES[sp];const card=document.createElement('div');card.className='scard';
     card.innerHTML=`<canvas width="80" height="80"></canvas><b>${sp}</b><small style="color:${TYPES[s.type].color}">${s.type}</small>`;
     drawCritter(card.querySelector('canvas'),80,sp);
-    card.onclick=()=>{newGame(pendingClass,sp);startWorld();dialog(`<b>${CLASSES[pendingClass].name} ${CLASSES[pendingClass].icon}</b> · <b>${sp}</b> joins you! <b>Left thumb</b> moves, <b>right thumb</b> casts (flick or draw V/◯/Z). Fighting charges your <b>✦ Super</b>. Level up to earn <b>skill points</b> — spend them in the ✦ Skill Tree (☰ menu). Tap <b>A</b> to catch a weakened critter.`);};
+    card.onclick=()=>{newGame(pendingClass,sp);startWorld();dialog(`<b>${CLASSES[pendingClass].name} ${CLASSES[pendingClass].icon}</b> · <b>${sp}</b> joins you! <b>Left thumb</b> moves, <b>right thumb</b> casts — flick or draw <b>V</b>, <b>Z</b>, or <b>◯</b> (see <b>✎ Spell Guide</b> in the ☰ menu). Fighting charges your <b>✦ Super</b> and earns <b>skill points</b> (✦ Skill Tree). Tap the <b>prompt above a critter</b> to catch it.`);};
     wrap.appendChild(card);});}
 function toClassSelect(){document.getElementById('title').style.display='none';document.getElementById('classSel').style.display='flex';mode='class';buildClasses();}
 document.getElementById('startBtn').onclick=toClassSelect;
