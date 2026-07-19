@@ -191,10 +191,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
   </div>
   <div id="bmenu">
     <div id="bmsg"></div>
-    <button class="cbtn" id="bFight">Fight</button>
-    <button class="cbtn" id="bCatch">Catch</button>
+    <button class="cbtn" id="bFight">Moves</button>
     <button class="cbtn" id="bBag">Bag</button>
-    <button class="cbtn" id="bRun">Run</button>
+    <button class="cbtn wide" id="bRun">Run</button>
   </div>
 </div>
 
@@ -297,20 +296,29 @@ const EVOLVE={
   Zephlet:{into:'Breezle',lvl:14},  Breezle:{into:'Nimbling',lvl:30},
 };
 const SHOP=[
-  {key:'orb',name:'Orb',price:20,desc:'Catches wild critters.'},
-  {key:'superorb',name:'Super Orb',price:65,desc:'Far better catch rate.'},
   {key:'berry',name:'Berry',price:15,desc:'Heals 40% HP + hunger.'},
   {key:'potion',name:'Potion',price:30,desc:'Restores 60 HP.'},
-  {key:'revive',name:'Revive',price:70,desc:'Revives a fainted critter.'},
   {key:'ration',name:'Ration',price:25,desc:'Fully restores hunger.'},
 ];
-const ITEM_KEYS=['orb','superorb','berry','potion','revive','ration'];
+const ITEM_KEYS=['berry','potion','ration'];
 
-/* ---------- character classes ---------- */
+/* ---------- character classes (you are the fighter) ---------- */
 const CLASSES={
-  mage:   {name:'Mage',    blurb:'Master of spellcraft.\n+12% spell power · −10% cooldown', robe:'#3f6fd6',trim:'#2456bf',skin:'#ffce9e',accent:'#7ad0ff',icon:'🧙'},
-  ranger: {name:'Ranger',  blurb:'Swift wild hunter.\n+15% move speed · +10% catch rate', robe:'#3f8f4a',trim:'#2e6d34',skin:'#f0b98a',accent:'#a8e063',icon:'🏹'},
-  warrior:{name:'Warrior', blurb:'Battle-hardened bruiser.\n+30% Super charge rate',        robe:'#b0402e',trim:'#7c2a1c',skin:'#e8a87a',accent:'#ffb454',icon:'⚔️'},
+  mage:   {name:'Mage',    blurb:'Arcane spellcaster.\n+12% spell power · −10% cooldown\nElement: Ember 🔥', robe:'#3f6fd6',trim:'#2456bf',skin:'#ffce9e',accent:'#7ad0ff',icon:'🧙'},
+  ranger: {name:'Ranger',  blurb:'Swift archer.\n+15% move speed · piercing arrows\nElement: Gale 🌪️',   robe:'#3f8f4a',trim:'#2e6d34',skin:'#f0b98a',accent:'#a8e063',icon:'🏹'},
+  warrior:{name:'Warrior', blurb:'Melee bruiser.\nCleaving melee swings · +30% Super\nElement: Stone 🪨', robe:'#b0402e',trim:'#7c2a1c',skin:'#e8a87a',accent:'#ffb454',icon:'⚔️'},
+};
+/* class → element / turn-based moves / base stats */
+const CLASS_ELEM={mage:'Ember',ranger:'Gale',warrior:'Stone'};
+const CLASS_MOVES={
+  mage:   ['Emberpuff','Firefang','Scorch','Flareburst'],
+  ranger: ['Gust','Quill','Cyclone','Lullwind'],
+  warrior:['Tackle','Pebble','Sandslam','Boulder'],
+};
+const CLASS_BASE={
+  mage:   {hp:54,atk:15,def:9},
+  ranger: {hp:52,atk:14,def:10},
+  warrior:{hp:66,atk:16,def:14},
 };
 /* ---------- skill tree (Diablo-style) ---------- */
 const SKILLS=[
@@ -322,17 +330,17 @@ const SKILLS=[
   {branch:'Storm',   key:'overload',name:'Overload',     max:3, eff:'+20% Super damage / rank', req:{focus:2}},
   {branch:'Survival',key:'swift',   name:'Swiftness',    max:5, eff:'+6% move speed / rank'},
   {branch:'Survival',key:'mending', name:'Mending',      max:3, eff:'regen HP while roaming / rank'},
-  {branch:'Survival',key:'tamer',   name:'Beast Tamer',  max:5, eff:'+6% catch chance / rank'},
+  {branch:'Survival',key:'vitality', name:'Vitality',     max:5, eff:'+6% max HP / rank'},
   {branch:'Survival',key:'scholar', name:'Scholar',      max:5, eff:'+10% XP / rank'},
   {branch:'Survival',key:'fortune', name:'Fortune',      max:5, eff:'+12% coins / rank'},
 ];
-function mods(){const m={dmg:1,cd:1,superGain:1,speed:1,catch:0,pierce:0,count:0,superPow:1,xp:1,coins:1,regen:0};
+function mods(){const m={dmg:1,cd:1,superGain:1,speed:1,pierce:0,count:0,superPow:1,xp:1,coins:1,regen:0,vitality:0};
   const cl=(G&&CLASSES[G.class])?G.class:'mage';
-  if(cl==='mage'){m.dmg*=1.12;m.cd*=0.9;} else if(cl==='ranger'){m.speed*=1.15;m.catch+=0.1;} else if(cl==='warrior'){m.superGain*=1.3;}
+  if(cl==='mage'){m.dmg*=1.12;m.cd*=0.9;} else if(cl==='ranger'){m.speed*=1.15;} else if(cl==='warrior'){m.superGain*=1.3;}
   const S=(G&&G.skills)||{};
   m.dmg*=1+0.08*(S.power||0); m.cd*=Math.pow(0.92,S.haste||0); m.count+=(S.multi||0); m.pierce+=(S.pierce||0);
   m.superGain*=1+0.15*(S.focus||0); m.superPow*=1+0.2*(S.overload||0); m.speed*=1+0.06*(S.swift||0);
-  m.catch+=0.06*(S.tamer||0); m.xp*=1+0.1*(S.scholar||0); m.coins*=1+0.12*(S.fortune||0); m.regen+=(S.mending||0);
+  m.vitality+=(S.vitality||0); m.xp*=1+0.1*(S.scholar||0); m.coins*=1+0.12*(S.fortune||0); m.regen+=(S.mending||0);
   return m;}
 function skillReq(node){if(!node.req)return true;for(const k in node.req){if(((G.skills||{})[k]||0)<node.req[k])return false;}return true;}
 
@@ -414,25 +422,53 @@ let G=null;
 const P={x:0,y:0,vx:0,vy:0,face:Math.PI/2,walk:0,moving:false,flip:1};
 const cam={x:0,y:0,ix:0,iy:0};
 let mode='title';
-function newGame(cls,starter){
+/* ---- the hero: YOU are the fighter (own hp/level/xp/atk/def/element) ---- */
+function heroType(){return CLASS_ELEM[(G&&G.class)]||'Ember';}
+function recalcHero(){const b=CLASS_BASE[G.class]||CLASS_BASE.mage,L=G.level||1,S=G.skills||{};
+  let maxHp=Math.floor(b.hp*(1+(L-1)*0.14))+10;maxHp=Math.floor(maxHp*(1+0.06*(S.vitality||0)));
+  G.maxHp=maxHp;
+  G._atk=Math.floor(b.atk*(1+(L-1)*0.11))+3;
+  G._def=Math.floor(b.def*(1+(L-1)*0.10))+2;
+  if(G.hp===undefined)G.hp=G.maxHp;if(G.hp>G.maxHp)G.hp=G.maxHp;}
+const HERO={isHero:true,
+  get species(){return CLASSES[G.class].name;},
+  get type(){return heroType();},
+  get level(){return G.level;}, set level(v){G.level=v;},
+  get xp(){return G.xp;}, set xp(v){G.xp=v;},
+  get hp(){return G.hp;}, set hp(v){G.hp=Math.max(0,Math.min(v,G.maxHp));},
+  get maxHp(){return G.maxHp;}, set maxHp(v){G.maxHp=v;},
+  get atk(){return G._atk;}, get def(){return G._def;}, get spd(){return 12;},
+  get moves(){return CLASS_MOVES[G.class]||CLASS_MOVES.mage;},
+  get status(){return G.status||null;}, set status(v){G.status=v;},
+  get statusT(){return G.statusT||0;}, set statusT(v){G.statusT=v;},
+};
+function newGame(cls){
   G={px:5.5*TILE,py:6.5*TILE,face:Math.PI/2,class:cls||'mage',
-    hunger:100,energy:100,party:[makeCritter(starter,5)],
-    items:{orb:5,superorb:0,berry:3,potion:0,revive:0,ration:1},coins:60,
-    caughtSpecies:{[starter]:true},day:1,skills:{},skillPoints:0,muted:false,
+    level:1,xp:0,hp:0,maxHp:0,_atk:0,_def:0,status:null,statusT:0,
+    hunger:100,energy:100,
+    items:{berry:3,potion:0,ration:1},coins:40,
+    day:1,skills:{},skillPoints:0,muted:false,
     res:{wood:0,stone:0,fiber:0},builds:[],craftLvl:1,craftXp:0,time:0.35};
+  recalcHero();G.hp=G.maxHp;
   syncPlayer();save();
 }
 function syncPlayer(){P.x=G.px;P.y=G.py;P.vx=P.vy=0;P.face=G.face||Math.PI/2;const p=projIso(P.x,P.y);cam.ix=p.x;cam.iy=p.y;rebuildBuildIndex();}
 
 /* ---------- persistence ---------- */
-const SAVE_KEY='critter-wilds-save-v3';
+const SAVE_KEY='critter-wilds-save-v4';
 function save(){try{if(G){G.px=P.x;G.py=P.y;G.face=P.face;}localStorage.setItem(SAVE_KEY,JSON.stringify(G,(k,v)=>k==='_s'?undefined:v));}catch(e){}}
-function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);migrate();G.party.forEach(recalc);syncPlayer();return true;}catch(e){return false;}}
-function migrate(){if(!G.items)G.items={orb:5,superorb:0,berry:3,potion:0,revive:0,ration:0};
-  ITEM_KEYS.forEach(k=>{if(G.items[k]===undefined)G.items[k]=0;});if(G.coins===undefined)G.coins=60;
-  if(!G.class)G.class='mage';if(!G.skills)G.skills={};if(G.skillPoints===undefined)G.skillPoints=0;if(G.muted===undefined)G.muted=false;
+function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);migrate();recalcHero();syncPlayer();return true;}catch(e){return false;}}
+function migrate(){
+  if(!G.class)G.class='mage';
+  if(G.level===undefined)G.level=(G.party&&G.party[0]?G.party[0].level:1)||1;
+  if(G.xp===undefined)G.xp=0;if(G.status===undefined)G.status=null;if(G.statusT===undefined)G.statusT=0;
+  if(!G.items)G.items={};ITEM_KEYS.forEach(k=>{if(G.items[k]===undefined)G.items[k]=0;});
+  if(G.coins===undefined)G.coins=40;
+  if(!G.skills)G.skills={};if(G.skillPoints===undefined)G.skillPoints=0;if(G.muted===undefined)G.muted=false;
   if(!G.res)G.res={wood:0,stone:0,fiber:0};if(!G.builds)G.builds=[];if(G.craftLvl===undefined)G.craftLvl=1;if(G.craftXp===undefined)G.craftXp=0;if(G.time===undefined)G.time=0.35;
-  (G.party||[]).forEach(c=>{if(c.status===undefined){c.status=null;c.statusT=0;}});
+  delete G.party;delete G.caughtSpecies;
+  recalcHero();
+  if(G.hp===undefined||G.hp>G.maxHp)G.hp=G.maxHp;
   if(G.px===undefined||G.px<MAP_W){G.px=5.5*TILE;G.py=6.5*TILE;}}
 
 /* ===================================================================
@@ -749,7 +785,7 @@ function renderWorld(){
     else if(it.dec){const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawDecor(it.dec,it.x,it.y,c.x,c.y);}
     else{const c=w2s((it.x+0.5)*TILE,(it.y+0.5)*TILE);drawPropIso(it.t,it.x,it.y,c.x,c.y);}
   }
-  drawShots();drawWaves();drawParts();drawFloats();
+  drawShots();drawWaves();drawSlashes();drawParts();drawFloats();
   // ambient particles: embers from fire, drifting fireflies
   if(Math.random()<0.6)spawn(CF.x+(Math.random()-.5)*16,CF.y-4,{vx:(Math.random()-.5)*10,vy:-36,g:-6,max:1.1,r:2.5,c:'#ff9a3c'});
   if(Math.random()<0.2)spawn(P.x+(Math.random()-.5)*520,P.y+(Math.random()-.5)*420,{vx:(Math.random()-.5)*8,vy:-6,g:0,max:1.7,r:2,c:'#cdf27a'});
@@ -807,14 +843,15 @@ function update(dt){
   engageCD=Math.max(0,engageCD-dt);
   // day/night clock
   G.time=(G.time||0)+dt/DAY_LEN; if(G.time>=1){G.time-=1;G.day=(G.day||1)+1;toast(`☀️ Day ${G.day}`);}
-  updateEnemies(dt);updateShots(dt);updateWaves(dt);updateNodes(dt);updateFloats(dt);
+  updateEnemies(dt);updateShots(dt);updateWaves(dt);updateSlashes(dt);updateNodes(dt);updateFloats(dt);
   // survival
   surv+=dt;if(surv>0.5){surv=0;
     G.hunger=Math.max(0,G.hunger-(P.moving?0.5:0.25));
     G.energy=Math.max(0,G.energy-(P.moving?0.4:0.15));
-    if(G.hunger<=0||G.energy<=0){const l=firstAlive();if(l){l.hp=Math.max(0,l.hp-1);}}
-    const rg=mods().regen;if(rg>0){const l=firstAlive();if(l&&l.hp<l.maxHp)l.hp=Math.min(l.maxHp,l.hp+rg);}
+    if(G.hunger<=0||G.energy<=0)G.hp=Math.max(0,G.hp-1);
+    const rg=mods().regen;if(rg>0&&G.hp>0&&G.hp<G.maxHp)G.hp=Math.min(G.maxHp,G.hp+rg);
   }
+  if(G.hp<=0&&mode==='world'){heroDeath();return;}
   updateInteract();updateParts(dt);updateHud();
   if((animT&63)===0)save();
 }
@@ -828,8 +865,6 @@ const IL={N:'Heal',M:'Shop',S:'Read',B:'Pick',H:'Rest'};
 function updateInteract(){
   interactTarget=null;let best=null,bd=1e9,label='';
   if(buildMode){document.getElementById('interactTag').style.display='none';return;}
-  // catchable enemy (weakened) takes priority
-  for(const e of enemies){if(e.hp/e.maxHp<0.35){const d=Math.hypot(e.x-P.x,e.y-P.y);if(d<bd&&d<TILE*1.5){bd=d;best={enemy:e};label='Catch';}}}
   // resource nodes
   for(const n of nodes){const d=Math.hypot(n.x-P.x,n.y-P.y);if(d<bd&&d<TILE*1.3){bd=d;best={node:n};label=NODE_KIND[n.k].label;}}
   const cx=Math.floor(P.x/TILE),cy=Math.floor(P.y/TILE);
@@ -846,7 +881,6 @@ function doInteract(){
   if(dialogCb){closeDialog();return;}
   if(mode==='world'&&buildMode){placeBuild();return;}
   if(mode!=='world'||!interactTarget)return;
-  if(interactTarget.enemy){catchEnemy(interactTarget.enemy);return;}
   if(interactTarget.node){gatherNode(interactTarget.node);return;}
   if(interactTarget.tree){chopTree(interactTarget.tree.x,interactTarget.tree.y);return;}
   if(interactTarget.hut){restAtHome();return;}
@@ -855,25 +889,25 @@ function doInteract(){
   else if(t==='H')restAtHome();
   else if(t==='S')dialog("<b>Sign:</b> Gather 🪵🪨🌿 from logs, rocks & shrubs, then <b>Craft</b> from the ☰ menu to build a Campfire, Wall, or your own Hut. Cast spells with your right thumb!");
 }
-function healParty(){G.party.forEach(c=>{c.hp=c.maxHp;c.status=null;c.statusT=0;});G.energy=100;sfx('heal');
-  dialog("<b>Nurse:</b> Your critters are fully healed and cured!");toast('Team healed');burst(P.x,P.y-10,'#ff9dc0');save();}
-function restAtHome(){const wasNight=isNight();if(G.time>0.5)G.day=(G.day||1)+1;G.time=0.28;G.energy=100;
-  G.party.forEach(c=>{if(c.hp>0)c.hp=Math.min(c.maxHp,c.hp+Math.floor(c.maxHp*0.4));});sfx('heal');
-  dialog("<b>You sleep until dawn.</b> Energy restored and your team rested up (Day "+(G.day||1)+").");toast('Rested till morning');save();}
+function healParty(){G.hp=G.maxHp;G.status=null;G.statusT=0;G.energy=100;sfx('heal');
+  dialog("<b>Nurse:</b> You're patched up — full health and energy!");toast('Fully healed');burst(P.x,P.y-10,'#ff9dc0');save();}
+function restAtHome(){if(G.time>0.5)G.day=(G.day||1)+1;G.time=0.28;G.energy=100;
+  if(G.hp>0)G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.5));sfx('heal');
+  dialog("<b>You sleep until dawn.</b> Energy restored and your wounds tended (Day "+(G.day||1)+").");toast('Rested till morning');save();}
 function pickBerry(x,y){G.items.berry++;grid[y][x]='.';G.hunger=Math.min(100,G.hunger+4);
   toast('+1 Berry');burst((x+.5)*TILE,(y+.5)*TILE,'#e5372f');save();}
 function burst(x,y,c){for(let i=0;i<10;i++)spawn(x,y,{vx:Math.cos(i)*70,vy:Math.sin(i)*70-20,g:80,max:.6,r:4,c});}
 
 /* ---------- HUD ---------- */
 function clamp(v){return Math.max(0,Math.min(100,v));}
-function firstAlive(){return G.party.find(c=>c.hp>0);}
+function firstAlive(){return (G&&G.hp>0)?HERO:null;}
 function updateHud(){
   document.getElementById('mHunger').style.width=clamp(G.hunger)+'%';
   document.getElementById('mEnergy').style.width=clamp(G.energy)+'%';
-  const l=firstAlive()||G.party[0];
-  document.getElementById('mHp').style.width=clamp(l.hp/l.maxHp*100)+'%';
-  const nx=xpToNext(l.level);document.getElementById('mXp').style.width=clamp((l.xp/nx)*100)+'%';
-  document.getElementById('xpIc').textContent=l.level;
+  document.getElementById('mHp').style.width=clamp(G.hp/G.maxHp*100)+'%';
+  const nx=xpToNext(G.level);document.getElementById('mXp').style.width=clamp((G.xp/nx)*100)+'%';
+  document.getElementById('xpIc').textContent=G.level;
+  document.getElementById('leadIc').textContent=CLASSES[G.class].icon;
   document.getElementById('coinVal').textContent=G.coins||0;
   const tt=(G.time||0),hr=Math.floor(tt*24),mn=Math.floor((tt*24-hr)*60);
   document.getElementById('clockDay').textContent='Day '+(G.day||1);
@@ -905,7 +939,7 @@ function startBattle(src){
     alpha=!!src.alpha; foe.level=src.level; srcEnemy=src;
     const i=enemies.indexOf(src);if(i>=0)enemies.splice(i,1);
   } else {
-    const lvl=Math.max(2,G.party[0].level+(Math.floor(Math.random()*3)-1));
+    const lvl=Math.max(2,(G.level||3)+(Math.floor(Math.random()*3)-1));
     foe=makeCritter(WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],lvl);
   }
   foe.alpha=alpha;
@@ -925,10 +959,9 @@ function renderBattle(){
   const fm=document.getElementById('foeMon'),am=document.getElementById('allyMon');
   fm.innerHTML='';am.innerHTML='';
   const fc=document.createElement('canvas');fc.width=118;fc.height=118;drawCritter(fc,118,B.foe.species);fm.appendChild(fc);
-  const ac=document.createElement('canvas');ac.width=124;ac.height=124;drawCritter(ac,124,B.ally.species);am.appendChild(ac);
+  const ac=document.createElement('canvas');ac.width=124;ac.height=124;heroPreview(ac,G.class);am.appendChild(ac);
   document.getElementById('foePlate').innerHTML=plate(B.foe);
   document.getElementById('allyPlate').innerHTML=plate(B.ally);
-  const bc=document.getElementById('bCatch');if(bc){bc.textContent=`Catch (${G.items.orb})`;bc.disabled=G.items.orb<=0;}
 }
 function setBMsg(m){document.getElementById('bmsg').innerHTML=m;}
 function calcDamage(att,def,move){const m=MOVES[move],eff=effect(m.type,def.type),stab=att.type===m.type?1.2:1;
@@ -964,49 +997,37 @@ function foeTurn(){if(!B)return;if(B.foe.hp<=0)return winBattle();
   if(m.status&&!B.ally.status&&B.ally.hp>0&&Math.random()<(m.schance||0)){applyStatus(B.ally,m.status);msg+=' '+sMsg(B.ally.species,m.status);}
   setBMsg(msg);renderBattle();setTimeout(()=>{if(B.ally.hp<=0)faintAlly();else endPlayerTurn();},850);}
 function endPlayerTurn(){if(!B)return;B.busy=false;setBMsg('✎ Draw a spell above — or use the buttons.');}
-function faintAlly(){if(!B)return;B.ally.hp=0;renderBattle();setBMsg(`${B.ally.species} fainted!`);const next=firstAlive();
-  setTimeout(()=>{if(next){B.ally=next;renderBattle();setBMsg(`Go, ${next.species}!`);B.busy=false;}
-    else{setBMsg('All your critters have fainted!');setTimeout(()=>{endBattle();
-      dialog("<b>You blacked out…</b> A kind stranger carried you back to town.",()=>{
-        G.party.forEach(c=>{c.hp=Math.max(1,Math.floor(c.maxHp*0.5));c.status=null;});
-        P.x=5.5*TILE;P.y=6.5*TILE;G.energy=Math.max(30,G.energy);save();});},900);}},900);}
+function faintAlly(){if(!B)return;renderBattle();setBMsg('You were defeated…');B.busy=true;
+  setTimeout(()=>{endBattle();setTimeout(heroDeath,250);},1100);}
 function winBattle(){if(!B)return;B.foe.hp=0;renderBattle();const am=B.alpha?3:1,gain=(8+B.foe.level*5)*am,coins=Math.round((6+B.foe.level*3+Math.floor(Math.random()*6))*am*mods().coins);
-  G.coins+=coins;setBMsg(`Wild ${B.foe.species} fainted! +${gain} XP · +${coins} coins.`);grantXp(B.ally,gain);
+  G.coins+=coins;setBMsg(`The ${B.foe.species} was defeated! +${gain} XP · +${coins} coins.`);grantXp(HERO,gain);
   setTimeout(endBattle,1300);}
-function grantXp(c,a){c.xp+=Math.round(a*mods().xp);while(c.xp>=xpToNext(c.level)&&c.level<50){c.xp-=xpToNext(c.level);c.level++;const b=c.maxHp;recalc(c);c.hp+=(c.maxHp-b);
-    if(G)G.skillPoints=(G.skillPoints||0)+1;sfx('level');toast(`${c.species} → Lv.${c.level}! +1 skill point ✦`);}
-  evolveCheck(c);save();}
-function evolveCheck(c){let ev=EVOLVE[c.species];
-  while(ev&&ev.into&&c.level>=ev.lvl){const from=c.species;c.species=ev.into;c._s=SPECIES[ev.into];c.type=SPECIES[ev.into].type;
-    c.moves=SPECIES[ev.into].moves.slice(0,4);const b=c.maxHp;recalc(c);c.hp=Math.min(c.maxHp,c.hp+(c.maxHp-b));
-    if(G)G.caughtSpecies[ev.into]=true;
-    spellFlash('EVOLVED!','#ffe86a');sfx('level');toast(`✨ ${from} evolved into ${ev.into}!`);
-    if(mode==='world')for(let k=0;k<24;k++)spawn(P.x,P.y,{vx:(Math.random()-.5)*180,vy:(Math.random()-.5)*180-30,g:120,max:.8,r:5,c:'#ffe86a'});
-    else if(mode==='battle')flashMon(c===((B&&B.ally))?'allyMon':'foeMon');
-    ev=EVOLVE[c.species];}}
-function throwOrb(sup){if(!B||B.busy)return;const it=G.items;
-  if(sup){if(it.superorb<=0)return;it.superorb--;}else{if(it.orb<=0)return;it.orb--;}
-  B.busy=true;renderBattle();const hr=B.foe.hp/B.foe.maxHp;
-  let ch=(1-hr)*0.6+0.16-B.foe.level*0.006+mods().catch;if(B.foe.status)ch+=0.12;if(sup)ch=ch*1.7+0.1;ch=Math.min(0.97,Math.max(0.03,ch));
-  setBMsg(`You threw ${sup?'a <b>Super Orb</b>':'an <b>Orb</b>'}…`);document.getElementById('foeMon').classList.add('shake');
-  setTimeout(()=>{document.getElementById('foeMon').classList.remove('shake');if(!B)return;
-    if(Math.random()<ch){B.caught=true;B.foe.status=null;const res=G.party.length>=6;if(!res)G.party.push(B.foe);
-      G.caughtSpecies[B.foe.species]=true;sfx('catch');setBMsg(`Gotcha! <b>${B.foe.species}</b> was caught!`+(res?' (Team full — released.)':''));save();setTimeout(endBattle,1300);}
-    else{setBMsg(`Oh no! ${B.foe.species} broke free!`);setTimeout(foeTurn,900);}},1100);}
-function openBagMenu(){if(B.busy)return;const it=G.items,fn=G.party.some(c=>c.hp<=0),menu=document.getElementById('bmenu');
+function grantXp(c,a){G.xp=(G.xp||0)+Math.round(a*mods().xp);
+  while(G.xp>=xpToNext(G.level)&&G.level<50){G.xp-=xpToNext(G.level);G.level++;const b=G.maxHp;recalcHero();G.hp+=(G.maxHp-b);
+    G.skillPoints=(G.skillPoints||0)+1;sfx('level');spellFlash('LEVEL UP!','#ffe86a');toast(`Level ${G.level}! +1 skill point ✦`);}
+  save();}
+/* Hades-style death: lose loose loot & coins, keep skills/craft/builds/level */
+function heroDeath(){if(!G)return;
+  const lostRes=(G.res.wood||0)+(G.res.stone||0)+(G.res.fiber||0),lostCoins=G.coins||0;
+  G.res={wood:0,stone:0,fiber:0};G.coins=0;
+  G.status=null;G.statusT=0;recalcHero();G.hp=G.maxHp;
+  G.hunger=Math.max(45,G.hunger);G.energy=Math.max(45,G.energy);
+  superC=0;
+  P.x=5.5*TILE;P.y=6.5*TILE;P.vx=P.vy=0;syncPlayer();
+  if(mode==='battle'){document.getElementById('battle').style.display='none';B=null;}
+  mode='world';seedEnemies();sfx('fail');
+  dialog(`<b>You fell in the wild…</b> You wake at the town campfire. Your loose loot is gone${lostRes||lostCoins?` (−${lostRes} materials, −${lostCoins}c)`:''}, but your skills, crafting level and buildings remain. Rise and fight again!`);
+  save();}
+function openBagMenu(){if(B.busy)return;const it=G.items,menu=document.getElementById('bmenu');
   menu.innerHTML=`<div id="bmsg">Use which item?</div>
     <button class="cbtn small" data-use="berry" ${it.berry<=0?'disabled':''}>Berry (${it.berry})</button>
     <button class="cbtn small" data-use="potion" ${it.potion<=0?'disabled':''}>Potion (${it.potion})</button>
-    <button class="cbtn small" data-use="superorb" ${it.superorb<=0?'disabled':''}>Super Orb (${it.superorb})</button>
-    <button class="cbtn small" data-use="revive" ${(it.revive<=0||!fn)?'disabled':''}>Revive (${it.revive})</button>
     <button class="cbtn small wide" id="backBag">◀ Back</button>`;
   menu.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>useBattleItem(b.dataset.use));
   document.getElementById('backBag').onclick=restoreBattleMenu;}
 function useBattleItem(k){const it=G.items;
-  if(k==='superorb'){if(it.superorb<=0)return;restoreBattleMenu();return throwOrb(true);}
-  if(k==='berry'){if(it.berry<=0)return;it.berry--;const h=Math.floor(B.ally.maxHp*0.4);B.ally.hp=Math.min(B.ally.maxHp,B.ally.hp+h);G.hunger=Math.min(100,G.hunger+10);return afterItem(`${B.ally.species} ate a Berry! +${h} HP.`);}
-  if(k==='potion'){if(it.potion<=0)return;it.potion--;const h=Math.min(60,B.ally.maxHp-B.ally.hp);B.ally.hp+=h;return afterItem(`Potion restored ${h} HP.`);}
-  if(k==='revive'){const f=G.party.find(c=>c.hp<=0);if(it.revive<=0||!f)return;it.revive--;f.hp=Math.floor(f.maxHp*0.5);f.status=null;return afterItem(`${f.species} was revived!`);}}
+  if(k==='berry'){if(it.berry<=0)return;it.berry--;const h=Math.floor(B.ally.maxHp*0.4);B.ally.hp=Math.min(B.ally.maxHp,B.ally.hp+h);G.hunger=Math.min(100,G.hunger+10);return afterItem(`You ate a Berry! +${h} HP.`);}
+  if(k==='potion'){if(it.potion<=0)return;it.potion--;const h=Math.min(60,B.ally.maxHp-B.ally.hp);B.ally.hp+=h;return afterItem(`Potion restored ${h} HP.`);}}
 function afterItem(m){restoreBattleMenu();B.busy=true;setBMsg(m);renderBattle();save();setTimeout(foeTurn,1000);}
 function tryRun(){if(B.busy)return;if(Math.random()<0.7){B.ran=true;setBMsg('Got away safely!');B.busy=true;setTimeout(endBattle,800);}else{setBMsg("Couldn't escape!");B.busy=true;setTimeout(foeTurn,900);}}
 function endBattle(){
@@ -1021,11 +1042,11 @@ function openFightMenu(){if(B.busy)return;const menu=document.getElementById('bm
   document.getElementById('backBtn').onclick=restoreBattleMenu;}
 function restoreBattleMenu(){const menu=document.getElementById('bmenu');
   menu.innerHTML=`<div id="bmsg">✎ Draw a spell above (flick · V · Z · ◯) — or…</div>
-    <button class="cbtn" id="bFight">Moves</button><button class="cbtn" id="bCatch">Catch</button>
-    <button class="cbtn" id="bBag">Bag</button><button class="cbtn" id="bRun">Run</button>`;wireBattle();renderBattle();}
-function wireBattle(){document.getElementById('bFight').onclick=openFightMenu;
-  document.getElementById('bCatch').onclick=()=>throwOrb(false);
-  document.getElementById('bBag').onclick=openBagMenu;document.getElementById('bRun').onclick=tryRun;}
+    <button class="cbtn" id="bFight">Moves</button><button class="cbtn" id="bBag">Bag</button>
+    <button class="cbtn wide" id="bRun">Run</button>`;wireBattle();renderBattle();}
+function wireBattle(){const f=document.getElementById('bFight');if(f)f.onclick=openFightMenu;
+  const bag=document.getElementById('bBag');if(bag)bag.onclick=openBagMenu;
+  const run=document.getElementById('bRun');if(run)run.onclick=tryRun;}
 /* draw-a-spell attack in battle (Harry Potter style) */
 function battleCast(spell){if(!B||B.busy)return;B.busy=true;sfx('cast');const sp=SPELLS[spell]||SPELLS.bolt,M=mods();
   const s=statusTick(B.ally);if(s.dmg){B.ally.hp-=s.dmg;flashMon('allyMon');}renderBattle();
@@ -1042,32 +1063,29 @@ function flashMon(id){const el=document.getElementById(id);el.classList.add('fla
    PANEL / SHOP
    =================================================================== */
 function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.items,p=document.getElementById('panel');
-  let h='<h2>Team &amp; Bag</h2>';
-  h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · Caught ${Object.keys(G.caughtSpecies).length}/${Object.keys(SPECIES).length}</div>`;
+  const C=CLASSES[G.class],el=heroType(),hpPct=Math.max(0,G.hp/G.maxHp*100);
+  const styleName={warrior:'melee cleaves',ranger:'piercing arrows',mage:'arcane bolts'}[G.class]||'attacks';
+  let h=`<h2>${C.icon} ${C.name}</h2>`;
+  h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · ${typeChip(el)} ${styleName}</div>`;
   h+=`<div class="subline">🪵 ${G.res.wood} · 🪨 ${G.res.stone} · 🌿 ${G.res.fiber} · 🔨 Craft Lv.${G.craftLvl}</div>`;
   h+='<div class="plist">';
-  G.party.forEach((c,i)=>{const pct=Math.max(0,c.hp/c.maxHp*100);
-    h+=`<div class="pcard"><canvas class="mini" width="46" height="46" data-sp="${c.species}"></canvas>
-      <div style="flex:1"><div><b>${c.species}</b> ${typeChip(c.type)}${statusChip(c)} <span class="lv">Lv.${c.level}</span></div>
-        <div class="hpwrap"><i style="width:${pct}%"></i></div>
-        <small>${Math.ceil(Math.max(0,c.hp))}/${c.maxHp} HP · XP ${c.xp}/${xpToNext(c.level)}${EVOLVE[c.species]?` · <span style="color:#9a6cff">→ ${EVOLVE[c.species].into} @Lv.${EVOLVE[c.species].lvl}</span>`:''}</small></div>
-      ${i>0?`<button class="cbtn small" data-lead="${i}">Lead</button>`:'<span class="lv">Lead</span>'}</div>`;});
+  h+=`<div class="pcard"><canvas class="mini" width="56" height="56" id="heroCv"></canvas>
+      <div style="flex:1"><div><b>${C.name}</b> ${typeChip(el)}${statusChip(HERO)} <span class="lv">Lv.${G.level}</span></div>
+        <div class="hpwrap"><i style="width:${hpPct}%"></i></div>
+        <small>${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} HP · ⚔ ${G._atk} ATK · 🛡 ${G._def} DEF · XP ${G.xp}/${xpToNext(G.level)}</small></div></div>`;
   h+='</div>';
-  h+=`<div class="subline">Bag — Orbs ${it.orb} · Super ${it.superorb} · Berry ${it.berry} · Potion ${it.potion} · Revive ${it.revive} · Ration ${it.ration}</div>`;
-  const fn=G.party.some(c=>c.hp<=0);
+  h+=`<div class="subline">Bag — Berry ${it.berry} · Potion ${it.potion} · Ration ${it.ration}</div>`;
   h+='<div class="prow">';
-  h+=`<button class="cbtn small" data-item="berry" ${it.berry<=0?'disabled':''}>Eat Berry (+hunger, heal lead)</button>`;
+  h+=`<button class="cbtn small" data-item="berry" ${it.berry<=0?'disabled':''}>Eat Berry (+hunger, heal)</button>`;
   h+=`<button class="cbtn small" data-item="potion" ${it.potion<=0?'disabled':''}>Use Potion (+60 HP)</button>`;
   h+=`<button class="cbtn small" data-item="ration" ${it.ration<=0?'disabled':''}>Eat Ration (fill hunger)</button>`;
-  h+=`<button class="cbtn small" data-item="revive" ${(it.revive<=0||!fn)?'disabled':''}>Use Revive</button>`;
   h+=`<button class="cbtn small" id="openSkills" style="background:linear-gradient(#efe0ff,#d9c2ff)">✦ Skill Tree${(G.skillPoints||0)>0?` (${G.skillPoints} pts!)`:''}</button>`;
   h+=`<button class="cbtn small" id="openCraft" style="background:linear-gradient(#ffe9c2,#f7cf8e)">🔨 Craft &amp; Build</button>`;
   h+=`<button class="cbtn small" id="spellGuide" style="background:linear-gradient(#e0f0ff,#c2e0ff)">✎ Spell Guide</button>`;
   h+=`<button class="cbtn small" id="muteBtn">${G.muted?'🔇 Sound: Off':'🔊 Sound: On'}</button>`;
   h+=`<button class="cbtn small" id="closePanel">Close</button></div>`;
   p.innerHTML=h;p.style.display='flex';
-  p.querySelectorAll('canvas.mini').forEach(cv=>drawCritter(cv,46,cv.dataset.sp));
-  p.querySelectorAll('[data-lead]').forEach(b=>b.onclick=()=>{const i=+b.dataset.lead;const c=G.party.splice(i,1)[0];G.party.unshift(c);save();openPanel();});
+  heroPreview(document.getElementById('heroCv'),G.class);
   p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>usePanelItem(b.dataset.item));
   document.getElementById('openSkills').onclick=openSkills;
   document.getElementById('openCraft').onclick=openCraft;
@@ -1087,7 +1105,7 @@ function openSpellGuide(){mode='panel';const p=document.getElementById('panel');
     ['power','Draw a V','Power Blast','Slow, heavy hit'],
     ['chain','Draw a Z (zig-zag)','Chain Bolt','Fast — pierces through'],
     ['nova','Draw a ◯ (circle)','Nova','Fires 3 ways at once']];
-  let h='<h2>✎ Spell Gestures</h2><div class="subline">Draw with your <b>right thumb</b> — on the map, or on the arena during battle. Spells take your <b>lead critter\'s element</b>, so type matchups matter.</div><div class="plist">';
+  let h='<h2>✎ Spell Gestures</h2><div class="subline">Draw with your <b>right thumb</b> — on the map, or on the arena during battle. Your attacks take your <b>class element</b> (Mage 🔥Ember · Ranger 🌪️Gale · Warrior 🪨Stone), so type matchups matter. <b>Warriors</b> swing in melee — get close!</div><div class="plist">';
   rows.forEach(r=>{h+=`<div class="pcard"><canvas class="gly" width="56" height="56" data-k="${r[0]}" style="background:rgba(122,92,255,.08);border-radius:10px"></canvas>
     <div style="flex:1"><div><b>${r[2]}</b> — <span style="color:#3f7d34">${r[1]}</span></div><small style="color:#8a6d3a">${r[3]}</small></div></div>`;});
   h+='</div><div class="subline" style="color:#cfe6c2">Fill the ✦ Super bar by fighting, then tap the glowing ✦ button to unleash your class Super.</div>';
@@ -1111,11 +1129,10 @@ function openSkills(){mode='panel';const p=document.getElementById('panel');
   p.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{const nd=SKILLS.find(s=>s.key===b.dataset.sk),rank=(G.skills||{})[nd.key]||0;
     if(rank>=nd.max||(G.skillPoints||0)<=0||!skillReq(nd))return;G.skills[nd.key]=rank+1;G.skillPoints--;toast(`${nd.name} → ${rank+1}`);save();openSkills();});
   document.getElementById('backSkills').onclick=openPanel;}
-function usePanelItem(k){const it=G.items,l=firstAlive()||G.party[0];
-  if(k==='berry'){if(it.berry<=0)return;it.berry--;G.hunger=Math.min(100,G.hunger+25);l.hp=Math.min(l.maxHp,l.hp+Math.floor(l.maxHp*0.35));toast('Ate a Berry');}
-  else if(k==='potion'){if(it.potion<=0)return;it.potion--;l.hp=Math.min(l.maxHp,l.hp+60);toast('Used a Potion');}
+function usePanelItem(k){const it=G.items;
+  if(k==='berry'){if(it.berry<=0)return;it.berry--;G.hunger=Math.min(100,G.hunger+25);G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.35));toast('Ate a Berry');}
+  else if(k==='potion'){if(it.potion<=0)return;it.potion--;G.hp=Math.min(G.maxHp,G.hp+60);toast('Used a Potion');}
   else if(k==='ration'){if(it.ration<=0)return;it.ration--;G.hunger=100;toast('Hunger restored');}
-  else if(k==='revive'){const f=G.party.find(c=>c.hp<=0);if(it.revive<=0||!f)return;it.revive--;f.hp=Math.floor(f.maxHp*0.5);f.status=null;toast(`${f.species} revived`);}
   save();openPanel();}
 function closePanel(){document.getElementById('panel').style.display='none';mode='world';}
 function openShop(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
@@ -1183,7 +1200,7 @@ function openTileForSpawn(){
     if(Math.hypot(wx-P.x,wy-P.y)<TILE*5)continue; if(x<10&&y<9)continue; return{wx,wy};}
   return null;}
 function spawnEnemy(){if(enemies.length>=MAX_ENEMIES)return;const pos=openTileForSpawn();if(!pos)return;
-  const base=(G.party&&G.party[0]?G.party[0].level:3);const alpha=Math.random()<0.08;
+  const base=(G&&G.level)||3;const alpha=Math.random()<0.08;
   const lvl=Math.max(2,base+(Math.floor(Math.random()*5)-2))+(alpha?5:0);
   const sp=WILD_POOL[Math.floor(Math.random()*WILD_POOL.length)],c=makeCritter(sp,lvl);
   const mhp=alpha?Math.floor(c.maxHp*2.2):c.maxHp;
@@ -1218,27 +1235,56 @@ function drawEnemy(e){const s=w2s(e.x,e.y),sx=s.x,sy=s.y,bob=Math.sin(e.bob*3)*2
   ctx.fillStyle=e.alpha?'#ffd23c':TYPES[e.type].color;ctx.font='bold 10px Fredoka';ctx.textAlign='center';ctx.fillText((e.alpha?'★L':'L')+e.level,sx,top+10);
   if(e.hp<e.maxHp){const w=44*sc,pct=Math.max(0,e.hp/e.maxHp);ctx.fillStyle='rgba(0,0,0,.5)';rr(sx-w/2,top+14,w,5,3);ctx.fill();
     ctx.fillStyle=pct>.5?'#54c23a':pct>.25?'#f2c14e':'#e8483a';rr(sx-w/2,top+14,w*pct,5,3);ctx.fill();}
-  if(e.hp/e.maxHp<0.35){ctx.strokeStyle='#ffd23c';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
-    ctx.beginPath();ctx.arc(sx,sy-16*sc-bob,26*sc,0,7);ctx.stroke();ctx.setLineDash([]);}
 }
 function nearestEnemy(x,y,maxd){let best=null,bd=maxd||1e9;for(const e of enemies){const d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}return best;}
-function cast(key,aimx,aimy){if(castCD>0)return;const sp=SPELLS[key]||SPELLS.bolt;const lead=firstAlive();if(!lead)return;
-  const M=mods();castCD=sp.cd*M.cd;const el=lead.type,col=TYPES[el].color;sfx('cast');
-  let ang;const tgt=nearestEnemy(P.x,P.y,CAST_RANGE);
+function cast(key,aimx,aimy){if(castCD>0)return;const lead=firstAlive();if(!lead)return;
+  const cl=(G&&G.class)||'mage';
+  let ang;const tgt=nearestEnemy(P.x,P.y,cl==='warrior'?TILE*2.4:CAST_RANGE);
   if(tgt)ang=Math.atan2(tgt.y-P.y,tgt.x-P.x);
   else if((aimx||aimy))ang=Math.atan2(aimy,aimx);else ang=P.face;
-  // class projectile flavor
-  const cl=(G&&G.class)||'mage';
+  if(cl==='warrior'){meleeAttack(key,ang);return;}
+  const sp=SPELLS[key]||SPELLS.bolt;const M=mods();castCD=sp.cd*M.cd;const el=heroType(),col=TYPES[el].color;sfx('cast');
+  // class projectile flavor: mage = arcane bolts, ranger = fast piercing arrows
   let spdMul=1,rMul=1,dmgMul=1,pierceAdd=0,kb=0;
-  if(cl==='ranger'){spdMul=1.3;rMul=0.8;pierceAdd=1;}
-  else if(cl==='warrior'){spdMul=0.85;rMul=1.45;dmgMul=1.18;kb=26;}
+  if(cl==='ranger'){spdMul=1.35;rMul=0.78;pierceAdd=1;}
   const n=(sp.count||1)+M.count;
   for(let i=0;i<n;i++){const a=ang+(i-(n-1)/2)*0.22;
-    shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*sp.speed*spdMul,vy:Math.sin(a)*sp.speed*spdMul,dmg:Math.max(3,Math.floor(lead.atk*sp.mult*M.dmg*dmgMul)),el,col,r:sp.r*rMul,life:1.2,pierce:(sp.pierce||0)+M.pierce+pierceAdd,kb,hit:new Set()});}
+    shots.push({x:P.x,y:P.y-6,vx:Math.cos(a)*sp.speed*spdMul,vy:Math.sin(a)*sp.speed*spdMul,dmg:Math.max(3,Math.floor(G._atk*sp.mult*M.dmg*dmgMul)),el,col,r:sp.r*rMul,life:1.2,pierce:(sp.pierce||0)+M.pierce+pierceAdd,kb,arrow:cl==='ranger',hit:new Set()});}
   for(let i=0;i<7;i++)spawn(P.x+Math.cos(ang)*14,P.y-6+Math.sin(ang)*14,{vx:Math.cos(ang)*90+(Math.random()-.5)*70,vy:Math.sin(ang)*90+(Math.random()-.5)*70,g:0,max:.3,r:4,c:col});
   spellFlash(sp.name,col);
 }
+/* warrior: melee cleave — arc hitbox in front, knockback, no projectiles */
+const slashes=[];
+function meleeAttack(key,ang){const sp=SPELLS[key]||SPELLS.bolt,M=mods();
+  const heavy=sp.mult>1.5;castCD=Math.max(0.28,sp.cd*M.cd*0.8);
+  const el=heroType(),col=TYPES[el].color;sfx('cast');
+  const reach=TILE*(heavy?1.85:1.5),arc=heavy?1.35:1.0,kb=heavy?52:30;
+  const dmg=Math.max(4,Math.floor(G._atk*sp.mult*M.dmg*1.4));
+  slashes.push({ang,arc,reach,life:0,max:0.2,col});
+  for(const e of enemies){const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy);if(d>reach+ER)continue;
+    let da=Math.atan2(dy,dx)-ang;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;
+    if(Math.abs(da)>arc)continue;
+    const eff=effect(el,e.type),dd=Math.max(1,Math.floor(dmg*eff*(0.9+Math.random()*0.2)));
+    e.hp-=dd;e.flash=0.2;addSuper(dd*0.4);sfx('hit');
+    const nd=d||1,nx=e.x+dx/nd*kb,ny=e.y+dy/nd*kb;if(!solidWorld(nx,e.y))e.x=nx;if(!solidWorld(e.x,ny))e.y=ny;
+    floatText(e.x,e.y-40,(eff>1?'✦':'')+dd,eff>1?'#ffd23c':'#fff');
+    for(let k=0;k<7;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*170,vy:(Math.random()-.5)*170,g:120,max:.4,r:4,c:eff>1?'#fff2a0':col});
+    if(e.hp<=0)defeatEnemy(e);}
+  spellFlash(heavy?'Cleave!':'Slash',col);}
+function updateSlashes(dt){for(let i=slashes.length-1;i>=0;i--){const s=slashes[i];s.life+=dt;if(s.life>=s.max)slashes.splice(i,1);}}
+function drawSlashes(){for(const s of slashes){const k=1-s.life/s.max;ctx.save();ctx.globalAlpha=Math.max(0,k*0.85);
+  ctx.strokeStyle=s.col;ctx.lineWidth=6*k+3;ctx.lineCap='round';ctx.shadowColor=s.col;ctx.shadowBlur=16;
+  const steps=12;ctx.beginPath();
+  for(let j=0;j<=steps;j++){const t=j/steps,aa=s.ang-s.arc+2*s.arc*t;
+    const p=w2s(P.x+Math.cos(aa)*s.reach,P.y+Math.sin(aa)*s.reach);
+    if(j===0)ctx.moveTo(p.x,p.y-6);else ctx.lineTo(p.x,p.y-6);}
+  ctx.stroke();ctx.restore();}ctx.globalAlpha=1;}
 function drawShots(){for(const s of shots){const p=w2s(s.x,s.y),sx=p.x,sy=p.y-6;
+  if(s.arrow){const a=Math.atan2(s.vy,s.vx);ctx.save();ctx.translate(sx,sy);ctx.rotate(a);
+    ctx.strokeStyle=s.col;ctx.lineWidth=3;ctx.lineCap='round';ctx.shadowColor=s.col;ctx.shadowBlur=12;
+    ctx.beginPath();ctx.moveTo(-s.r*1.6,0);ctx.lineTo(s.r*1.6,0);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s.r*1.6,0);ctx.lineTo(s.r*0.6,-s.r*0.8);ctx.moveTo(s.r*1.6,0);ctx.lineTo(s.r*0.6,s.r*0.8);ctx.stroke();
+    ctx.restore();ctx.shadowBlur=0;continue;}
   ctx.fillStyle=s.col;ctx.shadowColor=s.col;ctx.shadowBlur=14;ctx.beginPath();ctx.arc(sx,sy,s.r,0,7);ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.arc(sx,sy,s.r*0.45,0,7);ctx.fill();ctx.shadowBlur=0;}}
 function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
@@ -1257,25 +1303,11 @@ function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.l
   if(gone)shots.splice(i,1);
 }}
 function defeatEnemy(e){const idx=enemies.indexOf(e);if(idx<0)return;enemies.splice(idx,1);sfx('coin');
-  const mult=e.alpha?3:1,lead=firstAlive(),gain=(8+e.level*5)*mult,coins=Math.round((5+e.level*3+Math.floor(Math.random()*5))*mult*mods().coins);
-  if(lead)grantXp(lead,gain);G.coins+=coins;
+  const mult=e.alpha?3:1,gain=(8+e.level*5)*mult,coins=Math.round((5+e.level*3+Math.floor(Math.random()*5))*mult*mods().coins);
+  grantXp(HERO,gain);G.coins+=coins;
   const kk=e.alpha?36:18;for(let k=0;k<kk;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*(e.alpha?320:230),vy:(Math.random()-.5)*280-40,g:170,max:.8,r:5,c:e.alpha?'#ffd23c':TYPES[e.type].color});
   floatText(e.x,e.y-30,'+'+coins+'c','#ffd23c');
   toast(e.alpha?`⭐ Defeated the ALPHA ${e.sp}! +${gain} XP`:`Defeated ${e.sp}! +${gain} XP`);save();}
-function catchEnemy(e){if(G.items.orb<=0){toast('No Orbs! Buy some at the Mart 🛒');return;}
-  G.items.orb--;const hr=e.hp/e.maxHp;let ch=(1-hr)*0.7+0.2-e.level*0.006+mods().catch;ch=Math.min(0.97,Math.max(0.05,ch));
-  burst(e.x,e.y,'#ffd23c');
-  if(Math.random()<ch){const idx=enemies.indexOf(e);if(idx>=0)enemies.splice(idx,1);
-    const res=G.party.length>=6;if(!res)G.party.push(makeCritter(e.sp,e.level));G.caughtSpecies[e.sp]=true;sfx('catch');
-    toast((e.alpha?`⭐ Caught the ALPHA ${e.sp}!`:`Gotcha! Caught ${e.sp}!`)+(res?' (Team full — released.)':''));
-    for(let k=0;k<22;k++)spawn(e.x,e.y,{vx:(Math.random()-.5)*220,vy:(Math.random()-.5)*220,g:110,max:.8,r:5,c:'#ffd23c'});save();}
-  else{sfx('fail');toast(`${e.sp} broke free!`);e.hp=Math.min(e.maxHp,e.hp+Math.floor(e.maxHp*0.12));}
-}
-function onLeadFaint(){const alive=firstAlive();
-  if(!alive){P.x=5.5*TILE;P.y=6.5*TILE;G.party.forEach(c=>{c.hp=Math.max(1,Math.floor(c.maxHp*0.5));c.status=null;});
-    G.energy=Math.max(30,G.energy);seedEnemies();dialog("<b>You blacked out…</b> A stranger carried you back to town. Your team was patched up.");save();}
-  else toast(`${alive.species} steps up!`);
-}
 function flashHurt(){hurtFlash=0.5;}
 function floatText(x,y,txt,col){floats.push({x,y,txt,col,life:0,max:0.8});}
 function updateFloats(dt){for(let i=floats.length-1;i>=0;i--){const f=floats[i];f.life+=dt;f.y-=30*dt;if(f.life>=f.max)floats.splice(i,1);}}
@@ -1358,10 +1390,8 @@ const RECIPES=[
   {key:'torch',   name:'Torch',   build:true,cost:{wood:2,fiber:2}, lvl:1,desc:'A bright light post.'},
   {key:'wall',    name:'Wall',    build:true,cost:{wood:2,stone:2}, lvl:1,desc:'Blocks enemies.'},
   {key:'hut',     name:'Hut',     build:true,cost:{wood:12,stone:6},lvl:2,desc:'Rest, heal & save point + light.'},
-  {key:'orb',     name:'Orb',     item:true, cost:{fiber:3,stone:1},lvl:1,desc:'A catch device.'},
   {key:'potion',  name:'Potion',  item:true, cost:{fiber:2,berry:1},lvl:1,desc:'Heals 60 HP.'},
   {key:'ration',  name:'Ration',  item:true, cost:{fiber:3},        lvl:1,desc:'Fills hunger.'},
-  {key:'superorb',name:'Super Orb',item:true,cost:{fiber:5,stone:3},lvl:3,desc:'Great catch rate.'},
 ];
 function craftXpToNext(lvl){return 4+lvl*3;}
 function haveCost(cost){for(const k in cost){const have=(k==='berry')?(G.items.berry||0):(G.res[k]||0);if(have<cost[k])return false;}return true;}
@@ -1533,15 +1563,10 @@ function buildClasses(){const wrap=document.getElementById('classCards');wrap.in
   for(const key of Object.keys(CLASSES)){const C=CLASSES[key];const card=document.createElement('div');card.className='scard';card.style.width='150px';
     card.innerHTML=`<canvas width="90" height="90"></canvas><b>${C.icon} ${C.name}</b><small style="color:#5a4;white-space:pre-line;font-size:11px">${C.blurb}</small>`;
     heroPreview(card.querySelector('canvas'),key);
-    card.onclick=()=>{pendingClass=key;document.getElementById('classSel').style.display='none';
-      document.getElementById('starterSel').style.display='flex';mode='starter';buildStarters();};
+    card.onclick=()=>{const atk=key==='warrior'?'swing your weapon in melee':(key==='ranger'?'loose piercing arrows':'cast arcane bolts');
+      newGame(key);startWorld();
+      dialog(`<b>${C.name} ${C.icon}</b> — you set out alone into the wild! <b>You</b> are the fighter now (your own HP, level & XP). <b>Left thumb</b> moves, <b>right thumb</b> to ${atk} — flick or draw <b>V</b>, <b>Z</b>, or <b>◯</b> (see <b>✎ Spell Guide</b> in the ☰ menu). Fighting charges your <b>✦ Super</b> and earns <b>skill points</b>. Fall in battle and you respawn in town — you lose loose loot but keep your skills, crafting & buildings. Good luck!`);};
     wrap.appendChild(card);}}
-function buildStarters(){const wrap=document.getElementById('starterCards');wrap.innerHTML='';
-  STARTERS.forEach(sp=>{const s=SPECIES[sp];const card=document.createElement('div');card.className='scard';
-    card.innerHTML=`<canvas width="80" height="80"></canvas><b>${sp}</b><small style="color:${TYPES[s.type].color}">${s.type}</small>`;
-    drawCritter(card.querySelector('canvas'),80,sp);
-    card.onclick=()=>{newGame(pendingClass,sp);startWorld();dialog(`<b>${CLASSES[pendingClass].name} ${CLASSES[pendingClass].icon}</b> · <b>${sp}</b> joins you! <b>Left thumb</b> moves, <b>right thumb</b> casts — flick or draw <b>V</b>, <b>Z</b>, or <b>◯</b> (see <b>✎ Spell Guide</b> in the ☰ menu). Fighting charges your <b>✦ Super</b> and earns <b>skill points</b> (✦ Skill Tree). Tap the <b>prompt above a critter</b> to catch it.`);};
-    wrap.appendChild(card);});}
 function toClassSelect(){document.getElementById('title').style.display='none';document.getElementById('classSel').style.display='flex';mode='class';buildClasses();}
 document.getElementById('startBtn').onclick=toClassSelect;
 function init(){resize();buildGrid();wireBattle();
