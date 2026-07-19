@@ -16,6 +16,7 @@ A tiny **isometric action-survival roguelite** that runs entirely in your browse
 - **A real overworld** — a big generated map with **three towns** (Oakvale, Emberport, Mossholm) connected by dirt roads, each with its own nurse, mart, land registrar, and chatty villagers. Towns are safe; the wilderness between them gets **meaner the further you stray** (enemy levels scale with distance from town — and so does the loot).
 - **Land ownership** — staked plots ring every town (**gold stakes = for sale**, price on the sign; **green = yours**). Buy them from the 🏛 **registrar**, and structural building (walls, towers, chests…) only works on land you own.
 - **Homestead class perks** — **Warrior · Builder** (+25% building HP, 20% cheaper repairs) · **Ranger · Forager** (+1 resource on every gather) · **Mage · Arcanist** (+15% tower damage, +10% tower range).
+- **Class mobility** — a dedicated button with a 3-second cooldown ring: **Warrior & Ranger dash** in a burst of speed, the **Mage blinks** (teleports) about 3 tiles, walls permitting. The main action button is your **class weapon** (⚔️ sword / 🏹 bow / 🪄 wand) — tap it to attack even with no prompt up, and Ranger shots fly as real fletched **arrows**.
 - **Tiered tools** — craft an **axe** to chop trees and a **pickaxe** to mine **⛏️ ore** (found in deeper wilderness only). Tier-2+ tools are smithed at a **forge** and add bonus yield. Resource nodes are fixed in the world and **respawn on their own timers**.
 - **Base building with HP** — walls, a **door** (you pass, enemies don't), floors, a **storage chest** (banked materials survive death), **craft table** and **forge** stations that unlock recipes when you stand near them, decorative banners, and huts. Everything has **hit points**, shows a damage bar, and can be **repaired** with wood.
 - **Defense towers** — an **Arrow Tower** (single target), **Frost Tower** (slows), and **Catapult** (AoE splash), each with a range ring at placement, **3 upgrade tiers**, and an **ammo** supply you load from materials (wood/fiber/stone). Plus **spike traps** and **snare traps** with limited uses.
@@ -59,7 +60,9 @@ Built **touch-first for landscape phones**, with a Brawl Stars-style look — ch
 |---|---|---|
 | Move | **Left thumb** — press and drag anywhere on the left half; 360° smooth movement | Arrow keys / WASD |
 | Attack | **Right thumb** — flick or draw a shape on the right half | J = Bolt, K = Twin, L = Power, U = Chain, O = Nova |
-| Interact / confirm | **A** button (also advances dialog) | Space or E |
+| Weapon attack / interact | **Class weapon button** (⚔️ / 🏹 / 🪄) — attacks with your weapon, or acts on the floating prompt (also advances dialog) | Space or E |
+| Dash / Blink | **💨 / 🌀 button** — Warrior & Ranger dash, Mage teleports ~3 tiles (3s cooldown ring) | Q or Shift |
+| Super | **✦ button** when it glows gold | H |
 | Hero & Bag | **☰** button | P or B |
 
 **Attack gestures** (right thumb): a quick flick = **Bolt**, a gentle bend = **Twin**, a sharp **V** = **Power**, a **Z** zigzag = **Chain** (pierces), a **circle** = **Nova** (3-way). The name flashes when you attack, and it uses your **class element**. **Mages** fire arcane bolts, **Rangers** loose piercing arrows, and **Warriors** cleave a melee arc in front of them — so warriors need to get right up close.
