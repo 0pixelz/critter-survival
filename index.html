@@ -149,6 +149,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
 .pcard .hpwrap{height:8px;background:#6a5a44;border-radius:6px;margin-top:4px;overflow:hidden;}
 .pcard .hpwrap>i{display:block;height:100%;background:#54c23a;}
 .prow{max-width:640px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:8px;}
+/* menu hub tiles */
+.menugrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:640px;width:100%;margin:0 auto;}
+.mtile{background:var(--panel);border:4px solid var(--outline);border-radius:16px;padding:11px 4px 9px;
+  font-weight:700;color:var(--ink);cursor:pointer;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.2);font-size:13px;
+  transition:transform .06s;position:relative;}
+.mtile:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2);}
+.mtile .big{font-size:26px;display:block;margin-bottom:2px;line-height:1.1;}
+.mtile .badge{position:absolute;top:-8px;right:-6px;background:#e8483a;color:#fff;font-size:11px;
+  border-radius:10px;padding:2px 7px;border:2px solid var(--outline);}
+/* compact skill tree */
+.skgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:640px;width:100%;margin:0 auto;}
+.skcard{background:var(--panel);border:3px solid var(--outline);border-radius:12px;padding:6px 8px;
+  color:var(--ink);display:flex;align-items:center;gap:7px;}
+.skcard b{font-size:12.5px;} .skcard small{font-size:10px;color:#5a4;display:block;line-height:1.25;}
+.skcard .rk{font-size:10.5px;font-weight:700;opacity:.65;}
+.skcard .cbtn{padding:7px 11px;font-size:15px;min-width:40px;box-shadow:0 3px 0 rgba(0,0,0,.2);flex:none;}
 
 /* ---------- Rotate prompt ---------- */
 #rotate{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;
@@ -201,7 +217,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
   <div id="bmenu">
     <div id="bmsg"></div>
     <button class="cbtn" id="bFight">Moves</button>
-    <button class="cbtn" id="bBag">Bag</button>
+    <button class="cbtn" id="bBag">Items</button>
     <button class="cbtn wide" id="bRun">Run</button>
   </div>
 </div>
@@ -1237,7 +1253,7 @@ function openFightMenu(){if(B.busy)return;const menu=document.getElementById('bm
   document.getElementById('backBtn').onclick=restoreBattleMenu;}
 function restoreBattleMenu(){const menu=document.getElementById('bmenu');
   menu.innerHTML=`<div id="bmsg">✎ Draw a spell above (flick · V · Z · ◯) — or…</div>
-    <button class="cbtn" id="bFight">Moves</button><button class="cbtn" id="bBag">Bag</button>
+    <button class="cbtn" id="bFight">Moves</button><button class="cbtn" id="bBag">Items</button>
     <button class="cbtn wide" id="bRun">Run</button>`;wireBattle();renderBattle();}
 function wireBattle(){const f=document.getElementById('bFight');if(f)f.onclick=openFightMenu;
   const bag=document.getElementById('bBag');if(bag)bag.onclick=openBagMenu;
@@ -1257,37 +1273,46 @@ function flashMon(id){const el=document.getElementById(id);el.classList.add('fla
 /* ===================================================================
    PANEL / SHOP
    =================================================================== */
-function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const it=G.items,p=document.getElementById('panel');
+function openPanel(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
   const C=CLASSES[G.class],el=heroType(),hpPct=Math.max(0,G.hp/G.maxHp*100);
   const styleName={warrior:'melee cleaves',ranger:'piercing arrows',mage:'arcane bolts'}[G.class]||'attacks';
-  let h=`<h2>${C.icon} ${C.name}</h2>`;
-  h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · ${typeChip(el)} ${styleName}</div>`;
-  h+=`<div class="subline">🪵 ${G.res.wood} · 🪨 ${G.res.stone} · 🌿 ${G.res.fiber} · ⛏️ ${G.res.ore} · 🔨 Craft Lv.${G.craftLvl}</div>`;
-  h+=`<div class="subline">🪓 ${G.tools.axe?TOOLS.axe.tiers[G.tools.axe-1].name:'no axe'} · ⛏️ ${G.tools.pickaxe?TOOLS.pickaxe.tiers[G.tools.pickaxe-1].name:'no pickaxe'} · ⌂ ${Object.keys(G.plots).length} plot${Object.keys(G.plots).length===1?'':'s'} · <span style="color:#b39dff">${CLASS_PERK[G.class].name}: ${CLASS_PERK[G.class].desc}</span></div>`;
-  h+='<div class="plist">';
-  h+=`<div class="pcard"><canvas class="mini" width="56" height="56" id="heroCv"></canvas>
-      <div style="flex:1"><div><b>${C.name}</b> ${typeChip(el)}${statusChip(HERO)} <span class="lv">Lv.${G.level}</span></div>
-        <div class="hpwrap"><i style="width:${hpPct}%"></i></div>
-        <small>${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} HP · ⚔ ${G._atk} ATK · 🛡 ${G._def} DEF · XP ${G.xp}/${xpToNext(G.level)}</small></div></div>`;
-  h+='</div>';
-  h+=`<div class="subline">Bag — Berry ${it.berry} · Potion ${it.potion} · Ration ${it.ration}</div>`;
-  h+='<div class="prow">';
-  h+=`<button class="cbtn small" data-item="berry" ${it.berry<=0?'disabled':''}>Eat Berry (+hunger, heal)</button>`;
-  h+=`<button class="cbtn small" data-item="potion" ${it.potion<=0?'disabled':''}>Use Potion (+60 HP)</button>`;
-  h+=`<button class="cbtn small" data-item="ration" ${it.ration<=0?'disabled':''}>Eat Ration (fill hunger)</button>`;
-  h+=`<button class="cbtn small" id="openSkills" style="background:linear-gradient(#efe0ff,#d9c2ff)">✦ Skill Tree${(G.skillPoints||0)>0?` (${G.skillPoints} pts!)`:''}</button>`;
-  h+=`<button class="cbtn small" id="openCraft" style="background:linear-gradient(#ffe9c2,#f7cf8e)">🔨 Craft &amp; Build</button>`;
-  h+=`<button class="cbtn small" id="spellGuide" style="background:linear-gradient(#e0f0ff,#c2e0ff)">✎ Spell Guide</button>`;
-  h+=`<button class="cbtn small" id="muteBtn">${G.muted?'🔇 Sound: Off':'🔊 Sound: On'}</button>`;
-  h+=`<button class="cbtn small" id="closePanel">Close</button></div>`;
+  let h=`<h2>${C.icon} ${C.name} <span style="font-size:15px;opacity:.8">Lv.${G.level}</span></h2>`;
+  h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · ${typeChip(el)} ${styleName} · <span style="color:#b39dff">★ ${CLASS_PERK[G.class].name}</span></div>`;
+  h+=`<div class="plist"><div class="pcard"><canvas class="mini" width="56" height="56" id="heroCv"></canvas>
+    <div style="flex:1"><div class="hpwrap"><i style="width:${hpPct}%"></i></div>
+    <small>${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} HP · ⚔ ${G._atk} · 🛡 ${G._def} · XP ${G.xp}/${xpToNext(G.level)}${statusChip(HERO)?' · ':''}${statusChip(HERO)}</small></div></div></div>`;
+  h+=`<div class="menugrid">
+    <div class="mtile" id="mInv"><span class="big">🎒</span>Inventory</div>
+    <div class="mtile" id="mSkill"><span class="big">✦</span>Skills${(G.skillPoints||0)>0?`<span class="badge">${G.skillPoints}</span>`:''}</div>
+    <div class="mtile" id="mCraft"><span class="big">🔨</span>Craft &amp; Build</div>
+    <div class="mtile" id="mGuide"><span class="big">✎</span>Guide</div>
+    <div class="mtile" id="mSound"><span class="big">${G.muted?'🔇':'🔊'}</span>Sound ${G.muted?'Off':'On'}</div>
+    <div class="mtile" id="mClose"><span class="big">▶</span>Resume</div>
+  </div>`;
   p.innerHTML=h;p.style.display='flex';
   heroPreview(document.getElementById('heroCv'),G.class);
+  document.getElementById('mInv').onclick=openInventory;
+  document.getElementById('mSkill').onclick=openSkills;
+  document.getElementById('mCraft').onclick=openCraft;
+  document.getElementById('mGuide').onclick=openSpellGuide;
+  document.getElementById('mSound').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('menu');openPanel();};
+  document.getElementById('mClose').onclick=closePanel;}
+function openInventory(){mode='panel';const p=document.getElementById('panel');const it=G.items;
+  let h='<h2>🎒 Inventory</h2>';
+  h+=`<div class="subline">🍖 hunger ${Math.round(G.hunger)}% · ⚡ energy ${Math.round(G.energy)}% · ❤️ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp}</div>`;
+  h+='<div class="plist">';
+  [['berry','🫐 Berry','heals 35% HP + hunger'],['potion','🧪 Potion','restores 60 HP'],['ration','🍖 Ration','fully fills hunger']]
+    .forEach(([k,nm,fx])=>{h+=`<div class="pcard"><div style="flex:1"><b>${nm}</b> <span class="lv">×${it[k]||0}</span><br><small style="color:#8a6d3a">${fx}</small></div>
+    <button class="cbtn small" data-item="${k}" ${!(it[k]>0)?'disabled':''}>Use</button></div>`;});
+  h+='</div><div class="subline" style="margin-top:8px;color:#f2c14e;font-weight:700">MATERIALS</div>';
+  const banked=RES_KEYS.reduce((a,k)=>a+(G.bank[k]||0),0);
+  h+=`<div class="subline">${RES_KEYS.map(k=>`${RES_ICON[k]} ${G.res[k]||0}`).join(' · ')}${banked?` · 📦 ${banked} banked`:''}</div>`;
+  h+='<div class="subline" style="margin-top:8px;color:#f2c14e;font-weight:700">TOOLS</div>';
+  h+=`<div class="subline">🪓 ${G.tools.axe?TOOLS.axe.tiers[G.tools.axe-1].name:'none — craft one!'} · ⛏️ ${G.tools.pickaxe?TOOLS.pickaxe.tiers[G.tools.pickaxe-1].name:'none — craft one!'}</div>`;
+  h+='<div class="prow" style="margin-top:10px"><button class="cbtn small" id="invBack">◀ Menu</button></div>';
+  p.innerHTML=h;p.style.display='flex';
   p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>usePanelItem(b.dataset.item));
-  document.getElementById('openSkills').onclick=openSkills;
-  document.getElementById('openCraft').onclick=openCraft;
-  document.getElementById('spellGuide').onclick=openSpellGuide;
-  document.getElementById('muteBtn').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('menu');openPanel();};
-  document.getElementById('closePanel').onclick=closePanel;}
+  document.getElementById('invBack').onclick=openPanel;}
 function drawGlyph(cv,kind,col){const c=cv.getContext('2d'),s=cv.width;c.clearRect(0,0,s,s);
   c.strokeStyle=col;c.lineWidth=5;c.lineJoin='round';c.lineCap='round';c.shadowColor=col;c.shadowBlur=6;c.beginPath();
   if(kind==='bolt'){c.moveTo(s*0.18,s*0.5);c.lineTo(s*0.82,s*0.5);c.moveTo(s*0.62,s*0.36);c.lineTo(s*0.82,s*0.5);c.lineTo(s*0.62,s*0.64);}
@@ -1310,17 +1335,17 @@ function openSpellGuide(){mode='panel';const p=document.getElementById('panel');
   p.querySelectorAll('canvas.gly').forEach(cv=>drawGlyph(cv,cv.dataset.k,'#7a5cff'));
   document.getElementById('backGuide').onclick=openPanel;}
 function openSkills(){mode='panel';const p=document.getElementById('panel');
-  let h=`<h2>✦ Skill Tree</h2><div class="subline">Skill points: <b style="color:#ffd23c">${G.skillPoints||0}</b> · Class: <b>${CLASSES[G.class].name}</b> ${CLASSES[G.class].icon}</div>`;
+  let h=`<h2>✦ Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> · +1 every level-up</div>`;
   for(const br of ['Arcane','Storm','Survival']){
-    h+=`<div class="subline" style="margin-top:8px;color:#b39dff;font-weight:700;letter-spacing:.5px">${br.toUpperCase()}</div><div class="plist">`;
+    h+=`<div class="subline" style="margin:7px 0 3px;color:#b39dff;font-weight:700;letter-spacing:.5px;font-size:12px">${br.toUpperCase()}</div><div class="skgrid">`;
     for(const nd of SKILLS.filter(s=>s.branch===br)){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=skillReq(nd);
       const canBuy=!maxed&&(G.skillPoints||0)>0&&ok;
-      const lock=!ok?` <span style="color:#c0392b">🔒 needs ${Object.entries(nd.req).map(([k,v])=>k+' '+v).join(', ')}</span>`:'';
-      h+=`<div class="pcard" style="${ok?'':'opacity:.6'}"><div style="flex:1"><div><b>${nd.name}</b> <span class="lv">${rank}/${nd.max}</span></div>
-        <small style="color:#5a4">${nd.eff}${lock}</small></div>
-        <button class="cbtn small" data-sk="${nd.key}" ${canBuy?'':'disabled'} style="min-width:52px">${maxed?'MAX':'+'}</button></div>`;}
+      const lock=!ok?` 🔒${Object.entries(nd.req).map(([k,v])=>k+' '+v).join(',')}`:'';
+      h+=`<div class="skcard" style="${ok?'':'opacity:.55'}"><div style="flex:1;min-width:0"><b>${nd.name}</b> <span class="rk">${rank}/${nd.max}</span>
+        <small>${nd.eff}${lock}</small></div>
+        <button class="cbtn" data-sk="${nd.key}" ${canBuy?'':'disabled'}>${maxed?'✓':'+'}</button></div>`;}
     h+='</div>';}
-  h+='<div class="prow"><button class="cbtn small" id="backSkills">◀ Back to Bag</button></div>';
+  h+='<div class="prow" style="margin-top:9px"><button class="cbtn small" id="backSkills">◀ Menu</button></div>';
   p.innerHTML=h;p.style.display='flex';
   p.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{const nd=SKILLS.find(s=>s.key===b.dataset.sk),rank=(G.skills||{})[nd.key]||0;
     if(rank>=nd.max||(G.skillPoints||0)<=0||!skillReq(nd))return;G.skills[nd.key]=rank+1;G.skillPoints--;toast(`${nd.name} → ${rank+1}`);save();openSkills();});
@@ -1329,7 +1354,7 @@ function usePanelItem(k){const it=G.items;
   if(k==='berry'){if(it.berry<=0)return;it.berry--;G.hunger=Math.min(100,G.hunger+25);G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.35));toast('Ate a Berry');}
   else if(k==='potion'){if(it.potion<=0)return;it.potion--;G.hp=Math.min(G.maxHp,G.hp+60);toast('Used a Potion');}
   else if(k==='ration'){if(it.ration<=0)return;it.ration--;G.hunger=100;toast('Hunger restored');}
-  save();openPanel();}
+  save();openInventory();}
 function closePanel(){document.getElementById('panel').style.display='none';mode='world';}
 function openShop(){if(mode!=='world'||dialogCb)return;mode='panel';const p=document.getElementById('panel');
   let h='<h2>🛒 Trader&#39;s Mart</h2>';h+=`<div class="subline" style="color:#ffd23c;font-size:16px">◉ ${G.coins} coins</div>`;
@@ -2012,7 +2037,9 @@ function updKb(){kb.x=(keys['arrowright']||keys['d']?1:0)-(keys['arrowleft']||ke
   kb.y=(keys['arrowdown']||keys['s']?1:0)-(keys['arrowup']||keys['w']?1:0);}
 // buttons
 window.addEventListener('pointerdown',()=>actx(),{capture:true}); // unlock/resume audio on first touch
-function bindBtn(el,fn){el.addEventListener('click',e=>{e.preventDefault();actx();sfx('menu');fn();});}
+/* pointerdown (not click) so buttons work while the other thumb holds the joystick —
+   browsers suppress synthesized clicks for secondary touches */
+function bindBtn(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();actx();sfx('menu');fn();});}
 // tap the dialog box itself (or the floating prompt) to act — no need for the A button
 document.getElementById('dialog').addEventListener('click',()=>{if(dialogCb)closeDialog();});
 document.getElementById('interactTag').addEventListener('click',()=>{if(mode==='world')doInteract();});
@@ -2076,9 +2103,9 @@ function buildClasses(){const wrap=document.getElementById('classCards');wrap.in
   for(const key of Object.keys(CLASSES)){const C=CLASSES[key];const card=document.createElement('div');card.className='scard';card.style.width='150px';
     card.innerHTML=`<canvas width="90" height="90"></canvas><b>${C.icon} ${C.name}</b><small style="color:#5a4;white-space:pre-line;font-size:11px">${C.blurb}</small><small style="color:#7a5cff;font-size:10px">★ ${CLASS_PERK[key].name}: ${CLASS_PERK[key].desc}</small>`;
     heroPreview(card.querySelector('canvas'),key);
-    card.onclick=()=>{const atk=key==='warrior'?'swing your weapon in melee':(key==='ranger'?'loose piercing arrows':'cast arcane bolts');
+    card.onclick=()=>{const w={mage:'🪄',ranger:'🏹',warrior:'⚔️'}[key];
       newGame(key);startWorld();
-      dialog(`<b>${C.name} ${C.icon}</b> — you set out alone into the wild! <b>Left thumb</b> moves, <b>right thumb</b> to ${atk} (draw <b>V</b>, <b>Z</b>, or <b>◯</b> for bigger attacks). Gather materials, then buy <b>land</b> at a town's 🏛 registrar and build a base — walls, <b>towers</b>, traps — because <b>raiders will come</b>. Three towns lie along the roads; the deeper the wilds, the deadlier (and richer). If you fall you keep your skills, land & buildings. Good luck!`);};
+      dialog(`<b>${C.name} ${C.icon}</b> — <b>left thumb</b> moves, <b>right thumb</b> attacks (or tap ${w}). Everything else is in the <b>☰ menu</b>. Good luck!`);};
     wrap.appendChild(card);}}
 function toClassSelect(){document.getElementById('title').style.display='none';document.getElementById('classSel').style.display='flex';mode='class';buildClasses();}
 document.getElementById('startBtn').onclick=toClassSelect;

@@ -63,7 +63,7 @@ Built **touch-first for landscape phones**, with a Brawl Stars-style look — ch
 | Weapon attack / interact | **Class weapon button** (⚔️ / 🏹 / 🪄) — attacks with your weapon, or acts on the floating prompt (also advances dialog) | Space or E |
 | Dash / Blink | **💨 / 🌀 button** — Warrior & Ranger dash, Mage teleports ~3 tiles (3s cooldown ring) | Q or Shift |
 | Super | **✦ button** when it glows gold | H |
-| Hero & Bag | **☰** button | P or B |
+| Menu (Inventory · Skills · Craft · Guide) | **☰** button | P or B |
 
 **Attack gestures** (right thumb): a quick flick = **Bolt**, a gentle bend = **Twin**, a sharp **V** = **Power**, a **Z** zigzag = **Chain** (pierces), a **circle** = **Nova** (3-way). The name flashes when you attack, and it uses your **class element**. **Mages** fire arcane bolts, **Rangers** loose piercing arrows, and **Warriors** cleave a melee arc in front of them — so warriors need to get right up close.
 
