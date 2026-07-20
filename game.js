@@ -1423,9 +1423,71 @@ function questDone(q){const def=QUESTS.find(x=>x.key===q.key);
   return def.kind==='bring'?(G.res[def.res]||0)>=q.need:(q.n||0)>=q.need;}
 function questProg(q){const def=QUESTS.find(x=>x.key===q.key);
   return def.kind==='bring'?(G.res[def.res]||0)+'/'+q.need+' carried':(q.n||0)+'/'+q.need;}
-function trackTarget(){if(G.trackQ==null)return null;const q=(G.quests||[])[G.trackQ];if(!q)return null;
-  if(q.key==='boss'&&!questDone(q))return {x:BOSS_LAIR.x,y:BOSS_LAIR.y,ic:'💀'};
-  const p=questNpcPos(q.town||0);return {x:p.x,y:p.y,ic:'❗'};}
+function trackTargetLive(){
+  if(G.trackQ==null)return null;const q=(G.quests||[])[G.trackQ];if(!q)return null;
+  const def=QUESTS.find(x=>x.key===q.key);
+  if(questDone(q)){const p=questNpcPos(q.town||0);return {x:p.x,y:p.y,t:'turnin'};}
+  if(q.key==='boss')return {x:BOSS_LAIR.x,y:BOSS_LAIR.y,t:'boss'};
+  if(scene&&(q.key==='slay'||q.key==='rare')){
+    let best=null,bd=1e18;
+    for(const e of scene.enemies){if(e.raider||e.boss)continue;
+      if(q.key==='rare'&&!(e.rare||e.alpha))continue;
+      const d=Math.hypot(e.x-scene.px,e.y-scene.py);if(d<bd){bd=d;best=e;}}
+    if(best)return {x:best.x/TILE-0.5,y:best.y/TILE-0.5,t:'hunt'};
+    if(q.key==='rare'){ // no rare alive: hunt near a cave
+      let bc=null,bcd=1e9;const px2=Math.floor(scene.px/TILE),py2=Math.floor(scene.py/TILE);
+      for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++)if(grid[y][x]==='C'){
+        const d=Math.hypot(x-px2,y-py2);if(d<bcd){bcd=d;bc={x,y};}}
+      if(bc)return {x:bc.x,y:bc.y,t:'hunt'};}
+  }
+  if(def&&def.kind==='bring'&&scene){
+    const want=def.res,px2=Math.floor(scene.px/TILE),py2=Math.floor(scene.py/TILE);
+    let best=null,bd=1e9;
+    for(let y=Math.max(2,py2-26);y<Math.min(MH-2,py2+26);y++)
+      for(let x=Math.max(2,px2-26);x<Math.min(MW-2,px2+26);x++){
+        let ok=false;
+        if(want==='wood')ok=grid[y][x]==='T';
+        else{const nd2=nodeSpec(x,y);ok=!!nd2&&nd2.k===want&&nodeReady(x,y);}
+        if(ok){const d=Math.hypot(x-px2,y-py2);if(d<bd){bd=d;best={x,y};}}}
+    if(best)return {x:best.x,y:best.y,t:want};
+  }
+  const p=questNpcPos(q.town||0);return {x:p.x,y:p.y,t:'turnin'};}
+function trackTarget(){return (scene&&scene._trk!==undefined)?scene._trk:trackTargetLive();}
+function drawPinIcon(cv,t){
+  const c=cv.getContext('2d'),S2=cv.width;c.clearRect(0,0,S2,S2);
+  const m=S2/2;
+  c.lineJoin='round';c.lineCap='round';
+  const g=c.createLinearGradient(0,S2*0.05,0,S2*0.75);
+  g.addColorStop(0,'#ffe082');g.addColorStop(1,'#f0a012');
+  c.fillStyle=g;c.strokeStyle='#1c1408';c.lineWidth=S2*0.08;
+  c.beginPath();c.arc(m,S2*0.38,S2*0.32,Math.PI*0.85,Math.PI*0.15);
+  c.quadraticCurveTo(S2*0.62,S2*0.68,m,S2*0.92);
+  c.quadraticCurveTo(S2*0.38,S2*0.68,m-Math.cos(Math.PI*0.15)*S2*0.32,S2*0.38+Math.sin(Math.PI*0.15)*S2*0.32);
+  c.closePath();c.fill();c.stroke();
+  c.fillStyle='#fff6e0';c.beginPath();c.arc(m,S2*0.38,S2*0.2,0,7);c.fill();
+  c.strokeStyle='#1c1408';c.lineWidth=S2*0.05;c.stroke();
+  const ink='#2a1c08';
+  if(t==='turnin'){c.fillStyle=ink;
+    c.beginPath();c.arc(m,S2*0.47,S2*0.045,0,7);c.fill();
+    c.beginPath();c.moveTo(m-S2*0.035,S2*0.27);c.lineTo(m+S2*0.035,S2*0.27);
+    c.lineTo(m+S2*0.02,S2*0.41);c.lineTo(m-S2*0.02,S2*0.41);c.closePath();c.fill();}
+  else if(t==='hunt'){c.strokeStyle=ink;c.lineWidth=S2*0.055;
+    c.beginPath();c.moveTo(m-S2*0.11,S2*0.49);c.lineTo(m+S2*0.11,S2*0.27);c.stroke();
+    c.beginPath();c.moveTo(m+S2*0.11,S2*0.49);c.lineTo(m-S2*0.11,S2*0.27);c.stroke();
+    c.lineWidth=S2*0.04;
+    c.beginPath();c.moveTo(m-S2*0.13,S2*0.31);c.lineTo(m-S2*0.06,S2*0.31);c.stroke();
+    c.beginPath();c.moveTo(m+S2*0.06,S2*0.31);c.lineTo(m+S2*0.13,S2*0.31);c.stroke();}
+  else if(t==='boss'){c.fillStyle=ink;
+    c.beginPath();c.arc(m,S2*0.35,S2*0.11,Math.PI,0);
+    c.lineTo(m+S2*0.11,S2*0.45);c.lineTo(m-S2*0.11,S2*0.45);c.closePath();c.fill();
+    c.fillStyle='#fff6e0';
+    for(const dx of[-0.045,0.045]){c.beginPath();c.arc(m+dx*S2,S2*0.36,S2*0.032,0,7);c.fill();}}
+  else if(t==='wood'){c.fillStyle='#8a5a2e';c.strokeStyle=ink;c.lineWidth=S2*0.035;
+    c.fillRect(m-S2*0.13,S2*0.31,S2*0.26,S2*0.12);c.strokeRect(m-S2*0.13,S2*0.31,S2*0.26,S2*0.12);
+    c.fillStyle='#d8b888';c.beginPath();c.arc(m-S2*0.13,S2*0.37,S2*0.055,0,7);c.fill();c.stroke();}
+  else{c.fillStyle='#9aa2ac';c.strokeStyle=ink;c.lineWidth=S2*0.035;
+    c.beginPath();c.moveTo(m-S2*0.12,S2*0.44);c.lineTo(m-S2*0.08,S2*0.3);c.lineTo(m+S2*0.05,S2*0.28);
+    c.lineTo(m+S2*0.13,S2*0.38);c.lineTo(m+S2*0.06,S2*0.45);c.closePath();c.fill();c.stroke();}}
 function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById('panel');
   const tn2=TOWNS[ti]?TOWNS[ti].name:'Town';
   let h='<h2>❗ '+tn2+' Quest Board</h2>';
@@ -1546,10 +1608,11 @@ function openMap(){const p=document.getElementById('panel');
   const vg=c.createRadialGradient(MW*S/2,MH*S/2,MH*S*0.35,MW*S/2,MH*S/2,MW*S*0.62);
   vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(5,8,14,.5)');
   c.fillStyle=vg;c.fillRect(0,0,MW*S,MH*S);
-  {const tt3=trackTarget();
-   if(tt3){c.font='30px system-ui';
+  {const tt3=trackTargetLive();
+   if(tt3){
      c.fillStyle='rgba(255,210,60,.35)';c.beginPath();c.arc((tt3.x+0.5)*S,(tt3.y+0.5)*S,S*3,0,7);c.fill();
-     c.fillText(tt3.ic,(tt3.x+0.5)*S,(tt3.y-0.6)*S);}}
+     const pcv=document.createElement('canvas');pcv.width=44;pcv.height=44;drawPinIcon(pcv,tt3.t);
+     c.drawImage(pcv,(tt3.x+0.5)*S-22,(tt3.y+0.5)*S-40);}}
   if(!dungeon&&scene){
     const pxT=scene.px/TILE,pyT=scene.py/TILE;
     const g2=c.createRadialGradient(pxT*S,pyT*S,1,pxT*S,pyT*S,S*3.2);
@@ -2688,6 +2751,7 @@ class World extends Phaser.Scene{
     }else if(this.ghost){this.ghost.destroy();this.ghost=null;}
     this.survT+=dt;if(this.survT>0.5){this.survT=0;
       if(!dungeon)revealAt(this.px,this.py);
+      this._trk=trackTargetLive();
       G.hunger=Math.max(0,G.hunger-(Math.hypot(this.vx,this.vy)>20?0.4:0.2));
       if(G.hunger<=0)G.hp=Math.max(0,G.hp-1);
       const rg=mods().regen;if(rg>0&&G.hp>0&&G.hp<G.maxHp)G.hp=Math.min(G.maxHp,G.hp+rg);
@@ -2915,7 +2979,8 @@ class World extends Phaser.Scene{
          const tmax=Math.min((SW/2-MG)/Math.max(1e-6,Math.abs(Math.cos(tang))),(SH/2-MG)/Math.max(1e-6,Math.abs(Math.sin(tang))));
          ex2=SW/2+Math.cos(tang)*tmax;ey2=SH/2+Math.sin(tang)*tmax;}
        ta.style.display='flex';ta.style.left=ex2+'px';ta.style.top=ey2+'px';
-       document.getElementById('taIc').textContent=tt2.ic;
+       const taIc=document.getElementById('taIc');
+       if(ta.dataset.t!==tt2.t){ta.dataset.t=tt2.t;drawPinIcon(taIc,tt2.t);}
        document.getElementById('taDist').textContent=dist2<TILE*1.8?'HERE!':Math.round(dist2/TILE)+'m';
        const tr=document.getElementById('taRot');
        tr.style.display=off2?'block':'none';
