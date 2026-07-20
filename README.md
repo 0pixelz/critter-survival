@@ -130,4 +130,16 @@ Built as a starter project — fork it, tweak the `SPECIES` and `MAP_STR` tables
 
 ## 🚀 v2 — New Engine (beta)
 
-The game is being ported to **Phaser 3 (WebGL)** keeping its signature hand-drawn Brawl-Stars-style art — every sprite is baked from the game's own procedural drawings onto GPU textures, then lit with bloom, additive glow, particles, camera shake, and dynamic day/night light pools. Try it at [**/v2/**](https://0pixelz.github.io/critter-survival/v2/) — currently a combat & exploration slice while the full systems (gear, dungeons, building, raids) are ported over. The classic version remains the complete game.
+The game has been ported to **Phaser 3 (WebGL)** keeping its signature hand-drawn Brawl-Stars-style art — every sprite is baked from the game's own procedural drawings onto GPU textures, then lit with bloom, additive glow, particles, camera shake, and dynamic day/night light pools. Try it at [**/v2/**](https://0pixelz.github.io/critter-survival/v2/).
+
+The port now includes essentially the whole game:
+
+- **Combat** — class weapons, dash/blink, Supers, class actives (Spell Shield / War Cry / Rapid Quiver), crits, rare loot monsters, procedural sound
+- **Gear** — Diablo-style rarities, 6 equip slots, paperdoll Character screen, salvage, beam-of-light drops
+- **Towns & economy** — shops, nurse, banking, land plots with walk-on "tap to buy", villagers
+- **Gathering & crafting** — wood/stone/fiber/ore nodes, tool tiers, stations (workbench/forge), recipes
+- **Building & raids** — walls, doors, torches, traps, 3 tower types with ammo, night raids that target your base
+- **Dungeons** — Diablo-style caves & town sewers with darkness + light pools, treasure rooms, ⭐ Guardians
+- Full save/continue (including underground), day/night, hunger, 17-node skill tree
+
+The classic canvas version remains playable at the root link above.
