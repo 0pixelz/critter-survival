@@ -1219,12 +1219,31 @@ class World extends Phaser.Scene{
         if(g2.length){const spell=classifyGesture(g2),a=g2[0],b=g2[g2.length-1];this.attack(spell,b.x-a.x,b.y-a.y);}}};
     this.input.on('pointerup',up);this.input.on('pointerupoutside',up);
     this.keys=this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,J,Q,SHIFT');
-    document.getElementById('btnA').addEventListener('pointerdown',e=>{e.preventDefault();
-      if(this.interactT)this.doInteract();else this.attack('bolt',0,0);});
-    document.getElementById('btnDash').addEventListener('pointerdown',e=>{e.preventDefault();this.dash();});
-    document.getElementById('btnMenu').addEventListener('pointerdown',e=>{e.preventDefault();
-      if(this.buildMode){this.cancelBuild();toast('Build cancelled');return;}openPanel();});
-    document.getElementById('interactTag').addEventListener('pointerdown',e=>{e.preventDefault();this.doInteract();});
+    this.aim={active:false,id:-1,ox:0,oy:0,dx:0,dy:0};
+    if(!window._uiBound){window._uiBound=true;
+      const $=id=>document.getElementById(id);
+      $('btnDash').addEventListener('pointerdown',e=>{e.preventDefault();scene.dash();});
+      $('btnMenu').addEventListener('pointerdown',e=>{e.preventDefault();
+        if(scene.buildMode){scene.cancelBuild();toast('Build cancelled');return;}openPanel();});
+      $('interactTag').addEventListener('pointerdown',e=>{e.preventDefault();scene.doInteract();});
+      $('btnSuper').addEventListener('pointerdown',e=>{e.preventDefault();scene.unleashSuper();});
+      $('btnAbility').addEventListener('pointerdown',e=>{e.preventDefault();scene.classAbility();});
+      // A button — tap: attack/interact. Ranged classes: hold & drag to aim, release to fire (Brawl-style)
+      const ba=$('btnA');
+      ba.addEventListener('pointerdown',e=>{e.preventDefault();
+        if(scene.interactT){scene.doInteract();return;}
+        if(cls==='warrior'){scene.attack('bolt',0,0);return;}
+        scene.aim={active:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0};
+        try{ba.setPointerCapture(e.pointerId);}catch(_){}});
+      ba.addEventListener('pointermove',e=>{const a=scene.aim;
+        if(!a.active||e.pointerId!==a.id)return;e.preventDefault();
+        a.dx=e.clientX-a.ox;a.dy=e.clientY-a.oy;});
+      const rel=e=>{const a=scene.aim;if(!a.active||e.pointerId!==a.id)return;a.active=false;
+        if(Math.hypot(a.dx,a.dy)<16)scene.attack('bolt',0,0);
+        else scene.attack('bolt',0,0,Math.atan2(a.dy/IH-a.dx/IW,a.dx/IW+a.dy/IH));};
+      ba.addEventListener('pointerup',rel);
+      ba.addEventListener('pointercancel',()=>{scene.aim.active=false;});
+    }
     // crown texture for alpha monsters
     if(!this.textures.exists('crownTex')){const g=this.make.graphics({add:false});
      g.fillStyle(0x12160f,1);g.fillPoints([{x:0,y:17},{x:0,y:3},{x:6,y:9},{x:11,y:1},{x:16,y:9},{x:22,y:3},{x:22,y:17}],true);
@@ -1254,9 +1273,8 @@ class World extends Phaser.Scene{
     this.bushSprites=this.bushSprites||{};this.saveT=0;this.survT=0;this.interactT=null;
     this.waves=[];this.waveGfx=this.add.graphics().setDepth(999901);
     this.buffGfx=this.add.graphics().setDepth(999902);
+    this.aimGfx=this.add.graphics().setDepth(999903);
     this.shieldT=0;this.shieldHp=0;this.warcryT=0;this.quiverT=0;this.abilityCD=0;this.abilityMax=1;
-    document.getElementById('btnSuper').addEventListener('pointerdown',e=>{e.preventDefault();this.unleashSuper();});
-    document.getElementById('btnAbility').addEventListener('pointerdown',e=>{e.preventDefault();this.classAbility();});
     setBtnIcon(document.getElementById('btnAbility').querySelector('span'),{mage:'shield',warrior:'horn',ranger:'quiver'}[cls],30);
     setBtnIcon(document.getElementById('btnA'),'w_'+cls,56);
     setBtnIcon(document.querySelector('#btnDash span'),cls==='mage'?'blink':'dash',30);
@@ -1412,13 +1430,15 @@ class World extends Phaser.Scene{
       this.enemies.push(en);
       return en;}
   }
-  attack(spell,gx,gy){
+  attack(spell,gx,gy,forceAng){
     if(this.castCD>0)return;
-    let ang=null,best=null,bd=cls==='warrior'?TILE*2.6:TILE*7;
-    for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d<bd){bd=d;best=e;}}
-    if(best)ang=Math.atan2(best.y-this.py,best.x-this.px);
-    else if(gx||gy){let wx=gx/IW+gy/IH,wy=gy/IH-gx/IW;ang=Math.atan2(wy,wx);}
-    else ang=Math.atan2(this.face.y,this.face.x);
+    let ang=null;
+    if(forceAng!=null)ang=forceAng;
+    else{let best=null,bd=cls==='warrior'?TILE*2.6:TILE*7;
+      for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d<bd){bd=d;best=e;}}
+      if(best)ang=Math.atan2(best.y-this.py,best.x-this.px);
+      else if(gx||gy){let wx=gx/IW+gy/IH,wy=gy/IH-gx/IW;ang=Math.atan2(wy,wx);}
+      else ang=Math.atan2(this.face.y,this.face.x);}
     const M=mods();
     const mult=spell==='power'?1.9:spell==='chain'?1.15:spell==='nova'?0.8:1;
     this.castCD=(spell==='bolt'?0.3:0.85)*M.cd*(this.quiverT>0?0.33:1);
@@ -1707,6 +1727,29 @@ class World extends Phaser.Scene{
     // charm orbit fx
     if(this.charmFx&&this.charmFx.visible){const a=this.time.now*0.003;
       this.charmFx.setPosition(sx+Math.cos(a)*22,sy-34+Math.sin(a*2)*7);}
+    // aim preview (hold A + drag)
+    this.aimGfx.clear();
+    if(this.aim.active&&Math.hypot(this.aim.dx,this.aim.dy)>=16){
+      const awx=this.aim.dx/IW+this.aim.dy/IH,awy=this.aim.dy/IH-this.aim.dx/IW;
+      const al2=Math.hypot(awx,awy)||1,AL=TILE*7;
+      const ex4=this.px+awx/al2*AL,ey4=this.py+awy/al2*AL;
+      const x0=sx,y0=sy-16,x1=isoX(ex4,ey4),y1=isoY(ex4,ey4)-16;
+      const an2=Math.atan2(y1-y0,x1-x0),pp=an2+Math.PI/2;
+      const acol=cls==='mage'?0xffaa55:0xc8f07a;
+      this.aimGfx.fillStyle(acol,0.2);
+      this.aimGfx.beginPath();
+      this.aimGfx.moveTo(x0+Math.cos(pp)*3,y0+Math.sin(pp)*3);
+      this.aimGfx.lineTo(x1+Math.cos(pp)*15,y1+Math.sin(pp)*15);
+      this.aimGfx.lineTo(x1-Math.cos(pp)*15,y1-Math.sin(pp)*15);
+      this.aimGfx.lineTo(x0-Math.cos(pp)*3,y0-Math.sin(pp)*3);
+      this.aimGfx.closePath();this.aimGfx.fillPath();
+      this.aimGfx.lineStyle(2,acol,0.55);this.aimGfx.strokePath();
+      this.aimGfx.fillStyle(acol,0.55);
+      this.aimGfx.beginPath();
+      this.aimGfx.moveTo(x1+Math.cos(an2)*20,y1+Math.sin(an2)*20);
+      this.aimGfx.lineTo(x1+Math.cos(pp)*11,y1+Math.sin(pp)*11);
+      this.aimGfx.lineTo(x1-Math.cos(pp)*11,y1-Math.sin(pp)*11);
+      this.aimGfx.closePath();this.aimGfx.fillPath();}
     // buff rings
     this.buffGfx.clear();
     if(this.shieldT>0){this.buffGfx.lineStyle(3,0x7ad0ff,0.4+Math.sin(this.time.now*0.01)*0.2);
