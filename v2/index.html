@@ -153,13 +153,14 @@ const CLASSES={
   ranger:{robe:'#3f8f4a',trim:'#2e6d34',skin:'#f0b98a',el:'Gale'},
   warrior:{robe:'#b0402e',trim:'#7c2a1c',skin:'#e8a87a',el:'Stone'}};
 const TOWNS=[{name:'Oakvale',cx:14,cy:12,s:6},{name:'Emberport',cx:78,cy:16,s:6},{name:'Mossholm',cx:46,cy:52,s:6}];
+const CASTLES=[];
 function hash(a,b){const n=Math.sin(a*127.1+b*311.7)*43758.5453;return n-Math.floor(n);}
 function shadeCol(hex,amt){let h=hex.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');
   let r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
   const f=amt<0?0:255,t=Math.abs(amt);r=Math.round(r+(f-r)*t);g=Math.round(g+(f-g)*t);b=Math.round(b+(f-b)*t);return`rgb(${r},${g},${b})`;}
 /* ---- world gen (v1's generator) ---- */
 let grid=[];
-const SOLID=new Set(['T','W','H','N','M','S','B','R','V','C','U','r','b','K','w']);
+const SOLID=new Set(['T','W','H','N','M','S','B','R','V','C','U','r','b','K','w','Y','X']);
 const PROP=new Set(['T','H','N','M','S','B','R','V']);
 function inb(x,y){return x>1&&y>1&&x<MW-2&&y<MH-2;}
 function gen(){
@@ -192,6 +193,20 @@ function gen(){
     if(!inb(x,y))continue;if(grid[y][x]!=='.'&&grid[y][x]!=='T')continue;grid[y][x]=ch;return;}};
   for(const[ex,ey]of[[12,50],[82,46],[64,10],[30,26]])placeE(ex,ey,'C');
   TOWNS.forEach(t=>placeE(t.cx+t.s+2,t.cy+3,'U'));
+  // castles: 3x2 keep + gate tile below
+  CASTLES.length=0;
+  for(const[cx0,cy0]of[[24,40],[68,28]]){
+    let done=false;
+    for(let r=0;r<10&&!done;r++)for(let y=cy0-r;y<=cy0+r&&!done;y++)for(let x=cx0-r;x<=cx0+r&&!done;x++){
+      if(x<3||y<3||x+2>=MW-3||y+2>=MH-3)continue;
+      let ok=true;
+      for(let dy=0;dy<3;dy++)for(let dx=0;dx<3;dx++){const t=grid[y+dy][x+dx];
+        if(t!=='.'&&t!==','&&t!=='T')ok=false;}
+      if(!ok)continue;
+      for(let dy=0;dy<2;dy++)for(let dx=0;dx<3;dx++)grid[y+dy][x+dx]='Y';
+      grid[y+2][x]='.';grid[y+2][x+2]='.';
+      grid[y+2][x+1]='X';
+      CASTLES.push({x:x+1,y:y+2});done=true;}}
   PLOTS.length=0;plotIndex={};
   TOWNS.forEach((t,i)=>{const sz=t.s;
     [[-sz-7,-2,5,4],[sz+2,-5,6,5],[-2,sz+2,6,4]].forEach((d,j)=>{
@@ -416,6 +431,8 @@ function bakeHero(cls2,frame,pose){
     ctx.quadraticCurveTo(fx-6,3.5-fl,fx-6,2-fl);ctx.closePath();ctx.fill();ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(fx-4,-5.2-fl);ctx.lineTo(fx+5,-5.2-fl);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.2)';
+    ctx.beginPath();ctx.ellipse(fx-1,-4.4-fl,2.2,1.1,-0.3,0,7);ctx.fill();
     ctx.strokeStyle=OL;ctx.lineWidth=3;}
   // ---- off arm ----
   const oaSw=pose==='walk'?sw*7:(atk===0?-5:atk===1?6:0);
@@ -429,7 +446,7 @@ function bakeHero(cls2,frame,pose){
     ctx.quadraticCurveTo(0,-45,10,-40);ctx.quadraticCurveTo(17,-32,14,-13);
     ctx.quadraticCurveTo(0,-9,-14,-13);ctx.closePath();};
   if(cls2==='warrior'){
-    const sg=ctx.createLinearGradient(0,-44,0,-12);sg.addColorStop(0,'#7c8894');sg.addColorStop(1,'#4a525c');
+    const sg=ctx.createRadialGradient(-6,-38,3,0,-27,30);sg.addColorStop(0,'#98a4b0');sg.addColorStop(0.55,'#69747f');sg.addColorStop(1,'#3e454e');
     ctx.fillStyle=sg;torso();ctx.fill();ctx.stroke();
     ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2.4;
     ctx.beginPath();ctx.moveTo(0,-42);ctx.lineTo(0,-12);ctx.stroke();
@@ -442,7 +459,7 @@ function bakeHero(cls2,frame,pose){
     ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(9,-38);ctx.quadraticCurveTo(13,-40,17,-37);ctx.stroke();
   }else if(cls2==='ranger'){
-    const rg=ctx.createLinearGradient(0,-44,0,-12);rg.addColorStop(0,'#3f7048');rg.addColorStop(1,'#2a4d32');
+    const rg=ctx.createRadialGradient(-6,-38,3,0,-27,30);rg.addColorStop(0,'#579a62');rg.addColorStop(0.55,'#3a6a43');rg.addColorStop(1,'#22402a');
     ctx.fillStyle=rg;torso();ctx.fill();ctx.stroke();
     ctx.strokeStyle='#6b4326';ctx.lineWidth=4.4;                  // strap
     ctx.beginPath();ctx.moveTo(-11,-40);ctx.lineTo(12,-16);ctx.stroke();
@@ -451,7 +468,7 @@ function bakeHero(cls2,frame,pose){
     ctx.fillStyle='rgba(255,255,255,.14)';
     ctx.beginPath();ctx.moveTo(-9,-40);ctx.quadraticCurveTo(-14,-30,-12,-16);ctx.lineTo(-8,-16);ctx.quadraticCurveTo(-11,-30,-9,-40);ctx.closePath();ctx.fill();
   }else{
-    const mg=ctx.createLinearGradient(0,-44,0,-12);mg.addColorStop(0,'#3a4a9c');mg.addColorStop(1,'#252f68');
+    const mg=ctx.createRadialGradient(-6,-38,3,0,-27,30);mg.addColorStop(0,'#5468c4');mg.addColorStop(0.55,'#36448e');mg.addColorStop(1,'#1e2650');
     ctx.fillStyle=mg;torso();ctx.fill();ctx.stroke();
     ctx.strokeStyle='#ffd23c';ctx.lineWidth=2.6;                  // gold hem
     ctx.beginPath();ctx.moveTo(-13.5,-15);ctx.quadraticCurveTo(0,-11,13.5,-15);ctx.stroke();
@@ -465,6 +482,10 @@ function bakeHero(cls2,frame,pose){
   ctx.fillStyle='#241f19';ctx.strokeStyle=OL;ctx.lineWidth=2.4;
   rr(-14.5,-20,29,6,3);ctx.fill();ctx.stroke();
   ctx.fillStyle='#8a929c';rr(-3.5,-20.5,7,7,2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(0,0,0,.2)';                       // neck AO
+  ctx.beginPath();ctx.ellipse(1,-42,9,3.2,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.14)';                      // hip AO
+  ctx.beginPath();ctx.ellipse(0,-12,12,3,0,0,7);ctx.fill();
   // ---- weapon arm & weapon ----
   let armX,armY;
   if(atk===0){armX=6;armY=-38;}
@@ -535,7 +556,7 @@ function bakeHero(cls2,frame,pose){
   if(cls2==='warrior'){
     // iron helm, full face, glowing slits
     ctx.strokeStyle=OL;ctx.lineWidth=4;
-    const hg=ctx.createLinearGradient(0,hy-20,0,hy+16);hg.addColorStop(0,'#6a7580');hg.addColorStop(1,'#434b54');
+    const hg=ctx.createRadialGradient(-6,hy-8,3,0,hy,22);hg.addColorStop(0,'#96a2ae');hg.addColorStop(0.5,'#67727d');hg.addColorStop(1,'#3a424b');
     ctx.fillStyle=hg;
     ctx.beginPath();ctx.arc(0,hy,17.5,Math.PI*0.95,Math.PI*0.05);
     ctx.lineTo(17.5,hy+10);ctx.quadraticCurveTo(9,hy+16,0,hy+16);
@@ -557,7 +578,7 @@ function bakeHero(cls2,frame,pose){
     // hood (green ranger / deep-blue mage) with shadowed face
     const hc=cls2==='ranger'?['#3f7048','#27462e']:['#3a4a9c','#232c5c'];
     ctx.strokeStyle=OL;ctx.lineWidth=4;
-    const hgr=ctx.createLinearGradient(0,hy-22,0,hy+16);hgr.addColorStop(0,hc[0]);hgr.addColorStop(1,hc[1]);
+    const hgr=ctx.createRadialGradient(-6,hy-8,3,0,hy,24);hgr.addColorStop(0,shadeCol(hc[0],0.35));hgr.addColorStop(0.5,hc[0]);hgr.addColorStop(1,hc[1]);
     ctx.fillStyle=hgr;
     ctx.beginPath();
     ctx.moveTo(-16,hy+13);ctx.quadraticCurveTo(-21,hy-2,-14,hy-13);
@@ -585,6 +606,63 @@ function bakeHero(cls2,frame,pose){
   }
   ctx.restore();
   ctx.restore();
+  return cv;}
+function bakeCastle(){
+  const cv=mkCv(260,240),CX=130,base=222;
+  const OL='#12160f';
+  ctx.lineJoin='round';ctx.lineCap='round';
+  shadow(CX,base+6,95,20);
+  const stoneG=(x,y,w,h)=>{const g=ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,'#a8b2bc');g.addColorStop(0.5,'#8a95a0');g.addColorStop(1,'#5e6872');return g;};
+  const crenel=(x,y,w,n)=>{const cw=w/(n*2-1);
+    ctx.beginPath();ctx.moveTo(x,y+14);
+    for(let i=0;i<n;i++){const bx=x+i*cw*2;ctx.lineTo(bx,y);ctx.lineTo(bx+cw,y);ctx.lineTo(bx+cw,y+ (i===n-1?14:8));if(i<n-1)ctx.lineTo(bx+cw*2,y+8);}
+    ctx.lineTo(x+w,y+14);};
+  const bricks=(x,y,w,h)=>{ctx.strokeStyle='rgba(0,0,0,.16)';ctx.lineWidth=2;
+    for(let ry=y+12;ry<y+h;ry+=16){ctx.beginPath();ctx.moveTo(x+4,ry);ctx.lineTo(x+w-4,ry);ctx.stroke();}
+    for(let ry=y+4,k=0;ry<y+h-8;ry+=16,k++)for(let rx=x+14+(k%2)*12;rx<x+w-8;rx+=26){
+      ctx.beginPath();ctx.moveTo(rx,ry+8);ctx.lineTo(rx,ry+16);ctx.stroke();}};
+  const slit=(x,y)=>{ctx.fillStyle='#1c2026';ctx.strokeStyle=OL;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x-3,y+8);ctx.lineTo(x-3,y-4);ctx.arc(x,y-4,3,Math.PI,0);ctx.lineTo(x+3,y+8);ctx.closePath();ctx.fill();ctx.stroke();};
+  ctx.strokeStyle=OL;ctx.lineWidth=5;
+  // central keep (behind)
+  ctx.fillStyle=stoneG(CX-46,40,92,120);
+  crenel(CX-46,40,92,5);ctx.lineTo(CX+46,150);ctx.lineTo(CX-46,150);ctx.closePath();ctx.fill();ctx.stroke();
+  bricks(CX-46,54,92,96);
+  slit(CX-20,90);slit(CX+20,90);slit(CX,74);
+  // flag
+  ctx.strokeStyle='#3a2a16';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(CX,40);ctx.lineTo(CX,8);ctx.stroke();
+  ctx.fillStyle='#c8402e';ctx.strokeStyle=OL;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(CX,10);ctx.quadraticCurveTo(CX+26,6,CX+34,14);ctx.quadraticCurveTo(CX+22,18,CX,24);ctx.closePath();ctx.fill();ctx.stroke();
+  // side towers
+  ctx.strokeStyle=OL;ctx.lineWidth=5;
+  for(const tx2 of[CX-96,CX+56]){
+    ctx.fillStyle=stoneG(tx2,86,40,136);
+    crenel(tx2-6,86,52,3);ctx.lineTo(tx2+46,base);ctx.lineTo(tx2-6,base);ctx.closePath();ctx.fill();ctx.stroke();
+    bricks(tx2-6,102,52,116);
+    slit(tx2+20,130);slit(tx2+20,170);}
+  // curtain wall
+  ctx.fillStyle=stoneG(CX-72,138,144,84);
+  crenel(CX-72,138,144,6);ctx.lineTo(CX+72,base);ctx.lineTo(CX-72,base);ctx.closePath();ctx.fill();ctx.stroke();
+  bricks(CX-72,152,144,70);
+  // gate arch
+  ctx.fillStyle='#2a2f36';ctx.strokeStyle=OL;ctx.lineWidth=4.5;
+  ctx.beginPath();ctx.moveTo(CX-26,base);ctx.lineTo(CX-26,178);ctx.arc(CX,178,26,Math.PI,0);ctx.lineTo(CX+26,base);ctx.closePath();ctx.fill();ctx.stroke();
+  // wooden door inside arch
+  ctx.fillStyle='#6b4326';ctx.beginPath();ctx.moveTo(CX-19,base);ctx.lineTo(CX-19,182);ctx.arc(CX,182,19,Math.PI,0);ctx.lineTo(CX+19,base);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=2.4;
+  for(const dx of[-9,0,9]){ctx.beginPath();ctx.moveTo(CX+dx,base);ctx.lineTo(CX+dx,170);ctx.stroke();}
+  ctx.strokeStyle='#3a2a16';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(CX-19,196);ctx.lineTo(CX+19,196);ctx.stroke();
+  // banners by gate
+  ctx.strokeStyle=OL;ctx.lineWidth=3;
+  for(const dx of[-46,46]){
+    ctx.fillStyle='#c8402e';
+    ctx.beginPath();ctx.moveTo(CX+dx-8,150);ctx.lineTo(CX+dx+8,150);ctx.lineTo(CX+dx+8,192);ctx.lineTo(CX+dx,202);ctx.lineTo(CX+dx-8,192);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.arc(CX+dx,166,5,0,7);ctx.fill();ctx.stroke();}
+  // torch glows by gate
+  for(const dx of[-30,30]){
+    ctx.fillStyle='rgba(255,180,84,.35)';ctx.beginPath();ctx.arc(CX+dx,168,10,0,7);ctx.fill();
+    ctx.fillStyle='#ffb454';ctx.beginPath();ctx.ellipse(CX+dx,168,3.4,5,0,0,7);ctx.fill();}
   return cv;}
 function bakeMisc(kind){
   if(kind==='flame'){const cv=mkCv(30,40),cx=15;
@@ -1380,12 +1458,13 @@ function genDungeon(){
   g[far.cy][far.cx]='K';
   dungeon.grid=g;dungeon.w=w;dungeon.h=h;dungeon.rooms=rooms;dungeon.far=far;
   dungeon.sx=st.cx;dungeon.sy=Math.min(st.y+st.h-1,st.cy+1);}
-function enterDungeon(theme,ex,ey){
+function enterDungeon(theme,ex,ey,title){
   if(G.raid&&G.raid.active){toast('⚔️ Repel the raid first!');sfx('fail');return;}
   const zl=zoneLevel((ex+.5)*TILE,(ey+.5)*TILE);
   const lvl=theme==='cave'?Math.max(3,zl+1):Math.max(4,zl+3);
   let nm;
-  if(theme==='cave')nm=CAVE_NAMES[Math.floor(hash(ex*3.1,ey*7.3)*4)%4];
+  if(title)nm=title;
+  else if(theme==='cave')nm=CAVE_NAMES[Math.floor(hash(ex*3.1,ey*7.3)*4)%4];
   else{let bt=TOWNS[0],bd=1e9;for(const t of TOWNS){const d=Math.hypot(t.cx-ex,t.cy-ey);if(d<bd){bd=d;bt=t;}}nm=bt.name+' Sewers';}
   dungeon={theme,lvl,name:nm,returnX:scene.px,returnY:scene.py};
   genDungeon();sfx('engage');
@@ -1462,6 +1541,7 @@ class World extends Phaser.Scene{
     for(const k of['.','P','~','W',','])for(let v=0;v<3;v++)tx('g_'+k+v,bakeGround(k,v));
     for(let v=0;v<3;v++)tx('tree'+v,bakeTree(v));
     for(let v=0;v<3;v++)tx('houseR'+v,bakeHouse({roofIdx:v}));
+    tx('castleTex',bakeCastle());
     tx('nurse',bakeHouse({wallL:'#d0ccc0',wallR:'#efece2',roof:['#d06a8a','#a84a68'],sign:'cross'}));
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
@@ -1500,7 +1580,7 @@ class World extends Phaser.Scene{
         else if(t==='K'){this.chestSprite=this.add.image(sx,sy,'b_chestB').setScale(1.3).setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
           this.add.image(sx,sy-12,'glow').setScale(0.9).setTint(0xffd23c).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5).setDepth(sy+IH*0.28+1);}
         continue;}
-      const gk=PROP.has(t)||t==='C'||t==='U'?'.':t;
+      const gk=PROP.has(t)||t==='C'||t==='U'||t==='Y'||t==='X'?'.':t;
       const v=gk==='.'?(hash(x*1.3,y*2.7)<0.25?2:(x+y)&1):((x+y)&1);
       this.add.image(sx,sy,'g_'+gk+v).setDepth(sy-100000);
       if(t==='T'){const tv=hash(x*3+1,y*7+2)<0.3?1:(hash(x,y*3)<0.06?2:0);
@@ -1512,6 +1592,7 @@ class World extends Phaser.Scene{
       else if(t==='S')this.add.image(sx,sy,'sign').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
       else if(t==='C')this.add.image(sx,sy,'cavemouth').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
       else if(t==='U')this.add.image(sx,sy,'grate').setDepth(sy+IH*0.28).setOrigin(0.5,0.7);
+      else if(t==='X')this.add.image(sx,sy+IH*0.5,'castleTex').setDepth(sy+IH*0.28).setOrigin(0.5,0.94);
       else if(t==='B'){const bs=this.add.image(sx,sy,'berry').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
         this.bushSprites[x+','+y]=bs;
         if(G.berriesPicked&&G.berriesPicked[x+','+y]){bs.setVisible(false);grid[y][x]='.';}}
@@ -1525,7 +1606,7 @@ class World extends Phaser.Scene{
       this.add.image(cf.x,cf.y-10,'glow').setScale(1.2).setTint(0xff9a3c).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5).setDepth(isoY(this.cfX,this.cfY)+11);}
     if(dungeon){this.px=(dungeon.sx+0.5)*TILE;this.py=(dungeon.sy+0.5)*TILE;}
     else{this.px=G.px;this.py=G.py;}this.vx=0;this.vy=0;this.face={x:1,y:0};this.flip=1;
-    this.player=this.add.sprite(0,0,'heroIdle').setOrigin(0.5,0.8).setScale(0.82);
+    this.player=this.add.sprite(0,0,'heroIdle').setOrigin(0.5,0.8).setScale(0.66);
     this.pGlow=this.add.image(0,0,'glow').setScale(0.6).setTint(0xffe9a0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.2);
     if(!this.anims.exists('walk'))this.anims.create({key:'walk',frames:[0,1,2,3,4,5].map(f=>({key:'hero'+f})),frameRate:12,repeat:-1});
     if(!this.anims.exists('atk'))this.anims.create({key:'atk',frames:[0,1,1,2].map(f=>({key:'heroAtk'+f})),frameRate:18,repeat:0});
@@ -1747,6 +1828,7 @@ class World extends Phaser.Scene{
       this.waveGfx.closePath();this.waveGfx.strokePath();}}
   doInteract(){const t2=this.interactT;if(!t2)return;
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
+    if(t2.vault){enterDungeon('sewer',t2.vault.x,t2.vault.y,'Castle Vault');return;}
     if(t2.sewer){enterDungeon('sewer',t2.sewer.x,t2.sewer.y);return;}
     if(t2.stairs){exitDungeon();return;}
     if(t2.treasure){const{x,y}=t2.treasure;
@@ -2236,6 +2318,7 @@ class World extends Phaser.Scene{
         else if(t2==='S')setT(dd,TILE*1.2,{sign:1},'Read');
         else if(t2==='T'&&!dungeon&&!((this.choppedCD[xx+','+yy]||0)>this.time.now))setT(dd,TILE*1.25,{tree:{x:xx,y:yy}},'Chop');
         else if(t2==='C')setT(dd,TILE*1.3,{cave:{x:xx,y:yy}},'Enter Cave');
+        else if(t2==='X')setT(dd,TILE*1.5,{vault:{x:xx,y:yy}},'\ud83c\udff0 Enter Castle Vault');
         else if(t2==='U')setT(dd,TILE*1.3,{sewer:{x:xx,y:yy}},'Enter Sewers');
         else if(t2==='E')setT(dd,TILE*1.3,{stairs:1},'Climb Out');
         else if(t2==='K')setT(dd,TILE*1.4,{treasure:{x:xx,y:yy}},'Open Chest');
