@@ -1612,48 +1612,10 @@ function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
 function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');
   const RN=['I','II','III','IV'];
   let h=`<h2>\u2726 Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
+  if(skTab==='loadout')skTab='spell';
   h+=`<div class="sktabs">
     <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">\u2694 Spells</button>
-    <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button>
-    <button class="sktab ${skTab==='loadout'?'on':''}" data-tab="loadout">\u2b50 Loadout</button></div>`;
-  if(skTab==='loadout'){
-    if(!G.loadout)G.loadout=['strike'];
-    if(isRSub('beastmaster')){
-      if(!G.pet)G.pet='wolf';
-      h+='<div class="subline" style="margin-top:4px;color:#f2c14e;font-weight:700">COMPANION</div><div class="plist" style="margin-top:4px">';
-      for(const pk in PETS){const P2=PETS[pk];
-        const locked=P2.lock&&!P2.lock();
-        h+=`<div class="pcard" style="${locked?'opacity:.55':''}${G.pet===pk?';border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
-          <div style="width:34px;text-align:center;font-size:23px">${P2.ic}</div>
-          <div style="flex:1;min-width:0"><b>${P2.nm}</b>${G.pet===pk?' <span style="color:#3f7d34;font-size:11px">✔ active</span>':''}<br>
-          <small>${locked?'🔒 Unlock: '+P2.lockTxt:P2.desc+' · '+Math.round(P2.dmg*100)+'% ATK every '+P2.rate+'s'}</small></div>
-          <button class="cbtn" data-pet="${pk}" ${locked||G.pet===pk?'disabled':''}>${G.pet===pk?'✓':'Choose'}</button></div>`;}
-      h+='</div>';}
-    h+=`<div class="subline" style="margin-top:4px">Equip up to <b>3</b> spells \u2014 they appear as buttons in battle</div>`;
-    h+='<div class="plist" style="margin-top:6px">';
-    for(const k of Object.keys(SPELLBOOK)){const sb=SPELLBOOK[k];
-      const av=sb.avail(),eq=G.loadout.includes(k),full=G.loadout.length>=3;
-      h+=`<div class="pcard" style="${av?'':'opacity:.55'}">
-        <div style="width:34px;text-align:center;font-size:22px">${sb.cv?`<canvas class="skcv2" data-ic="${sb.icon()}" style="width:28px;height:28px"></canvas>`:sb.icon()}</div>
-        <div style="flex:1;min-width:0"><b>${sb.name()}</b>${eq?' <span style="color:#3f7d34;font-size:11px">\u2714 equipped</span>':''}<br>
-        <small>${av?sb.desc:'\ud83d\udd12 '+(sb.lock||'')}</small></div>
-        <button class="cbtn" data-eqs="${k}" ${av&&(eq||!full)?'':'disabled'}>${eq?'Remove':'Equip'}</button></div>`;}
-    h+='</div>';
-    h+=`<div class="subline" style="margin-top:6px">${G.loadout.length}/3 equipped</div>`;
-    h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
-    p.innerHTML=h;
-    p.querySelectorAll('canvas.skcv2').forEach(cv=>{cv.width=56;cv.height=56;drawMenuIcon(cv,cv.dataset.ic);});
-    p.querySelectorAll('.sktab').forEach(b2=>b2.onclick=()=>{skTab=b2.dataset.tab;sfx('menu');openSkills();});
-    p.querySelectorAll('[data-eqs]').forEach(b2=>b2.onclick=()=>{const k=b2.dataset.eqs;
-      if(G.loadout.includes(k))G.loadout=G.loadout.filter(x=>x!==k);
-      else if(G.loadout.length<3)G.loadout.push(k);
-      sfx('menu');save();openSkills();});
-    p.querySelectorAll('[data-pet]').forEach(b2=>b2.onclick=()=>{const pk=b2.dataset.pet;
-      const P2=PETS[pk];if(!P2||(P2.lock&&!P2.lock()))return;
-      G.pet=pk;if(scene&&scene.wolf)scene.wolf.s.setTexture(P2.tex);
-      sfx('level');toast(P2.ic+' '+P2.nm+' is now your companion!');save();openSkills();});
-    document.getElementById('skBack').onclick=openPanel;
-    return;}
+    <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button></div>`;
   const nd=SKILLS.find(n=>n.key===sel);
   if(nd){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
     const dispNm=(nd.key==='firewall'||nd.key==='spikewall'||nd.key==='thornwall')?wallDef().nm:nd.name;
@@ -1678,8 +1640,40 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
       h+=`<div class="sknode ${ok?'':'locked'} ${maxed?'maxed':''} ${sel===nd.key?'sel':''}" data-sk="${nd.key}">${nd.cv?`<canvas class="skcv" data-ic="${nd.icon}"></canvas>`:`<span>${nd.icon}</span>`}<span class="skrk">${rank}/${nd.max}</span></div>`;}
     h+='</div>';}
   h+='</div>';
+  if(skTab==='spell'){
+    if(!G.loadout)G.loadout=['strike'];
+    if(isRSub('beastmaster')){
+      if(!G.pet)G.pet='wolf';
+      h+='<div class="subline" style="margin-top:10px;color:#f2c14e;font-weight:700">COMPANION</div><div class="plist" style="margin-top:4px">';
+      for(const pk in PETS){const P2=PETS[pk];
+        const locked=P2.lock&&!P2.lock();
+        h+=`<div class="pcard" style="${locked?'opacity:.55':''}${G.pet===pk?';border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
+          <div style="width:34px;text-align:center;font-size:23px">${P2.ic}</div>
+          <div style="flex:1;min-width:0"><b>${P2.nm}</b>${G.pet===pk?' <span style="color:#3f7d34;font-size:11px">\u2714 active</span>':''}<br>
+          <small>${locked?'\ud83d\udd12 Unlock: '+P2.lockTxt:P2.desc+' \u00b7 '+Math.round(P2.dmg*100)+'% ATK every '+P2.rate+'s'}</small></div>
+          <button class="cbtn" data-pet="${pk}" ${locked||G.pet===pk?'disabled':''}>${G.pet===pk?'\u2713':'Choose'}</button></div>`;}
+      h+='</div>';}
+    h+=`<div class="subline" style="margin-top:10px;color:#f2c14e;font-weight:700">EQUIPPED SPELLS (${G.loadout.length}/3)</div>
+    <div class="subline" style="font-size:10px">they appear as buttons in battle</div><div class="plist" style="margin-top:4px">`;
+    for(const k of Object.keys(SPELLBOOK)){const sb=SPELLBOOK[k];
+      const av=sb.avail(),eq=G.loadout.includes(k),full=G.loadout.length>=3;
+      h+=`<div class="pcard" style="${av?'':'opacity:.55'}">
+        <div style="width:34px;text-align:center;font-size:22px">${sb.cv?`<canvas class="skcv2" data-ic="${sb.icon()}" style="width:28px;height:28px"></canvas>`:sb.icon()}</div>
+        <div style="flex:1;min-width:0"><b>${sb.name()}</b>${eq?' <span style="color:#3f7d34;font-size:11px">\u2714 equipped</span>':''}<br>
+        <small>${av?sb.desc:'\ud83d\udd12 '+(sb.lock||'')}</small></div>
+        <button class="cbtn" data-eqs="${k}" ${av&&(eq||!full)?'':'disabled'}>${eq?'Remove':'Equip'}</button></div>`;}
+    h+='</div>';}
   h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
   p.innerHTML=h;
+  p.querySelectorAll('canvas.skcv2').forEach(cv=>{cv.width=56;cv.height=56;drawMenuIcon(cv,cv.dataset.ic);});
+  p.querySelectorAll('[data-eqs]').forEach(b2=>b2.onclick=()=>{const k=b2.dataset.eqs;
+    if(G.loadout.includes(k))G.loadout=G.loadout.filter(x=>x!==k);
+    else if(G.loadout.length<3)G.loadout.push(k);
+    sfx('menu');save();openSkills(sel);});
+  p.querySelectorAll('[data-pet]').forEach(b2=>b2.onclick=()=>{const pk=b2.dataset.pet;
+    const P2=PETS[pk];if(!P2||(P2.lock&&!P2.lock()))return;
+    G.pet=pk;if(scene&&scene.wolf)scene.wolf.s.setTexture(P2.tex);
+    sfx('level');toast(P2.ic+' '+P2.nm+' is now your companion!');save();openSkills(sel);});
   p.querySelectorAll('canvas.skcv').forEach(cv=>{cv.width=60;cv.height=60;drawMenuIcon(cv,cv.dataset.ic);});
   p.querySelectorAll('[data-sk]').forEach(el=>el.onclick=()=>{sfx('menu');openSkills(el.dataset.sk);});
   p.querySelectorAll('.sktab').forEach(b2=>b2.onclick=()=>{skTab=b2.dataset.tab;sfx('menu');openSkills();});
@@ -1691,7 +1685,7 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
     let msg=nd2.name+' \u2192 '+(rank+1);
     if(rank===0&&nd2.key===abilityKey()&&autoEquip('active'))msg+=' \u00b7 equipped!';
     if(rank===0&&nd2.key===runeKey()&&autoEquip('rune'))msg+=' \u00b7 equipped!';
-    if(rank===0&&nd2.key==='multi')msg+=' \u00b7 '+SPELLBOOK.nova.name()+' unlocked in Loadout!';
+    if(rank===0&&nd2.key==='multi')msg+=' \u00b7 '+SPELLBOOK.nova.name()+' unlocked below!';
     toast(msg);save();updateHud();openSkills(nd2.key);};
   document.getElementById('skBack').onclick=openPanel;
   requestAnimationFrame(drawSkillLines);}
