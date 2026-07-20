@@ -1238,9 +1238,9 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
   p.innerHTML=h;
   heroPreview(document.getElementById('heroCv'),G.class,true);
   p.querySelectorAll('canvas.micon').forEach(cv=>{cv.width=68;cv.height=68;drawMenuIcon(cv,cv.dataset.ic);});
-  document.getElementById('mChar').onclick=openCharacter;
-  document.getElementById('mInv').onclick=openInventory;
-  document.getElementById('mSkill').onclick=openSkills;
+  document.getElementById('mChar').onclick=()=>openCharacter();
+  document.getElementById('mInv').onclick=()=>openInventory();
+  document.getElementById('mSkill').onclick=()=>openSkills();
   document.getElementById('mCraft').onclick=openCraft;
   document.getElementById('mSound').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('coin');openPanel();};
   document.getElementById('mClose').onclick=()=>pauseGame(false);}
@@ -1261,7 +1261,7 @@ function openInventory(){const p=document.getElementById('panel');const it=G.ite
     else{G.hunger=100;toast('Hunger restored');}
     save();updateHud();openInventory();});
   document.getElementById('invBack').onclick=openPanel;}
-function openCharacter(sel){const p=document.getElementById('panel');const M=mods();
+function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');const M=mods();
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   const SN=SETS[G.class].name,sc=setCount();
   let h=`<h2>${nm} — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">🌟</span>':''}</h2>`;
@@ -1315,7 +1315,7 @@ function openCharacter(sel){const p=document.getElementById('panel');const M=mod
 let skTab='spell';
 function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cls||nd.cls===G.class))t+=(G.skills||{})[nd.key]||0;return t;}
 function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
-function openSkills(sel){const p=document.getElementById('panel');
+function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');
   const RN=['I','II','III','IV'];
   let h=`<h2>\u2726 Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
   h+=`<div class="sktabs">
