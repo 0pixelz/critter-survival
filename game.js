@@ -2633,3 +2633,27 @@ function creationUI(){
 }
 const _hasSave=load();
 creationUI();
+
+/* ---- PWA: service worker + install-to-homescreen popup ---- */
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+(function(){
+  const standalone=matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone;
+  if(standalone||localStorage.getItem('cw-pwa-no'))return;
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  let deferred=null;
+  function showBar(ios){
+    if(document.getElementById('pwaBar'))return;
+    const d=document.createElement('div');d.id='pwaBar';
+    d.innerHTML=`<img src="icon-192.png" alt="">
+      <div class="ptxt">Install Critter Wilds${ios?'<small>Tap <b>Share ⬆</b> then <b>Add to Home Screen</b></small>':'<small>Fullscreen, works offline, right on your phone</small>'}</div>
+      ${ios?'':'<button id="pwaInstall">Install</button>'}<button id="pwaClose">✕</button>`;
+    document.body.appendChild(d);d.style.display='flex';
+    const ib=document.getElementById('pwaInstall');
+    if(ib)ib.onclick=async()=>{if(!deferred)return;deferred.prompt();
+      const ch=await deferred.userChoice;deferred=null;d.remove();
+      if(ch&&ch.outcome==='accepted')localStorage.setItem('cw-pwa-no','1');};
+    document.getElementById('pwaClose').onclick=()=>{localStorage.setItem('cw-pwa-no','1');d.remove();};
+  }
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;showBar(false);});
+  if(isIOS)setTimeout(()=>showBar(true),1800);
+})();
