@@ -37,21 +37,23 @@ const ELEMS={
   arcane:{nm:'Arcane',ic:'🔮',col:'#c07aff',hex:0xc07aff}};
 const SUBCLASSES={
   mage:{
-    fire:{nm:'Pyromancer',ic:'🔥',desc:'Your bolts ignite foes — burning damage over time'},
-    frost:{nm:'Cryomancer',ic:'❄️',desc:'Your bolts chill foes, slowing their movement'},
-    storm:{nm:'Stormweaver',ic:'⚡',desc:'Your bolts may arc lightning to a nearby foe'},
-    arcane:{nm:'Voidcaller',ic:'🔮',desc:'+8% damage and bolts pierce one extra foe'}},
+    fire:{nm:'Pyromancer',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Your bolts ignite foes — burning damage over time'},
+    frost:{nm:'Cryomancer',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff,desc:'Your bolts chill foes, slowing their movement'},
+    storm:{nm:'Stormweaver',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'Your bolts may arc lightning to a nearby foe'},
+    arcane:{nm:'Voidcaller',ic:'🔮',col:'#c07aff',hex:0xc07aff,desc:'+8% damage and bolts pierce one extra foe'}},
   warrior:{
-    fire:{nm:'Flamebrand',ic:'🔥',desc:'Your blade sets foes ablaze — they burn over time'},
-    frost:{nm:'Frostguard',ic:'❄️',desc:'Chilling blows — struck foes are slowed'},
-    storm:{nm:'Thunderlord',ic:'⚡',desc:'Strikes may arc lightning to a nearby foe'},
-    arcane:{nm:'Runeblade',ic:'🔮',desc:'+8% damage from runic engravings on your steel'}},
+    berserker:{nm:'Berserker',ic:'🩸',col:'#e8483a',hex:0xe8483a,desc:'Deal up to +50% damage as your HP drops · heal 8% of damage dealt · dealing & taking damage fills your RAGE — at full, erupt into a 6s FRENZY (+40% damage, +30% speed)'},
+    juggernaut:{nm:'Juggernaut',ic:'🛡️',col:'#8a929c',hex:0x8a929c,desc:'+20% DEF · 25% chance to BLOCK any hit · raiders near you drop what they\'re smashing and attack YOU instead — the wall your base deserves'},
+    blademaster:{nm:'Blademaster',ic:'🗡️',col:'#ffd23c',hex:0xffd23c,desc:'−20% attack cooldown · chained hits build a COMBO (+5% damage each, up to 5) · dash resets your swing and grants a 0.45s PARRY that reflects damage'},
+    warlord:{nm:'Warlord',ic:'📯',col:'#ffb454',hex:0xffb454,desc:'+20% Super charge · towers near you fire 35% faster · your War Cry lasts twice as long and heals more — lead the defense of your city'}},
   ranger:{
-    fire:{nm:'Wildfire',ic:'🔥',desc:'Burning arrows — foes take damage over time'},
-    frost:{nm:'Winterchill',ic:'❄️',desc:'Frosted arrowheads slow whatever they strike'},
-    storm:{nm:'Stormcaller',ic:'⚡',desc:'Arrows may arc lightning to a nearby foe'},
-    arcane:{nm:'Spiritshot',ic:'🔮',desc:'+8% damage and arrows pierce one extra foe'}}};
-function subDef(c2,el){return (SUBCLASSES[c2]||SUBCLASSES.mage)[el||'fire'];}
+    fire:{nm:'Wildfire',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Burning arrows — foes take damage over time'},
+    frost:{nm:'Winterchill',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff,desc:'Frosted arrowheads slow whatever they strike'},
+    storm:{nm:'Stormcaller',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'Arrows may arc lightning to a nearby foe'},
+    arcane:{nm:'Spiritshot',ic:'🔮',col:'#c07aff',hex:0xc07aff,desc:'+8% damage and arrows pierce one extra foe'}}};
+function subDef(c2,el){const t=SUBCLASSES[c2]||SUBCLASSES.mage;return t[el]||t[Object.keys(t)[0]];}
+function subVis(){const d=G?subDef(G.class,G.element):null;return d||{col:'#ff8844',hex:0xff8844};}
+function isWSub(k){return G&&G.class==='warrior'&&G.element===k;}
 const BOSS_LAIR={x:88,y:56};
 const CHUNK=6;
 function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
@@ -396,7 +398,7 @@ function bakeHero(cls2,frame,pose){
   pose=pose||'walk';
   const cv=mkCv(130,130),X=65,Y=104;
   const C=CLASSES[cls2],OL='#141414';
-  const el=(G&&G.element&&ELEMS[G.element])?ELEMS[G.element].col:TYPES[C.el].color;
+  const el=G?subDef(cls2,G.element).col||TYPES[C.el].color:TYPES[C.el].color;
   // darker heroic palettes (no clown vibes)
   const P={
     warrior:{legs:'#3a3f46',boot:'#241d15',eye:'#ffb454'},
@@ -821,6 +823,11 @@ function mods(){const m={dmg:1,cd:1,speed:1,xp:1,coins:1,crit:0,count:0,pierce:0
   m.superGain*=1+0.15*(S.focus||0);m.superPow*=1+0.2*(S.overload||0);m.regen+=(S.mending||0);
   m.xp*=1+0.1*(S.scholar||0);m.coins*=1+0.12*(S.fortune||0);m.crit=0.03*(S.crit||0);
   if(G.element==='arcane'){m.dmg*=1.08;m.pierce+=1;}
+  if(G.class==='warrior'){
+    if(G.element==='berserker'&&G.maxHp>0)m.dmg*=1+0.5*Math.max(0,1-G.hp/G.maxHp);
+    if(G.element==='blademaster')m.cd*=0.8;
+    if(G.element==='warlord')m.superGain*=1.2;
+    if(scene&&scene.frenzyT>0){m.dmg*=1.4;m.speed*=1.3;}}
   m.speed*=1+gearSum('spd')/100;m.xp*=1+gearSum('xp')/100;m.coins*=1+gearSum('coin')/100;
   return m;}
 
@@ -905,15 +912,25 @@ function autoEquip(k){if(!G.loadout)G.loadout=[];
   if(G.loadout.length<3&&!G.loadout.includes(k)){G.loadout.push(k);return true;}return false;}
 function runeRank(){return (G&&G.skills&&G.skills[runeKey()])||0;}
 function damageHero(d){if(!G)return 0;
+  if(isWSub('juggernaut')&&Math.random()<0.25){
+    if(scene){scene.hitEmit.setPosition(isoX(scene.px,scene.py),isoY(scene.px,scene.py)-22);scene.hitEmit.explode(6);}
+    sfx('cast');return 0;}
+  if(isWSub('blademaster')&&scene&&scene.parryT>0){
+    let best=null,bd=TILE*2.5;
+    for(const e of scene.enemies){const dd=Math.hypot(e.x-scene.px,e.y-scene.py);if(dd<bd){bd=dd;best=e;}}
+    if(best)scene.hurtEnemy(best,Math.max(3,d*2),Math.atan2(best.y-scene.py,best.x-scene.px));
+    toast('⚔ PARRY!');sfx('cast');return 0;}
   if(scene&&scene.shieldT>0&&scene.shieldHp>0){const a=Math.min(scene.shieldHp,d);scene.shieldHp-=a;d-=a;
     if(scene.shieldHp<=0){scene.shieldT=0;toast('🛡 Shield broke!');sfx('fail');}}
   if(scene&&scene.warcryT>0)d=Math.round(d*0.6);
+  if(isWSub('berserker')&&scene)scene.rage=Math.min(100,(scene.rage||0)+d*1.2);
   G.hp=Math.max(0,G.hp-d);return d;}
 function recalcHero(){const b=CLASS_BASE[G.class],L=G.level,S=G.skills||{};
   let mh=Math.floor(b.hp*(1+(L-1)*0.14))+10;mh=Math.floor(mh*(1+0.06*(S.vitality||0)));
   G.maxHp=mh+gearSum('hp');
   G._atk=Math.floor((Math.floor(b.atk*(1+(L-1)*0.11))+3)*(1+0.04*(S.might||0)))+gearSum('atk');
   G._def=Math.floor((Math.floor(b.def*(1+(L-1)*0.10))+2)*(1+0.05*(S.iron||0)))+gearSum('def');
+  if(G.class==='warrior'&&G.element==='juggernaut')G._def=Math.floor(G._def*1.2);
   if(fullSet()){G._atk=Math.floor(G._atk*1.12);G._def=Math.floor(G._def*1.12);G.maxHp=Math.floor(G.maxHp*1.08);}
   if(G.hp>G.maxHp)G.hp=G.maxHp;}
 function newGame(cls2,elem,name){
@@ -934,7 +951,9 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
   if(!G.nodeT)G.nodeT={};if(G.raid===undefined)G.raid=null;
   if(!G.loadout){G.loadout=['strike'];if(abilityRank()>0)autoEquip('active');if(runeRank()>0)autoEquip('rune');}
   if(G.quest===undefined)G.quest=null;if(!G.questsDone)G.questsDone=0;if(!G.bossRespawn)G.bossRespawn=0;
-  if(!G.element)G.element={mage:'fire',ranger:'storm',warrior:'frost'}[G.class]||'fire';
+  if(!G.element)G.element={mage:'fire',ranger:'storm',warrior:'berserker'}[G.class]||'fire';
+  if(G.class==='warrior'&&!SUBCLASSES.warrior[G.element])
+    G.element={fire:'berserker',frost:'juggernaut',storm:'blademaster',arcane:'warlord'}[G.element]||'berserker';
   if(!G.name)G.name={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   if(!G.seen){G.seen={};for(const t of TOWNS)revealAt((t.cx+0.5)*TILE,(t.cy+0.5)*TILE);revealAt(G.px,G.py);}
   recalcHero();return true;}catch(e){return false;}}
@@ -1412,7 +1431,7 @@ function openInventory(sel){if(typeof sel!=='string')sel=null;
 function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');const M=mods();
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   const SN=SETS[G.class].name,sc=setCount();
-  const EL=ELEMS[G.element||'fire'],SD=subDef(G.class,G.element);
+  const SD=subDef(G.class,G.element),EL=SD;
   let h=`<h2>${G.name||nm} <span style="font-size:13px;color:${EL.col}">${SD.ic} ${SD.nm}</span> — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">🌟</span>':''}</h2>`;
   h+=`<div class="subline">❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ⚔ ${G._atk} · 🛡 ${G._def}`+
      `${M.speed>1?` · 👟 +${Math.round((M.speed-1)*100)}%`:''}${M.xp>1?` · ✦ +${Math.round((M.xp-1)*100)}%`:''}${M.coins>1?` · ◉ +${Math.round((M.coins-1)*100)}%`:''}</div>`;
@@ -1557,7 +1576,7 @@ function applyGearFx(){if(!scene||!scene.pGlow)return;
     scene.setEmit.start();}
   else{scene.pGlow.setScale(0.6).setAlpha(0.2);
     if(scene.setEmit)scene.setEmit.stop();
-    scene.pGlow.setTint(wC?Phaser.Display.Color.HexStringToColor(wC).color:ELEMS[(G&&G.element)||'fire'].hex);}
+    scene.pGlow.setTint(wC?Phaser.Display.Color.HexStringToColor(wC).color:subVis().hex);}
   if(gearRarCol('charm')){if(!scene.charmFx){scene.charmFx=scene.add.image(0,0,'dot').setScale(0.28).setBlendMode(Phaser.BlendModes.ADD).setDepth(9999);}
     scene.charmFx.setTint(Phaser.Display.Color.HexStringToColor(gearRarCol('charm')).color).setVisible(true);}
   else if(scene.charmFx)scene.charmFx.setVisible(false);}
@@ -1907,6 +1926,7 @@ class World extends Phaser.Scene{
     this.waves=[];this.waveGfx=this.add.graphics().setDepth(999901);
     this.eshots=[];
     this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;this.strikeCD=0;this.novaCD=0;
+    this.rage=0;this.frenzyT=0;this.parryT=0;this.comboT=0;this.comboN=0;
     this.spellSwipe={active:false,id:-1,pts:[]};this.fadeTrail=null;
     this.trailGfx=this.add.graphics().setScrollFactor(0).setDepth(9999950);
     this.buffGfx=this.add.graphics().setDepth(999902);
@@ -2002,7 +2022,7 @@ class World extends Phaser.Scene{
     if(cls==='mage'){this.shieldHp=(28+G.level*3)*rank;this.shieldT=8;this.abilityCD=this.abilityMax=12;
       sfx('heal');toast('🛡 SPELL SHIELD');}
     else if(cls==='warrior'){const heal=Math.round(G.maxHp*(0.10+0.08*rank));
-      G.hp=Math.min(G.maxHp,G.hp+heal);this.warcryT=10;this.abilityCD=this.abilityMax=15;
+      G.hp=Math.min(G.maxHp,G.hp+Math.round(heal*(isWSub('warlord')?1.5:1)));this.warcryT=isWSub('warlord')?20:10;this.abilityCD=this.abilityMax=15;
       this.waves.push({x:this.px,y:this.py,r:10,maxR:TILE*3,dmg:0,kb:50,hit:new Set()});
       this.cameras.main.shake(200,0.005);sfx('super');toast('📯 WAR CRY! +'+heal+' HP');updateHud();}
     else{this.quiverT=4+rank;this.abilityCD=this.abilityMax=14;sfx('cast');toast('🏹 SWIFT QUIVER');}}
@@ -2180,6 +2200,9 @@ class World extends Phaser.Scene{
     const mult=spell==='power'?1.9:spell==='chain'?1.15:spell==='nova'?0.8:1;
     this.castCD=(spell==='bolt'?0.3:0.85)*M.cd*(this.quiverT>0?0.33:1);
     let dmg=Math.max(3,Math.round(G._atk*mult*M.dmg*(0.9+Math.random()*0.2)));
+    if(isWSub('blademaster')){
+      this.comboN=(this.comboT>0)?Math.min(5,(this.comboN||0)+1):0;
+      this.comboT=1.5;dmg=Math.round(dmg*(1+0.05*(this.comboN||0)));}
     if(Math.random()<M.crit)dmg*=2;
     this.atkAnimT=0.24;if(this.player.anims.isPlaying)this.player.anims.stop();this.player.play('atk');
     {const scr2=Math.cos(ang)-Math.sin(ang);if(scr2<-0.05)this.flip=-1;else if(scr2>0.05)this.flip=1;}
@@ -2199,7 +2222,7 @@ class World extends Phaser.Scene{
       // ring burst all around
       const n=8+M.count;
       for(let i=0;i<n;i++){const a2=ang+i*(Math.PI*2/n);
-        this.spawnShot(a2,430,dmg,(cls==='ranger'?1:0)+M.pierce,ELEMS[G.element||'fire'].hex,cls==='ranger');}
+        this.spawnShot(a2,430,dmg,(cls==='ranger'?1:0)+M.pierce,subVis().hex,cls==='ranger');}
       this.waves.push({x:this.px,y:this.py,r:10,maxR:TILE*2.2,dmg:0,kb:35,hit:new Set()});
       this.cameras.main.shake(130,0.005);
     }else if(spell==='power'){
@@ -2209,12 +2232,15 @@ class World extends Phaser.Scene{
     }else{
       const n=1+M.count;
       for(let i=0;i<n;i++){const a2=ang+(i-(n-1)/2)*0.28;
-        this.spawnShot(a2,cls==='ranger'?600:480,dmg,(spell==='chain'?2:(cls==='ranger'?1:0))+M.pierce,ELEMS[G.element||'fire'].hex);
+        this.spawnShot(a2,cls==='ranger'?600:480,dmg,(spell==='chain'?2:(cls==='ranger'?1:0))+M.pierce,subVis().hex);
       }
     }
   }
   hurtEnemy(e,dmg,ang){
     e.hp-=dmg;e.flash=0.15;e.s.setTintFill(0xffffff);addSuper(dmg*0.35);sfx('hit');
+    if(isWSub('berserker')){
+      G.hp=Math.min(G.maxHp,G.hp+dmg*(this.frenzyT>0?0.14:0.08));
+      this.rage=Math.min(100,(this.rage||0)+dmg*0.35);}
     if(G&&G.element&&!e._noProc){
       if(G.element==='fire'){e.burnT=Math.max(e.burnT||0,1.2);e.burnDmg=Math.max(1,Math.round((G._atk||5)*0.12));}
       else if(G.element==='frost')e.slowT=Math.max(e.slowT||0,0.9);
@@ -2247,7 +2273,8 @@ class World extends Phaser.Scene{
     }
   }
   dash(){
-    if(this.dashCD>0)return;this.dashCD=3;
+    if(this.dashCD>0)return;this.dashCD=isWSub('blademaster')?2:3;
+    if(isWSub('blademaster')){this.castCD=0;this.parryT=0.45;}
     let dx=this.face.x,dy=this.face.y;const mv=Math.hypot(this.vx,this.vy);
     if(mv>25){dx=this.vx/mv;dy=this.vy/mv;}
     if(cls==='mage'){let d=TILE*3.2;while(d>10&&this.collides(this.px+dx*d,this.py+dy*d))d-=10;
@@ -2320,7 +2347,9 @@ class World extends Phaser.Scene{
       let best=null,bd=rng;
       for(const e of this.enemies){const d=Math.hypot(e.x-bx,e.y-by);if(d<bd){bd=d;best=e;}}
       if(!best)continue;
-      b.cd=tier.rate;b.ammo--;
+      let rate=tier.rate;
+      if(isWSub('warlord')&&Math.hypot(this.px-bx,this.py-by)<TILE*7)rate*=0.65;
+      b.cd=rate;b.ammo--;
       const t0=bd/540,a=Math.atan2(best.y+best.vy*t0-by,best.x+best.vx*t0-bx);
       const dmg=Math.floor(tier.dmg*(G.class==='mage'?1.15:1));
       const core=this.add.image(0,0,'dot').setScale(0.45).setTint(T2.col);
@@ -2370,6 +2399,12 @@ class World extends Phaser.Scene{
   update(_,dms){
     const dt=Math.min(0.05,dms/1000);
     this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt);this.strikeCD=Math.max(0,this.strikeCD-dt);this.novaCD=Math.max(0,this.novaCD-dt);
+    this.parryT=Math.max(0,this.parryT-dt);this.comboT=Math.max(0,(this.comboT||0)-dt);if(this.comboT<=0)this.comboN=0;
+    if(this.frenzyT>0){this.frenzyT-=dt;this.player.setTint(0xff8a7a);
+      if(this.frenzyT<=0){this.player.clearTint();toast('Frenzy fades…');updateHud();}}
+    else if(isWSub('berserker')&&(this.rage||0)>=100){this.rage=0;this.frenzyT=6;
+      this.cameras.main.flash(220,255,60,40);this.cameras.main.shake(200,0.006);
+      sfx('super');toast('🩸 FRENZY! +40% damage, +30% speed');}
     this.abilityCD=Math.max(0,this.abilityCD-dt);this.shieldT=Math.max(0,this.shieldT-dt);
     this.warcryT=Math.max(0,this.warcryT-dt);this.quiverT=Math.max(0,this.quiverT-dt);
     G.time=(G.time+dt/DAY_LEN);if(G.time>=1){G.time-=1;G.day++;toast('☀️ Day '+G.day);}
@@ -2443,7 +2478,7 @@ class World extends Phaser.Scene{
             const d2=Math.hypot((b.x+0.5)*TILE-e.x,(b.y+0.5)*TILE-e.y);if(d2<bd2){bd2=d2;best=b;}}
           e.tgt=best;}
         let tx2,ty2;
-        if(dl<TILE*2.2||!e.tgt){tx2=this.px;ty2=this.py;}
+        if(dl<(isWSub('juggernaut')?TILE*5.5:TILE*2.2)||!e.tgt){tx2=this.px;ty2=this.py;}
         else{tx2=(e.tgt.x+0.5)*TILE;ty2=(e.tgt.y+0.5)*TILE;}
         const ddx=tx2-e.x,ddy=ty2-e.y,ddl=Math.hypot(ddx,ddy)||1;
         if(ddl>TILE*0.85){const spd=78*sf;
@@ -2592,7 +2627,7 @@ class World extends Phaser.Scene{
        if(el.dataset.k!==k+cls){el.dataset.k=k+cls;const sp3=el.querySelector('span');
          if(SPELLBOOK[k].cv)setBtnIcon(sp3,SPELLBOOK[k].icon(),24);
          else{sp3.innerHTML='';sp3.textContent=SPELLBOOK[k].icon();}}}
-     const db=document.getElementById('btnDash');const dd=Math.round((1-this.dashCD/3)*360);
+     const db=document.getElementById('btnDash');const dd=Math.round((1-this.dashCD/(isWSub('blademaster')?2:3))*360);
      db.style.background=`conic-gradient(#5fd0f5 ${dd}deg, rgba(30,32,44,.9) ${dd}deg)`;
      db.classList.toggle('cd',this.dashCD>0);}
     // interact scan: gear drops & berry bushes
@@ -2733,7 +2768,8 @@ function creationUI(){
   for(const c of['mage','ranger','warrior'])
     h+=`<div class="ccard ${mkCls===c?'sel':''}" data-mkc="${c}"><canvas data-cv="${c}" width="164" height="164"></canvas><b>${{mage:'Mage',ranger:'Ranger',warrior:'Warrior'}[c]}</b><small>${MK_TAG[c]}</small></div>`;
   h+='</div><div class="mklab">CHOOSE YOUR SUBCLASS</div><div class="crow">';
-  for(const k in ELEMS){const sd=subDef(mkCls,k);
+  if(!SUBCLASSES[mkCls][mkElem])mkElem=Object.keys(SUBCLASSES[mkCls])[0];
+  for(const k in SUBCLASSES[mkCls]){const sd=SUBCLASSES[mkCls][k];
     h+=`<button class="echip ${mkElem===k?'sel':''}" data-mke="${k}">${sd.ic} ${sd.nm}</button>`;}
   h+=`</div><div id="elemDesc">${subDef(mkCls,mkElem).desc}</div>`;
   h+=`<div class="mklab">NAME YOUR HERO</div>
