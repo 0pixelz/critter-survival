@@ -73,6 +73,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 .cbtn:active{transform:translateY(3px);}
 .cbtn:disabled{opacity:.45;}
 .skcard .cbtn{padding:7px 11px;font-size:15px;min-width:40px;flex:none;}
+.bicon{width:38px;height:38px;flex:none;}
 .sktabs{display:flex;gap:8px;justify-content:center;margin-top:2px;}
 .sktab{border:3px solid #1c2716;border-radius:12px;padding:6px 16px;font-family:inherit;font-weight:700;font-size:13px;background:#28361f;color:#9db88f;box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:pointer;}
 .sktab.on{background:linear-gradient(#ffd84a,#f0a012);color:#4a3000;}
@@ -726,6 +727,20 @@ function openRegistrar(){pauseGame(true);const p=document.getElementById('panel'
 function nearStation(kind){if(!scene)return false;
   for(const b of G.builds){if(b.t!==kind)continue;
     if(Math.hypot((b.x+0.5)*TILE-scene.px,(b.y+0.5)*TILE-scene.py)<TILE*2.6)return true;}return false;}
+const _bIcon={};
+function buildIconSrc(key){
+  if(_bIcon[key])return _bIcon[key];
+  const cv=key==='hut'?bakeHouse({roofIdx:2}):key==='campfire'?bakeMisc('campfire'):key==='chest'?bakeBuild('chestB'):bakeBuild(key);
+  _bIcon[key]=cv;return cv;}
+function blitBuildIcons(p){
+  p.querySelectorAll('canvas.bicon').forEach(cv=>{
+    const src=buildIconSrc(cv.dataset.bk);
+    cv.width=76;cv.height=76;
+    const c=cv.getContext('2d');
+    const s2=Math.min(76/src.width,76/src.height);
+    const w=src.width*s2,h2=src.height*s2;
+    c.imageSmoothingEnabled=true;
+    c.drawImage(src,(76-w)/2,(76-h2)/2,w,h2);});}
 function openCraft(){pauseGame(true);const p=document.getElementById('panel');const R=G.res;
   let h=`<h2>🔨 Crafting</h2><div class="subline">🔨 Lv.${G.craftLvl} (${G.craftXp}/${craftXpToNext(G.craftLvl)}) · 🪵${R.wood} 🪨${R.stone} 🌿${R.fiber} ⛏️${R.ore}</div>`;
   h+='<div class="subline" style="color:#f2c14e;font-weight:700">TOOLS</div><div class="plist">';
@@ -738,11 +753,12 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
   for(const r of RECIPES){const lock=G.craftLvl<r.lvl,noSt=r.station&&!nearStation(r.station);
     const ok=!lock&&!noSt&&haveCost(r.cost);
     const nm2=r.item?(r.key.charAt(0).toUpperCase()+r.key.slice(1)):BUILD_DEF[r.key].name;
-    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}"><div style="flex:1;min-width:0"><b>${r.item?'🧪':'🏠'} ${nm2}</b>${lock?' <span style="color:#c0392b">🔒Lv.'+r.lvl+'</span>':''}${noSt?' <span style="color:#c0392b">near '+BUILD_DEF[r.station].name+'</span>':''}${r.plot?' <span style="color:#3f7d34">⌂</span>':''}<br>
+    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}">${r.item?'<div style="width:38px;text-align:center;font-size:24px;flex:none">🧪</div>':`<canvas class="bicon" data-bk="${r.key}"></canvas>`}<div style="flex:1;min-width:0"><b>${nm2}</b>${lock?' <span style="color:#c0392b">🔒Lv.'+r.lvl+'</span>':''}${noSt?' <span style="color:#c0392b">near '+BUILD_DEF[r.station].name+'</span>':''}${r.plot?' <span style="color:#3f7d34">⌂</span>':''}<br>
       <small style="color:#5a4">${r.desc} — ${costStr(r.cost)}</small></div>
       <button class="cbtn" data-craft="${r.key}" ${ok?'':'disabled'}>${r.item?'Craft':'Build'}</button></div>`;}
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="craftClose">◀ Close</button></div>';
   p.innerHTML=h;
+  blitBuildIcons(p);
   p.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{const key=b.dataset.tool,T2=TOOLS[key],tier=G.tools[key]||0,next=T2.tiers[tier];
     if(!next||!haveCost(next.cost)||(next.station&&!nearStation(next.station)))return;
     payCost(next.cost);G.tools[key]=tier+1;gainCraftXp();sfx('level');toast(T2.icon+' '+next.name+' crafted!');save();openCraft();});
