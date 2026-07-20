@@ -74,6 +74,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 .cbtn:active{transform:translateY(3px);}
 .cbtn:disabled{opacity:.45;}
 .skcard .cbtn{padding:7px 11px;font-size:15px;min-width:40px;flex:none;}
+.sktabs{display:flex;gap:8px;justify-content:center;margin-top:2px;}
+.sktab{border:3px solid #1c2716;border-radius:12px;padding:6px 16px;font-family:inherit;font-weight:700;font-size:13px;background:#28361f;color:#9db88f;box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:pointer;}
+.sktab.on{background:linear-gradient(#ffd84a,#f0a012);color:#4a3000;}
+#skTree{position:relative;max-width:500px;width:100%;margin:2px auto 0;}
+#skLines{position:absolute;inset:0;z-index:0;pointer-events:none;}
+.sktier{display:flex;gap:16px;justify-content:center;position:relative;z-index:1;margin:5px 0;}
+.sktsep{text-align:center;color:#8fae86;font-size:9.5px;font-weight:700;letter-spacing:1px;margin-top:7px;position:relative;z-index:1;}
+.sktsep.dim{color:#5f6f58;}
+.sknode{width:52px;height:52px;border-radius:15px;background:linear-gradient(#fff6e6,#ecd9b4);border:3px solid #1c2716;display:grid;place-items:center;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.25);font-size:23px;cursor:pointer;}
+.sknode canvas.skcv{width:30px;height:30px;}
+.sknode.locked{filter:grayscale(.9) brightness(.55);}
+.sknode.maxed{border-color:#ffd23c;box-shadow:0 0 12px rgba(255,210,60,.55),0 3px 0 rgba(0,0,0,.25);}
+.sknode.sel{outline:3px solid #7ad0ff;outline-offset:1px;}
+.skrk{position:absolute;bottom:-8px;right:-7px;background:#1c2716;color:#ffd23c;font-size:9px;font-weight:700;padding:1.5px 5px;border-radius:8px;z-index:2;}
 </style>
 </head>
 <body>
@@ -511,26 +525,28 @@ const AFFIX_POOL=[{k:'atk',base:2,per:0.5,lab:'⚔'},{k:'def',base:2,per:0.4,lab
   {k:'spd',base:3,per:0.15,lab:'👟%'},{k:'xp',base:5,per:0.2,lab:'✦%'},{k:'coin',base:6,per:0.25,lab:'◉%'}];
 const RARE_PREFIX=['Dread','Vile','Gloom','Blood','Storm','Grim'];
 const SKILLS=[
-  {br:'Arcane',key:'power',name:'Spell Power',max:5,eff:'+8% damage / rank'},
-  {br:'Arcane',key:'haste',name:'Haste',max:5,eff:'−8% attack cooldown / rank'},
-  {br:'Arcane',key:'multi',name:'Split Shot',max:2,eff:'+1 projectile / rank',req:{power:2}},
-  {br:'Arcane',key:'pierce',name:'Piercing',max:3,eff:'+1 pierce / rank',req:{haste:2}},
-  {br:'Storm',key:'focus',name:'Super Focus',max:5,eff:'+15% Super charge / rank'},
-  {br:'Storm',key:'overload',name:'Overload',max:3,eff:'+20% Super damage / rank',req:{focus:2}},
-  {br:'Survival',key:'swift',name:'Swiftness',max:5,eff:'+6% move speed / rank'},
-  {br:'Survival',key:'mending',name:'Mending',max:3,eff:'regen HP while roaming / rank'},
-  {br:'Survival',key:'vitality',name:'Vitality',max:5,eff:'+6% max HP / rank'},
-  {br:'Survival',key:'might',name:'Might',max:5,eff:'+4% ATK / rank'},
-  {br:'Survival',key:'iron',name:'Iron Skin',max:5,eff:'+5% DEF / rank'},
-  {br:'Survival',key:'scholar',name:'Scholar',max:5,eff:'+10% XP / rank'},
-  {br:'Survival',key:'fortune',name:'Fortune',max:5,eff:'+12% coins / rank'},
-  {br:'Mastery',key:'crit',name:'Critical Strike',max:5,eff:'+3% chance of 2× damage / rank'},
-  {br:'Mastery',key:'shield',cls:'mage',name:'Spell Shield',max:3,eff:'ACTIVE: absorb damage 8s (stronger / rank)'},
-  {br:'Mastery',key:'warcry',cls:'warrior',name:'War Cry',max:3,eff:'ACTIVE: roar — heal & −40% damage 10s'},
-  {br:'Mastery',key:'quiver',cls:'ranger',name:'Swift Quiver',max:3,eff:'ACTIVE: 3× fire rate (4+rank s)'},
-  {br:'Mastery',key:'firewall',cls:'mage',name:'Fire Wall',max:3,eff:'SWIPE SPELL: draw a wall of flame that burns foes (longer+stronger / rank)'},
-  {br:'Mastery',key:'spikewall',cls:'warrior',name:'Earthshatter',max:3,eff:'SWIPE SPELL: draw a line of stone spikes that roots foes'},
-  {br:'Mastery',key:'thornwall',cls:'ranger',name:'Thorn Wall',max:3,eff:'SWIPE SPELL: draw a hedge of thorns that slows foes'}];
+  // == SPELL TREE ==
+  {tree:'spell',tier:1,icon:'\ud83d\udca5',key:'power',name:'Spell Power',max:5,eff:'+8% damage / rank'},
+  {tree:'spell',tier:1,icon:'\u26a1',key:'haste',name:'Haste',max:5,eff:'\u22128% attack cooldown / rank'},
+  {tree:'spell',tier:2,icon:'\ud83d\udd31',key:'multi',name:'Split Shot',max:2,eff:'+1 projectile / rank',req:{power:2}},
+  {tree:'spell',tier:2,icon:'\ud83c\udfaf',key:'pierce',name:'Piercing',max:3,eff:'+1 pierce / rank',req:{haste:2}},
+  {tree:'spell',tier:2,icon:'\ud83c\udf00',key:'focus',name:'Super Focus',max:5,eff:'+15% Super charge / rank'},
+  {tree:'spell',tier:3,icon:'\u2604\ufe0f',key:'overload',name:'Overload',max:3,eff:'+20% Super damage / rank',req:{focus:2}},
+  {tree:'spell',tier:3,icon:'shield',cv:1,key:'shield',cls:'mage',name:'Spell Shield',max:3,eff:'ACTIVE: absorb damage 8s (stronger / rank)'},
+  {tree:'spell',tier:3,icon:'horn',cv:1,key:'warcry',cls:'warrior',name:'War Cry',max:3,eff:'ACTIVE: roar \u2014 heal & \u221240% damage 10s'},
+  {tree:'spell',tier:3,icon:'quiver',cv:1,key:'quiver',cls:'ranger',name:'Swift Quiver',max:3,eff:'ACTIVE: 3\u00d7 fire rate (4+rank s)'},
+  {tree:'spell',tier:4,icon:'firewall',cv:1,key:'firewall',cls:'mage',name:'Fire Wall',max:3,eff:'SWIPE SPELL: draw a wall of flame (longer+stronger / rank)',req:{shield:1}},
+  {tree:'spell',tier:4,icon:'spikes',cv:1,key:'spikewall',cls:'warrior',name:'Earthshatter',max:3,eff:'SWIPE SPELL: draw stone spikes that root foes',req:{warcry:1}},
+  {tree:'spell',tier:4,icon:'thorns',cv:1,key:'thornwall',cls:'ranger',name:'Thorn Wall',max:3,eff:'SWIPE SPELL: draw a hedge of thorns that slows foes',req:{quiver:1}},
+  // == PASSIVE TREE ==
+  {tree:'passive',tier:1,icon:'\u2764\ufe0f',key:'vitality',name:'Vitality',max:5,eff:'+6% max HP / rank'},
+  {tree:'passive',tier:1,icon:'\ud83d\udcaa',key:'might',name:'Might',max:5,eff:'+4% ATK / rank'},
+  {tree:'passive',tier:1,icon:'\ud83e\udea8',key:'iron',name:'Iron Skin',max:5,eff:'+5% DEF / rank'},
+  {tree:'passive',tier:1,icon:'\ud83d\udc5f',key:'swift',name:'Swiftness',max:5,eff:'+6% move speed / rank'},
+  {tree:'passive',tier:2,icon:'\ud83d\udc9a',key:'mending',name:'Mending',max:3,eff:'regen HP while roaming / rank',req:{vitality:1}},
+  {tree:'passive',tier:2,icon:'\ud83d\udcd6',key:'scholar',name:'Scholar',max:5,eff:'+10% XP / rank'},
+  {tree:'passive',tier:2,icon:'\ud83d\udcb0',key:'fortune',name:'Fortune',max:5,eff:'+12% coins / rank'},
+  {tree:'passive',tier:3,icon:'\ud83d\udde1\ufe0f',key:'crit',name:'Critical Strike',max:5,eff:'+3% chance of 2\u00d7 damage / rank',req:{might:2}}];
 function skillReq(nd){if(!nd.req)return true;for(const k in nd.req){if(((G.skills||{})[k]||0)<nd.req[k])return false;}return true;}
 function xpToNext(l){return 16+l*l*4;}
 let G=null;
@@ -990,24 +1006,67 @@ function openCharacter(){const p=document.getElementById('panel');const M=mods()
     if(G.gear.length>=15){toast('Gear bag full');return;}
     G.equip[slot]=null;G.gear.push(it);recalcHero();if(G.hp>G.maxHp)G.hp=G.maxHp;save();updateHud();applyGearFx();openCharacter();});
   document.getElementById('charBack').onclick=openPanel;}
-function openSkills(){const p=document.getElementById('panel');
-  let h=`<h2>✦ Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> · +1 every level-up</div>`;
-  for(const br of['Arcane','Storm','Survival','Mastery']){
-    h+=`<div class="subline" style="margin:6px 0 3px;color:#b39dff;font-weight:700;font-size:11px">${br.toUpperCase()}</div><div class="skgrid">`;
-    for(const nd of SKILLS.filter(s2=>s2.br===br&&(!s2.cls||s2.cls===G.class))){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=skillReq(nd);
-      const canBuy=!maxed&&(G.skillPoints||0)>0&&ok;
-      const lock=!ok?` 🔒${Object.entries(nd.req).map(([k,v])=>k+' '+v).join(',')}`:'';
-      h+=`<div class="skcard" style="${ok?'':'opacity:.55'}"><div style="flex:1;min-width:0"><b>${nd.name}</b> <span class="rk">${rank}/${nd.max}</span>
-        <small>${nd.eff}${lock}</small></div>
-        <button class="cbtn" data-sk="${nd.key}" ${canBuy?'':'disabled'}>${maxed?'✓':'+'}</button></div>`;}
+let skTab='spell';
+function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cls||nd.cls===G.class))t+=(G.skills||{})[nd.key]||0;return t;}
+function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
+function openSkills(sel){const p=document.getElementById('panel');
+  const RN=['I','II','III','IV'];
+  let h=`<h2>\u2726 Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
+  h+=`<div class="sktabs">
+    <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">\u2694 Spells</button>
+    <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button></div>`;
+  const nd=SKILLS.find(n=>n.key===sel);
+  if(nd){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
+    const spentT=spentIn(nd.tree),need=(nd.tier-1)*2;
+    let lockTxt='';
+    if(spentT<need)lockTxt=`\ud83d\udd12 Needs ${need} points spent in this tree`;
+    else if(!skillReq(nd))lockTxt='\ud83d\udd12 Requires '+Object.entries(nd.req).map(([k,v])=>((SKILLS.find(n=>n.key===k)||{name:k}).name)+' '+v).join(', ');
+    h+=`<div class="pcard" style="max-width:500px;margin:4px auto 0;width:100%">
+      <div style="flex:1;min-width:0"><b>${nd.name}</b> <span class="lv">${rank}/${nd.max}</span><br>
+      <small>${nd.eff}</small>${lockTxt?`<br><small style="color:#e8483a">${lockTxt}</small>`:''}</div>
+      <button class="cbtn" id="skLearn" data-k="${nd.key}" ${(!maxed&&ok&&(G.skillPoints||0)>0)?'':'disabled'}>${maxed?'MAX':'Learn'}</button></div>`;}
+  else h+='<div class="subline" style="margin-top:4px">Tap a skill to inspect it</div>';
+  h+=`<div id="skTree"><canvas id="skLines"></canvas>`;
+  const spent=spentIn(skTab);
+  for(let t=1;t<=4;t++){
+    const nodes=SKILLS.filter(n=>n.tree===skTab&&n.tier===t&&(!n.cls||n.cls===G.class));
+    if(!nodes.length)continue;
+    const need=(t-1)*2,open=spent>=need;
+    if(t>1)h+=`<div class="sktsep ${open?'':'dim'}">TIER ${RN[t-1]}${open?'':' \ud83d\udd12 '+need+' pts in tree'}</div>`;
+    h+='<div class="sktier">';
+    for(const nd of nodes){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
+      h+=`<div class="sknode ${ok?'':'locked'} ${maxed?'maxed':''} ${sel===nd.key?'sel':''}" data-sk="${nd.key}">${nd.cv?`<canvas class="skcv" data-ic="${nd.icon}"></canvas>`:`<span>${nd.icon}</span>`}<span class="skrk">${rank}/${nd.max}</span></div>`;}
     h+='</div>';}
-  h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="skBack">◀ Menu</button></div>';
+  h+='</div>';
+  h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
   p.innerHTML=h;
-  p.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{const nd=SKILLS.find(s2=>s2.key===b.dataset.sk),rank=(G.skills||{})[nd.key]||0;
-    if(rank>=nd.max||(G.skillPoints||0)<=0||!skillReq(nd))return;G.skills[nd.key]=rank+1;G.skillPoints--;sfx('menu');
-    const b2=G.maxHp;recalcHero();G.hp+=Math.max(0,G.maxHp-b2);
-    toast(nd.name+' → '+(rank+1));save();updateHud();openSkills();});
-  document.getElementById('skBack').onclick=openPanel;}
+  p.querySelectorAll('canvas.skcv').forEach(cv=>{cv.width=60;cv.height=60;drawMenuIcon(cv,cv.dataset.ic);});
+  p.querySelectorAll('[data-sk]').forEach(el=>el.onclick=()=>{sfx('menu');openSkills(el.dataset.sk);});
+  p.querySelectorAll('.sktab').forEach(b2=>b2.onclick=()=>{skTab=b2.dataset.tab;sfx('menu');openSkills();});
+  const lb=document.getElementById('skLearn');
+  if(lb)lb.onclick=()=>{const nd2=SKILLS.find(n=>n.key===lb.dataset.k),rank=(G.skills||{})[nd2.key]||0;
+    if(rank>=nd2.max||(G.skillPoints||0)<=0||!nodeOpen(nd2))return;
+    G.skills[nd2.key]=rank+1;G.skillPoints--;sfx('level');
+    const b3=G.maxHp;recalcHero();G.hp+=Math.max(0,G.maxHp-b3);
+    toast(nd2.name+' \u2192 '+(rank+1));save();updateHud();openSkills(nd2.key);};
+  document.getElementById('skBack').onclick=openPanel;
+  requestAnimationFrame(drawSkillLines);}
+function drawSkillLines(){const tree=document.getElementById('skTree'),cv=document.getElementById('skLines');
+  if(!tree||!cv)return;
+  const w=tree.clientWidth,hh=tree.scrollHeight;
+  cv.width=w*2;cv.height=hh*2;cv.style.width=w+'px';cv.style.height=hh+'px';
+  const c=cv.getContext('2d');c.scale(2,2);c.lineCap='round';
+  const pos=k=>{const el=tree.querySelector(`[data-sk="${k}"]`);if(!el)return null;
+    return {x:el.offsetLeft+el.offsetWidth/2,y:el.offsetTop+el.offsetHeight/2};};
+  for(const nd of SKILLS){if(nd.tree!==skTab||!nd.req)continue;if(nd.cls&&nd.cls!==G.class)continue;
+    const b2=pos(nd.key);if(!b2)continue;
+    for(const rk in nd.req){const a2=pos(rk);if(!a2)continue;
+      const ok=((G.skills||{})[rk]||0)>=nd.req[rk];
+      c.strokeStyle=ok?'rgba(255,210,60,.85)':'rgba(140,150,140,.4)';
+      c.lineWidth=3;c.setLineDash(ok?[]:[5,4]);
+      c.beginPath();c.moveTo(a2.x,a2.y+24);
+      c.bezierCurveTo(a2.x,a2.y+40,b2.x,b2.y-42,b2.x,b2.y-26);c.stroke();}}
+  c.setLineDash([]);}
 function applyGearFx(){if(!scene||!scene.pGlow)return;
   const wC=gearRarCol('weapon');
   scene.pGlow.setTint(wC?Phaser.Display.Color.HexStringToColor(wC).color:0xffe9a0);
