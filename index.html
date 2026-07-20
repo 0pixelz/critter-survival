@@ -210,6 +210,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;color:#fff;
   <h1>Critter Wilds</h1>
   <p>Roam the wild with a tap-to-move joystick, befriend critters, and survive. Build a team of six!</p>
   <button class="bigbtn" id="startBtn">New Game</button>
+  <a href="v2/" style="color:#ffd23c;font-weight:700;font-size:14px;text-decoration:none;background:rgba(0,0,0,.3);padding:8px 16px;border-radius:14px;border:2px solid rgba(255,210,60,.5)">🚀 Try the NEW ENGINE beta — real pixel art!</a>
   <p style="font-size:13px;opacity:.7">Touch-first · progress auto-saves in your browser</p>
 </div>
 
@@ -2589,7 +2590,7 @@ function toClassSelect(){document.getElementById('title').style.display='none';d
 document.getElementById('startBtn').onclick=toClassSelect;
 function init(){resize();buildGrid();
   if(load()){const t=document.getElementById('title');
-    t.innerHTML='<h1>Critter Wilds</h1><p>Saved adventure found.</p><button class="bigbtn" id="resumeBtn">Continue</button><button class="bigbtn alt" id="newBtn">New Game</button>';
+    t.innerHTML='<h1>Critter Wilds</h1><p>Saved adventure found.</p><button class="bigbtn" id="resumeBtn">Continue</button><button class="bigbtn alt" id="newBtn">New Game</button><a href="v2/" style="color:#ffd23c;font-weight:700;font-size:14px;text-decoration:none;background:rgba(0,0,0,.3);padding:8px 16px;border-radius:14px;border:2px solid rgba(255,210,60,.5)">🚀 Try the NEW ENGINE beta — real pixel art!</a>';
     document.getElementById('resumeBtn').onclick=()=>startWorld();
     document.getElementById('newBtn').onclick=toClassSelect;}
   let last=performance.now();
