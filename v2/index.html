@@ -420,6 +420,16 @@ function bakeMisc(kind){
     ctx.fillStyle='#ff5a1e';ctx.beginPath();ctx.moveTo(cx-9,base);ctx.quadraticCurveTo(cx,base-28,cx+9,base);ctx.closePath();ctx.fill();
     ctx.fillStyle='#ffb02e';ctx.beginPath();ctx.moveTo(cx-6,base);ctx.quadraticCurveTo(cx,base-19,cx+6,base);ctx.closePath();ctx.fill();
     ctx.fillStyle='#ffe86a';ctx.beginPath();ctx.moveTo(cx-3,base-2);ctx.quadraticCurveTo(cx,base-11,cx+3,base-2);ctx.closePath();ctx.fill();return cv;}
+  if(kind==='firebolt'){const cv=mkCv(36,16);ctx.translate(18,8);
+    ctx.shadowColor='#ff9a3c';ctx.shadowBlur=6;
+    ctx.fillStyle='#ff7a2a';ctx.beginPath();
+    ctx.moveTo(14,0);ctx.quadraticCurveTo(6,-6,-6,-4);ctx.quadraticCurveTo(-15,-2,-17,0);
+    ctx.quadraticCurveTo(-15,2,-6,4);ctx.quadraticCurveTo(6,6,14,0);ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#ffc23c';ctx.beginPath();
+    ctx.moveTo(12,0);ctx.quadraticCurveTo(4,-3.6,-4,-2.4);ctx.quadraticCurveTo(-10,-1,-11,0);
+    ctx.quadraticCurveTo(-10,1,-4,2.4);ctx.quadraticCurveTo(4,3.6,12,0);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#fff6d8';ctx.beginPath();ctx.ellipse(7,0,4.5,1.9,0,0,7);ctx.fill();return cv;}
   if(kind==='arrow'){const cv=mkCv(44,20);ctx.translate(22,10);
     ctx.strokeStyle='#c9a15a';ctx.lineWidth=2.8;
     ctx.beginPath();ctx.moveTo(-16,0);ctx.lineTo(11,0);ctx.stroke();
@@ -1122,7 +1132,7 @@ class World extends Phaser.Scene{
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
     tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));
-    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));
+    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
     if(!this.textures.exists('rwall')){const da=bakeDungeonArt();
@@ -1301,8 +1311,8 @@ class World extends Phaser.Scene{
   spawnShot(a2,spd,dmg,pierce,tint,arrow){
     let core;
     if(arrow||cls==='ranger')core=this.add.image(0,0,'arrowTex').setScale(0.9);
-    else core=this.add.image(0,0,'dot').setScale(0.5).setTint(0xffcc88);
-    const gl=this.add.image(0,0,'glow').setScale(0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
+    else core=this.add.image(0,0,'fireboltTex').setScale(0.8);
+    const gl=this.add.image(0,0,'glow').setScale(0.24).setAlpha(0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
     this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce});}
   classAbility(){
     if(panelOpen)return;
@@ -1702,7 +1712,7 @@ class World extends Phaser.Scene{
       s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
       const ssx=isoX(s.x,s.y),ssy=isoY(s.x,s.y)-10;
       s.core.setPosition(ssx,ssy).setDepth(999000);s.gl.setPosition(ssx,ssy).setDepth(998999);
-      if(s.core.texture.key==='arrowTex'){
+      if(s.core.texture.key==='arrowTex'||s.core.texture.key==='fireboltTex'){
         const pang=Math.atan2((s.vx+s.vy)*IH/2,(s.vx-s.vy)*IW/2);s.core.setRotation(pang);}
       let dead=s.life<=0||solidWorld(s.x,s.y);
       if(!dead)for(const e of this.enemies){
