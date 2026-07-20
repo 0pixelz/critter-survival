@@ -1741,12 +1741,13 @@ class World extends Phaser.Scene{
     }
     for(let k=0;k<3;k++){this.hitEmit.setPosition(isoX(this.px,this.py),isoY(this.px,this.py)-10);this.hitEmit.explode(14);}
     toast(cls==='warrior'?'⚔ WARCRY SHOCKWAVE!':cls==='ranger'?'🏹 ARROW VOLLEY!':'✨ ARCANE NOVA!');}
-  spawnShot(a2,spd,dmg,pierce,tint,arrow){
+  spawnShot(a2,spd,dmg,pierce,tint,arrow,big){
     let core;
-    if(arrow||cls==='ranger')core=this.add.image(0,0,'arrowTex').setScale(0.9);
-    else core=this.add.image(0,0,'fireboltTex').setScale(0.8);
-    const gl=this.add.image(0,0,'glow').setScale(0.24).setAlpha(0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
-    this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce});}
+    if(arrow||cls==='ranger')core=this.add.image(0,0,'arrowTex').setScale(big?1.4:0.9);
+    else core=this.add.image(0,0,'fireboltTex').setScale(big?1.5:0.8);
+    if(big)core.setTint(0xffe9a0);
+    const gl=this.add.image(0,0,'glow').setScale(big?0.55:0.24).setAlpha(big?0.7:0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
+    this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big});}
   castSlot(i){
     const k=(G.loadout||[])[i];if(!k||!SPELLBOOK[k]||!SPELLBOOK[k].avail())return;
     if(k==='active')this.classAbility();
@@ -1795,11 +1796,12 @@ class World extends Phaser.Scene{
       const fade=Math.min(1,z.life/1.2);
       z.sp.setAlpha(fade);z.gl.setAlpha(0.4*fade*fl);
       z.tick-=dt;
-      if(z.tick<=0){z.tick=0.45;
+      if(z.tick<=0){z.tick=0.4;
         for(const e of [...this.enemies]){
-          if(Math.hypot(e.x-z.x,e.y-z.y)>TILE*0.8)continue;
+          if(Math.hypot(e.x-z.x,e.y-z.y)>TILE*0.95)continue;
           if(cls==='warrior')e.rootT=Math.max(e.rootT||0,1.0);
           if(cls==='ranger')e.slowT=Math.max(e.slowT||0,1.5);
+          if(cls==='mage'){e.burnT=3;e.burnDmg=Math.max(2,Math.round(z.dmg*0.35));}
           this.hurtEnemy(e,Math.max(1,Math.round(z.dmg*(0.85+Math.random()*0.3))),Math.atan2(e.y-z.y,e.x-z.x));}}}}
   classAbility(){
     if(panelOpen)return;
@@ -1945,14 +1947,29 @@ class World extends Phaser.Scene{
     {const scr2=Math.cos(ang)-Math.sin(ang);if(scr2<-0.05)this.flip=-1;else if(scr2>0.05)this.flip=1;}
     sfx('cast');
     if(cls==='warrior'){
-      this.slashes.push({ang,life:0.18,reach:TILE*1.6});
+      const rch=spell==='power'?TILE*2.3:TILE*1.6;
+      this.slashes.push({ang,life:spell==='power'?0.26:0.18,reach:rch});
       if(spell==='nova'){this.slashes.push({ang:ang+2.09,life:0.18,reach:TILE*1.6});this.slashes.push({ang:ang-2.09,life:0.18,reach:TILE*1.6});}
-      this.cameras.main.shake(70,0.003);
-      for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d>TILE*2.2)continue;
+      if(spell==='power'){this.waves.push({x:this.px,y:this.py,r:10,maxR:TILE*2.4,dmg:0,kb:60,hit:new Set()});
+        this.cameras.main.shake(180,0.008);}
+      else if(spell==='nova')this.cameras.main.shake(140,0.005);
+      else this.cameras.main.shake(70,0.003);
+      for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d>(spell==='power'?TILE*3:TILE*2.2))continue;
         let da=Math.atan2(e.y-this.py,e.x-this.px)-ang;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;
         if(spell!=='nova'&&Math.abs(da)>1.1)continue;this.hurtEnemy(e,dmg,ang);}
+    }else if(spell==='nova'){
+      // ring burst all around
+      const n=8+M.count;
+      for(let i=0;i<n;i++){const a2=ang+i*(Math.PI*2/n);
+        this.spawnShot(a2,430,dmg,(cls==='ranger'?1:0)+M.pierce,cls==='mage'?0x7ad0ff:0xa8e063,cls==='ranger');}
+      this.waves.push({x:this.px,y:this.py,r:10,maxR:TILE*2.2,dmg:0,kb:35,hit:new Set()});
+      this.cameras.main.shake(130,0.005);
+    }else if(spell==='power'){
+      // one huge heavy bolt
+      this.spawnShot(ang,540,dmg,1+M.pierce,0xffd23c,cls==='ranger',true);
+      this.cameras.main.shake(160,0.006);
     }else{
-      const n=(spell==='nova'?3:1)+M.count;
+      const n=1+M.count;
       for(let i=0;i<n;i++){const a2=ang+(i-(n-1)/2)*0.28;
         this.spawnShot(a2,cls==='ranger'?600:480,dmg,(spell==='chain'?2:(cls==='ranger'?1:0))+M.pierce,cls==='mage'?0xff8844:0xbbaaff);
       }
@@ -2152,7 +2169,16 @@ class World extends Phaser.Scene{
     this.pGlow.setPosition(sx,sy-14).setDepth(sy+IH*0.28-1);
     this.camTarget.setPosition(sx,sy);
     for(let i=this.enemies.length-1;i>=0;i--){const e=this.enemies[i];
-      e.flash=Math.max(0,e.flash-dt);if(e.flash<=0){e.s.clearTint();if(e.rare)e.s.setTint(0xd8a8ff);}
+      e.flash=Math.max(0,e.flash-dt);
+      if(e.flash<=0){e.s.clearTint();
+        if(e.burnT>0)e.s.setTint(0xff9a66);
+        else if(e.rare)e.s.setTint(0xd8a8ff);}
+      if(e.burnT>0){e.burnT-=dt;
+        if(Math.random()<dt*8){this.hitEmit.setPosition(e.s.x+(Math.random()-0.5)*18,e.s.y-16-Math.random()*10);this.hitEmit.explode(1);}
+        e.burnTick=(e.burnTick===undefined?0.5:e.burnTick)-dt;
+        if(e.burnTick<=0){e.burnTick=0.5;
+          this.hurtEnemy(e,e.burnDmg||2,Math.random()*6.28);
+          if(!this.enemies.includes(e))continue;}}
       e.touch=Math.max(0,e.touch-dt);e.bob+=dt;
       e.rootT=Math.max(0,(e.rootT||0)-dt);e.slowT=Math.max(0,(e.slowT||0)-dt);
       const sf=e.rootT>0?0:(e.slowT>0?0.45:1);
