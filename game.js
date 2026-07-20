@@ -37,10 +37,10 @@ const ELEMS={
   arcane:{nm:'Arcane',ic:'🔮',col:'#c07aff',hex:0xc07aff}};
 const SUBCLASSES={
   mage:{
-    fire:{nm:'Pyromancer',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Your bolts ignite foes — burning damage over time'},
-    frost:{nm:'Cryomancer',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff,desc:'Your bolts chill foes, slowing their movement'},
-    storm:{nm:'Stormweaver',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'Your bolts may arc lightning to a nearby foe'},
-    arcane:{nm:'Voidcaller',ic:'🔮',col:'#c07aff',hex:0xc07aff,desc:'+8% damage and bolts pierce one extra foe'}},
+    fire:{nm:'Pyromancer',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Bolts IGNITE foes — and burning enemies EXPLODE on death, spreading flame to everything nearby'},
+    storm:{nm:'Stormweaver',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'−10% cooldown · your bolts arc CHAIN LIGHTNING that can jump to a second and even a third foe'},
+    chrono:{nm:'Chronomancer',ic:'⏳',col:'#7ad0ff',hex:0x7ad0ff,desc:'Hits slow time around foes · ALL cooldowns recover 18% faster · every 20s an incoming hit is REWOUND to nothing'},
+    necro:{nm:'Necromancer',ic:'💀',col:'#c07aff',hex:0xc07aff,desc:'Drain life — heal 4% of damage dealt · slain foes may RISE as spirit minions that fight for you for 12s'}},
   warrior:{
     berserker:{nm:'Berserker',ic:'🩸',col:'#e8483a',hex:0xe8483a,desc:'Deal up to +50% damage as your HP drops · heal 8% of damage dealt · dealing & taking damage fills your RAGE — at full, erupt into a 6s FRENZY (+40% damage, +30% speed)'},
     juggernaut:{nm:'Juggernaut',ic:'🛡️',col:'#8a929c',hex:0x8a929c,desc:'+20% DEF · 25% chance to BLOCK any hit · raiders near you drop what they\'re smashing and attack YOU instead — the wall your base deserves'},
@@ -55,6 +55,7 @@ function subDef(c2,el){const t=SUBCLASSES[c2]||SUBCLASSES.mage;return t[el]||t[O
 function subVis(){const d=G?subDef(G.class,G.element):null;return d||{col:'#ff8844',hex:0xff8844};}
 function isWSub(k){return G&&G.class==='warrior'&&G.element===k;}
 function isRSub(k){return G&&G.class==='ranger'&&G.element===k;}
+function isMSub(k){return G&&G.class==='mage'&&G.element===k;}
 const BOSS_LAIR={x:88,y:56};
 const CHUNK=6;
 function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
@@ -845,6 +846,9 @@ function mods(){const m={dmg:1,cd:1,speed:1,xp:1,coins:1,crit:0,count:0,pierce:0
   m.superGain*=1+0.15*(S.focus||0);m.superPow*=1+0.2*(S.overload||0);m.regen+=(S.mending||0);
   m.xp*=1+0.1*(S.scholar||0);m.coins*=1+0.12*(S.fortune||0);m.crit=0.03*(S.crit||0);
   if(G.element==='arcane'){m.dmg*=1.08;m.pierce+=1;}
+  if(G.class==='mage'){
+    if(G.element==='storm')m.cd*=0.9;
+    if(G.element==='chrono')m.cd*=0.85;}
   if(G.class==='ranger'){
     if(G.element==='sharpshooter'){m.dmg*=1.12;m.crit+=0.10;}
     if(G.element==='warden')m.regen+=2;}
@@ -937,6 +941,9 @@ function autoEquip(k){if(!G.loadout)G.loadout=[];
   if(G.loadout.length<3&&!G.loadout.includes(k)){G.loadout.push(k);return true;}return false;}
 function runeRank(){return (G&&G.skills&&G.skills[runeKey()])||0;}
 function damageHero(d){if(!G)return 0;
+  if(isMSub('chrono')&&scene&&(scene.rewindCD||0)<=0){scene.rewindCD=20;
+    scene.cameras.main.flash(200,120,200,255);
+    toast('⏳ Time rewinds — the blow never lands!');sfx('cast');return 0;}
   if(isWSub('juggernaut')&&Math.random()<0.25){
     if(scene){scene.hitEmit.setPosition(isoX(scene.px,scene.py),isoY(scene.px,scene.py)-22);scene.hitEmit.explode(6);}
     sfx('cast');return 0;}
@@ -983,6 +990,8 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
     G.element={fire:'berserker',frost:'juggernaut',storm:'blademaster',arcane:'warlord'}[G.element]||'berserker';
   if(G.class==='ranger'&&!SUBCLASSES.ranger[G.element])
     G.element={fire:'sharpshooter',frost:'trapper',storm:'beastmaster',arcane:'warden'}[G.element]||'beastmaster';
+  if(G.class==='mage'&&!SUBCLASSES.mage[G.element])
+    G.element={frost:'chrono',arcane:'necro'}[G.element]||'fire';
   if(!G.name)G.name={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   if(!G.seen){G.seen={};for(const t of TOWNS)revealAt((t.cx+0.5)*TILE,(t.cy+0.5)*TILE);revealAt(G.px,G.py);}
   recalcHero();return true;}catch(e){return false;}}
@@ -1958,6 +1967,7 @@ class World extends Phaser.Scene{
     this.eshots=[];
     this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;this.strikeCD=0;this.novaCD=0;
     this.rage=0;this.frenzyT=0;this.parryT=0;this.comboT=0;this.comboN=0;
+    this.minions=[];this.rewindCD=0;
     if(isRSub('beastmaster')){
       this.wolf={x:this.px-40,y:this.py-20,cd:0,
         s:this.add.sprite(0,0,'wolfTex').setOrigin(0.5,0.85).setScale(0.9),
@@ -2280,13 +2290,20 @@ class World extends Phaser.Scene{
     if(isWSub('berserker')){
       G.hp=Math.min(G.maxHp,G.hp+dmg*(this.frenzyT>0?0.14:0.08));
       this.rage=Math.min(100,(this.rage||0)+dmg*0.35);}
+    if(isMSub('necro'))G.hp=Math.min(G.maxHp,G.hp+dmg*0.04);
     if(G&&G.element&&!e._noProc){
       if(G.element==='fire'){e.burnT=Math.max(e.burnT||0,1.2);e.burnDmg=Math.max(1,Math.round((G._atk||5)*0.12));}
-      else if(G.element==='frost')e.slowT=Math.max(e.slowT||0,0.9);
-      else if(G.element==='storm'&&Math.random()<0.15){let best=null,bd=TILE*3.5;
-        for(const o of this.enemies){if(o===e)continue;const d=Math.hypot(o.x-e.x,o.y-e.y);if(d<bd){bd=d;best=o;}}
-        if(best){best._noProc=1;this.hurtEnemy(best,Math.max(1,Math.round(dmg*0.4)),Math.atan2(best.y-e.y,best.x-e.x));best._noProc=0;
-          if(best.s&&best.s.scene){this.hitEmit.setPosition(best.s.x,best.s.y-16);this.hitEmit.explode(6);}}}}
+      else if(G.element==='frost'||G.element==='chrono')e.slowT=Math.max(e.slowT||0,0.9);
+      else if(G.element==='storm'&&Math.random()<(isMSub('storm')?0.25:0.15)){
+        let from=e,jd=Math.round(dmg*0.4);
+        const jumps=isMSub('storm')?2:1,hit=new Set([e]);
+        for(let j=0;j<jumps;j++){
+          let best=null,bd=TILE*3.5;
+          for(const o of this.enemies){if(hit.has(o))continue;const d=Math.hypot(o.x-from.x,o.y-from.y);if(d<bd){bd=d;best=o;}}
+          if(!best)break;hit.add(best);
+          best._noProc=1;this.hurtEnemy(best,Math.max(1,jd),Math.atan2(best.y-from.y,best.x-from.x));best._noProc=0;
+          if(best.s&&best.s.scene){this.hitEmit.setPosition(best.s.x,best.s.y-16);this.hitEmit.explode(6);}
+          from=best;jd=Math.round(jd*0.6);}}}
     e.vx+=Math.cos(ang)*140;e.vy+=Math.sin(ang)*140;
     this.hitEmit.setPosition(e.s.x,e.s.y-14);this.hitEmit.explode(8);
     const t=this.add.text(e.s.x,e.s.y-34,''+dmg,{fontFamily:'Fredoka',fontSize:'15px',color:'#fff',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(9999000);
@@ -2306,6 +2323,20 @@ class World extends Phaser.Scene{
       else if(Math.random()<0.06)this.dropGear(e.x,e.y,rollGear(e.lvl,0));
       if(G.quest&&!e.raider){if(G.quest.key==='slay')G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);
         if(G.quest.key==='rare'&&(e.rare||e.alpha))G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);}
+      if(isMSub('fire')&&(e.burnT||0)>0){
+        this.hitEmit.setPosition(e.s.x,e.s.y-10);this.hitEmit.explode(18);
+        this.cameras.main.shake(90,0.004);
+        const bx2=e.x,by2=e.y,bd3=Math.max(4,Math.round((G._atk||6)*0.8));
+        for(const o of [...this.enemies]){if(o===e)continue;
+          if(Math.hypot(o.x-bx2,o.y-by2)>TILE*1.7)continue;
+          o.burnT=Math.max(o.burnT||0,1.5);o.burnDmg=Math.max(1,Math.round((G._atk||5)*0.12));
+          o._noProc=1;this.hurtEnemy(o,bd3,Math.atan2(o.y-by2,o.x-bx2));o._noProc=0;}}
+      if(isMSub('necro')&&!e.raider&&Math.random()<0.2&&(this.minions||[]).length<3){
+        const ms=this.add.sprite(0,0,'cr_'+e.sp).setScale(0.4).setOrigin(0.5,0.82)
+          .setTint(0x9adfff).setAlpha(0.75);
+        const mg=this.add.image(0,0,'glow').setScale(0.3).setTint(0x9adfff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.3);
+        this.minions.push({x:e.x,y:e.y,s:ms,gl:mg,life:12,cd:0.5});
+        toast('💀 '+e.sp+' rises to serve you!');}
       e.s.destroy();e.hbB.destroy();e.hbF.destroy();if(e.nameT)e.nameT.destroy();if(e.crown)e.crown.destroy();if(e.ring)e.ring.destroy();
       this.enemies.splice(this.enemies.indexOf(e),1);
       updateHud();this.spawnEnemy();
@@ -2440,14 +2471,16 @@ class World extends Phaser.Scene{
       atk:6+lvl*1.8,wander:0,wdir:0,touch:0,flash:0,bob:Math.random()*6,atkCD:0});}
   update(_,dms){
     const dt=Math.min(0.05,dms/1000);
-    this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt);this.strikeCD=Math.max(0,this.strikeCD-dt);this.novaCD=Math.max(0,this.novaCD-dt);
+    const cdm=isMSub('chrono')?1.18:1;
+    this.castCD=Math.max(0,this.castCD-dt*cdm);this.dashCD=Math.max(0,this.dashCD-dt*cdm);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt*cdm);this.strikeCD=Math.max(0,this.strikeCD-dt*cdm);this.novaCD=Math.max(0,this.novaCD-dt*cdm);
+    this.rewindCD=Math.max(0,(this.rewindCD||0)-dt);
     this.parryT=Math.max(0,this.parryT-dt);this.comboT=Math.max(0,(this.comboT||0)-dt);if(this.comboT<=0)this.comboN=0;
     if(this.frenzyT>0){this.frenzyT-=dt;this.player.setTint(0xff8a7a);
       if(this.frenzyT<=0){this.player.clearTint();toast('Frenzy fades…');updateHud();}}
     else if(isWSub('berserker')&&(this.rage||0)>=100){this.rage=0;this.frenzyT=6;
       this.cameras.main.flash(220,255,60,40);this.cameras.main.shake(200,0.006);
       sfx('super');toast('🩸 FRENZY! +40% damage, +30% speed');}
-    this.abilityCD=Math.max(0,this.abilityCD-dt);this.shieldT=Math.max(0,this.shieldT-dt);
+    this.abilityCD=Math.max(0,this.abilityCD-dt*(isMSub('chrono')?1.18:1));this.shieldT=Math.max(0,this.shieldT-dt);
     this.warcryT=Math.max(0,this.warcryT-dt);this.quiverT=Math.max(0,this.quiverT-dt);
     G.time=(G.time+dt/DAY_LEN);if(G.time>=1){G.time-=1;G.day++;toast('☀️ Day '+G.day);}
     this.updateWaves(dt);this.updateZones(dt);this.updateEshots(dt);
@@ -2463,6 +2496,21 @@ class World extends Phaser.Scene{
         this.hurtEnemy(tgt,Math.max(2,Math.round(G._atk*0.45)),Math.atan2(tgt.y-w.y,tgt.x-w.x));}
       const wsx=isoX(w.x,w.y),wsy=isoY(w.x,w.y)-Math.abs(Math.sin(this.time.now*0.012))*2;
       w.s.setPosition(wsx,wsy).setDepth(isoY(w.x,w.y)+IH*0.28).setFlipX(dwx<0);
+      w.gl.setPosition(wsx,wsy-10).setDepth(isoY(w.x,w.y)+IH*0.28-1);}
+    for(let mi=(this.minions||[]).length-1;mi>=0;mi--){const w=this.minions[mi];
+      w.life-=dt;w.cd=Math.max(0,w.cd-dt);
+      if(w.life<=0){w.s.destroy();w.gl.destroy();this.minions.splice(mi,1);continue;}
+      let tgt=null,bd2=TILE*6;
+      for(const e of this.enemies){const d2=Math.hypot(e.x-w.x,e.y-w.y);if(d2<bd2){bd2=d2;tgt=e;}}
+      const hx=tgt?tgt.x:this.px+30+mi*24,hy=tgt?tgt.y:this.py+26;
+      const dwx=hx-w.x,dwy=hy-w.y,dwl=Math.hypot(dwx,dwy)||1;
+      if(dwl>16){w.x+=dwx/dwl*Math.min(165*dt,dwl);w.y+=dwy/dwl*Math.min(165*dt,dwl);}
+      if(tgt&&dwl<30&&w.cd<=0){w.cd=1.2;
+        tgt._noProc=1;this.hurtEnemy(tgt,Math.max(2,Math.round((G._atk||6)*0.35)),Math.atan2(tgt.y-w.y,tgt.x-w.x));tgt._noProc=0;}
+      if(!this.minions[mi])continue;
+      const wsx=isoX(w.x,w.y),wsy=isoY(w.x,w.y)-Math.abs(Math.sin(this.time.now*0.01+mi))*3;
+      w.s.setPosition(wsx,wsy).setDepth(isoY(w.x,w.y)+IH*0.28).setFlipX(dwx<0)
+        .setAlpha(Math.min(0.75,w.life));
       w.gl.setPosition(wsx,wsy-10).setDepth(isoY(w.x,w.y)+IH*0.28-1);}if(!dungeon){this.updateTowers(dt);this.updateTraps(dt);this.updateRaid(dt);}
     this.nodeCheckT+=dt;if(this.nodeCheckT>1){this.nodeCheckT=0;
       for(const k in this.nodeSprites){const o=this.nodeSprites[k];
