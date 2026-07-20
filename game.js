@@ -47,13 +47,14 @@ const SUBCLASSES={
     blademaster:{nm:'Blademaster',ic:'🗡️',col:'#ffd23c',hex:0xffd23c,desc:'−20% attack cooldown · chained hits build a COMBO (+5% damage each, up to 5) · dash resets your swing and grants a 0.45s PARRY that reflects damage'},
     warlord:{nm:'Warlord',ic:'📯',col:'#ffb454',hex:0xffb454,desc:'+20% Super charge · towers near you fire 35% faster · your War Cry lasts twice as long and heals more — lead the defense of your city'}},
   ranger:{
-    fire:{nm:'Wildfire',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Burning arrows — foes take damage over time'},
-    frost:{nm:'Winterchill',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff,desc:'Frosted arrowheads slow whatever they strike'},
-    storm:{nm:'Stormcaller',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'Arrows may arc lightning to a nearby foe'},
-    arcane:{nm:'Spiritshot',ic:'🔮',col:'#c07aff',hex:0xc07aff,desc:'+8% damage and arrows pierce one extra foe'}}};
+    beastmaster:{nm:'Beastmaster',ic:'🐺',col:'#c9803a',hex:0xc9803a,desc:'A spirit wolf hunts at your side — its bites MARK prey for 4s, and you deal +15% damage to marked targets'},
+    trapper:{nm:'Trapper',ic:'🪤',col:'#b8935e',hex:0xb8935e,desc:'Spike & snare traps cost half, last twice as many uses, and coat victims in POISON that ticks for seconds — total zone control'},
+    sharpshooter:{nm:'Sharpshooter',ic:'🎯',col:'#ffd23c',hex:0xffd23c,desc:'+12% damage · +10% crit · aimed (hold & drag) shots hit 40% harder · arrows that fly far strike for 150% — but −10% max HP'},
+    warden:{nm:'Warden',ic:'🌿',col:'#5da53f',hex:0x5da53f,desc:'Nature\'s guardian: regenerate 2 HP/s · +15% DEF · arrows may entangle foes in roots · your Thorn Wall lasts 50% longer and ROOTS instead of slowing'}}};
 function subDef(c2,el){const t=SUBCLASSES[c2]||SUBCLASSES.mage;return t[el]||t[Object.keys(t)[0]];}
 function subVis(){const d=G?subDef(G.class,G.element):null;return d||{col:'#ff8844',hex:0xff8844};}
 function isWSub(k){return G&&G.class==='warrior'&&G.element===k;}
+function isRSub(k){return G&&G.class==='ranger'&&G.element===k;}
 const BOSS_LAIR={x:88,y:56};
 const CHUNK=6;
 function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
@@ -695,6 +696,27 @@ function bakeMisc(kind){
     shadow(cx,base,18,7);
     ctx.fillStyle='#1f5223';ctx.strokeStyle=line;ctx.lineWidth=4;ctx.beginPath();ctx.arc(cx,base-12,18,0,7);ctx.fill();ctx.stroke();
     ctx.fillStyle='#e5372f';for(const[dx,dy]of[[-6,-8],[6,-2],[0,4],[9,-10]]){ctx.beginPath();ctx.arc(cx+dx,base-12+dy,3,0,7);ctx.fill();}return cv;}
+  if(kind==='wolf'){const cv=mkCv(56,44),line='#12160f';
+    shadow(28,38,15,5);
+    ctx.strokeStyle=line;ctx.lineWidth=2.8;ctx.lineJoin='round';
+    const g=ctx.createLinearGradient(0,10,0,36);g.addColorStop(0,'#b8a68e');g.addColorStop(1,'#8a7a62');
+    ctx.fillStyle=g;                                          // body
+    ctx.beginPath();ctx.moveTo(10,34);ctx.quadraticCurveTo(8,22,18,20);
+    ctx.quadraticCurveTo(30,16,40,21);ctx.quadraticCurveTo(46,24,45,32);
+    ctx.quadraticCurveTo(38,37,10,34);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#6a5a44';ctx.lineWidth=4;                // legs
+    for(const lx of[16,24,34,41]){ctx.beginPath();ctx.moveTo(lx,33);ctx.lineTo(lx-1,40);ctx.stroke();}
+    ctx.strokeStyle=line;ctx.lineWidth=2.4;                   // tail
+    ctx.fillStyle='#9a8a70';
+    ctx.beginPath();ctx.moveTo(11,30);ctx.quadraticCurveTo(2,26,4,18);ctx.quadraticCurveTo(8,24,13,26);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b8a68e';                                  // head
+    ctx.beginPath();ctx.moveTo(38,22);ctx.quadraticCurveTo(46,12,52,15);
+    ctx.quadraticCurveTo(56,20,50,25);ctx.quadraticCurveTo(44,28,38,25);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#8a7a62';                                  // ears
+    ctx.beginPath();ctx.moveTo(41,15);ctx.lineTo(43,7);ctx.lineTo(47,13);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7ad0ff';ctx.shadowColor='#7ad0ff';ctx.shadowBlur=5;  // spirit eye
+    ctx.beginPath();ctx.arc(47,18,2,0,7);ctx.fill();ctx.shadowBlur=0;
+    return cv;}
   if(kind==='quester'){const cv=mkCv(44,74),cx=22,base=66,line='#12160f';
     shadow(cx,base,12,5);
     ctx.strokeStyle=line;ctx.lineWidth=3;
@@ -823,6 +845,9 @@ function mods(){const m={dmg:1,cd:1,speed:1,xp:1,coins:1,crit:0,count:0,pierce:0
   m.superGain*=1+0.15*(S.focus||0);m.superPow*=1+0.2*(S.overload||0);m.regen+=(S.mending||0);
   m.xp*=1+0.1*(S.scholar||0);m.coins*=1+0.12*(S.fortune||0);m.crit=0.03*(S.crit||0);
   if(G.element==='arcane'){m.dmg*=1.08;m.pierce+=1;}
+  if(G.class==='ranger'){
+    if(G.element==='sharpshooter'){m.dmg*=1.12;m.crit+=0.10;}
+    if(G.element==='warden')m.regen+=2;}
   if(G.class==='warrior'){
     if(G.element==='berserker'&&G.maxHp>0)m.dmg*=1+0.5*Math.max(0,1-G.hp/G.maxHp);
     if(G.element==='blademaster')m.cd*=0.8;
@@ -931,6 +956,8 @@ function recalcHero(){const b=CLASS_BASE[G.class],L=G.level,S=G.skills||{};
   G._atk=Math.floor((Math.floor(b.atk*(1+(L-1)*0.11))+3)*(1+0.04*(S.might||0)))+gearSum('atk');
   G._def=Math.floor((Math.floor(b.def*(1+(L-1)*0.10))+2)*(1+0.05*(S.iron||0)))+gearSum('def');
   if(G.class==='warrior'&&G.element==='juggernaut')G._def=Math.floor(G._def*1.2);
+  if(G.class==='ranger'&&G.element==='warden')G._def=Math.floor(G._def*1.15);
+  if(G.class==='ranger'&&G.element==='sharpshooter')G.maxHp=Math.floor(G.maxHp*0.9);
   if(fullSet()){G._atk=Math.floor(G._atk*1.12);G._def=Math.floor(G._def*1.12);G.maxHp=Math.floor(G.maxHp*1.08);}
   if(G.hp>G.maxHp)G.hp=G.maxHp;}
 function newGame(cls2,elem,name){
@@ -951,9 +978,11 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
   if(!G.nodeT)G.nodeT={};if(G.raid===undefined)G.raid=null;
   if(!G.loadout){G.loadout=['strike'];if(abilityRank()>0)autoEquip('active');if(runeRank()>0)autoEquip('rune');}
   if(G.quest===undefined)G.quest=null;if(!G.questsDone)G.questsDone=0;if(!G.bossRespawn)G.bossRespawn=0;
-  if(!G.element)G.element={mage:'fire',ranger:'storm',warrior:'berserker'}[G.class]||'fire';
+  if(!G.element)G.element={mage:'fire',ranger:'beastmaster',warrior:'berserker'}[G.class]||'fire';
   if(G.class==='warrior'&&!SUBCLASSES.warrior[G.element])
     G.element={fire:'berserker',frost:'juggernaut',storm:'blademaster',arcane:'warlord'}[G.element]||'berserker';
+  if(G.class==='ranger'&&!SUBCLASSES.ranger[G.element])
+    G.element={fire:'sharpshooter',frost:'trapper',storm:'beastmaster',arcane:'warden'}[G.element]||'beastmaster';
   if(!G.name)G.name={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   if(!G.seen){G.seen={};for(const t of TOWNS)revealAt((t.cx+0.5)*TILE,(t.cy+0.5)*TILE);revealAt(G.px,G.py);}
   recalcHero();return true;}catch(e){return false;}}
@@ -1040,10 +1069,11 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
       <button class="cbtn" data-tool="${key}" ${ok?'':'disabled'}>${next?'Craft':'✓'}</button></div>`;}
   h+='</div><div class="subline" style="color:#f2c14e;font-weight:700;margin-top:6px">RECIPES</div><div class="plist">';
   for(const r of RECIPES){const lock=G.craftLvl<r.lvl,noSt=r.station&&!nearStation(r.station);
-    const ok=!lock&&!noSt&&haveCost(r.cost);
+    const rc=scene&&scene.effCost?scene.effCost(r):r.cost;
+    const ok=!lock&&!noSt&&haveCost(rc);
     const nm2=r.item?(r.key.charAt(0).toUpperCase()+r.key.slice(1)):BUILD_DEF[r.key].name;
     h+=`<div class="pcard" style="${ok?'':'opacity:.6'}">${r.item?'<div style="width:38px;text-align:center;font-size:24px;flex:none">🧪</div>':`<canvas class="bicon" data-bk="${r.key}"></canvas>`}<div style="flex:1;min-width:0"><b>${nm2}</b>${lock?' <span style="color:#c0392b">🔒Lv.'+r.lvl+'</span>':''}${noSt?' <span style="color:#c0392b">near '+BUILD_DEF[r.station].name+'</span>':''}${r.plot?' <span style="color:#3f7d34">⌂</span>':''}<br>
-      <small style="color:#5a4">${r.desc} — ${costStr(r.cost)}</small></div>
+      <small style="color:#5a4">${r.desc} — ${costStr(rc)}</small></div>
       <button class="cbtn" data-craft="${r.key}" ${ok?'':'disabled'}>${r.item?'Craft':'Build'}</button></div>`;}
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="craftClose">◀ Close</button></div>';
   p.innerHTML=h;
@@ -1052,8 +1082,9 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
     if(!next||!haveCost(next.cost)||(next.station&&!nearStation(next.station)))return;
     payCost(next.cost);G.tools[key]=tier+1;gainCraftXp();sfx('level');toast(T2.icon+' '+next.name+' crafted!');save();openCraft();});
   p.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>{const r=RECIPES.find(x=>x.key===b.dataset.craft);
-    if(G.craftLvl<r.lvl||!haveCost(r.cost)||(r.station&&!nearStation(r.station)))return;
-    if(r.item){payCost(r.cost);G.items[r.key]=(G.items[r.key]||0)+1;gainCraftXp();sfx('coin');toast('Crafted '+r.key);save();openCraft();}
+    const rc=scene&&scene.effCost?scene.effCost(r):r.cost;
+    if(G.craftLvl<r.lvl||!haveCost(rc)||(r.station&&!nearStation(r.station)))return;
+    if(r.item){payCost(rc);G.items[r.key]=(G.items[r.key]||0)+1;gainCraftXp();sfx('coin');toast('Crafted '+r.key);save();openCraft();}
     else{scene.enterBuild(r.key,r);pauseGame(false);toast('Placing '+BUILD_DEF[r.key].name+' — tap a tile to aim it, ✓ to build');}});
   document.getElementById('craftClose').onclick=()=>pauseGame(false);}
 function openBank(){pauseGame(true);const p=document.getElementById('panel');
@@ -1754,7 +1785,7 @@ class World extends Phaser.Scene{
     tx('nurse',bakeHouse({wallL:'#d0ccc0',wallR:'#efece2',roof:['#d06a8a','#a84a68'],sign:'cross'}));
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
-    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));
+    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('wolfTex',bakeMisc('wolf'));
     tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
@@ -1927,6 +1958,10 @@ class World extends Phaser.Scene{
     this.eshots=[];
     this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;this.strikeCD=0;this.novaCD=0;
     this.rage=0;this.frenzyT=0;this.parryT=0;this.comboT=0;this.comboN=0;
+    if(isRSub('beastmaster')){
+      this.wolf={x:this.px-40,y:this.py-20,cd:0,
+        s:this.add.sprite(0,0,'wolfTex').setOrigin(0.5,0.85).setScale(0.9),
+        gl:this.add.image(0,0,'glow').setScale(0.35).setTint(0x7ad0ff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.25)};}
     this.spellSwipe={active:false,id:-1,pts:[]};this.fadeTrail=null;
     this.trailGfx=this.add.graphics().setScrollFactor(0).setDepth(9999950);
     this.buffGfx=this.add.graphics().setDepth(999902);
@@ -1960,7 +1995,7 @@ class World extends Phaser.Scene{
     else core=this.add.image(0,0,'fireboltTex').setScale(big?1.5:0.8);
     if(big)core.setTint(0xffe9a0);
     const gl=this.add.image(0,0,'glow').setScale(big?0.55:0.24).setAlpha(big?0.7:0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
-    this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big});}
+    this.shots.push({core,gl,x:this.px,y:this.py,x0:this.px,y0:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big});}
   castSlot(i){
     const k=(G.loadout||[])[i];if(!k||!SPELLBOOK[k]||!SPELLBOOK[k].avail())return;
     if(k==='active')this.classAbility();
@@ -1988,7 +2023,8 @@ class World extends Phaser.Scene{
         if(segs.length>=maxSegs)break;}}
     if(!segs.length){toast('Swipe across open ground');return;}
     this.spellCD=this.spellMax=14;
-    const dur=5+rank*2,dmg=Math.max(4,Math.round(G._atk*(0.55+0.25*rank)*mods().dmg));
+    let dur=5+rank*2;if(isRSub('warden'))dur=Math.round(dur*1.5);
+    const dmg=Math.max(4,Math.round(G._atk*(0.55+0.25*rank)*mods().dmg));
     const texKey=cls==='mage'?'flameTex':cls==='warrior'?'b_spike':'thornTex';
     const gcol=cls==='mage'?0xff9a3c:cls==='warrior'?0xc8d0d8:0x7dd05a;
     for(const sg of segs){
@@ -2013,7 +2049,7 @@ class World extends Phaser.Scene{
         for(const e of [...this.enemies]){
           if(Math.hypot(e.x-z.x,e.y-z.y)>TILE*0.95)continue;
           if(cls==='warrior')e.rootT=Math.max(e.rootT||0,1.0);
-          if(cls==='ranger')e.slowT=Math.max(e.slowT||0,1.5);
+          if(cls==='ranger'){if(isRSub('warden'))e.rootT=Math.max(e.rootT||0,1.2);else e.slowT=Math.max(e.slowT||0,1.5);}
           if(cls==='mage'){e.burnT=3;e.burnDmg=Math.max(2,Math.round(z.dmg*0.35));}
           this.hurtEnemy(e,Math.max(1,Math.round(z.dmg*(0.85+Math.random()*0.3))),Math.atan2(e.y-z.y,e.x-z.x));}}}}
   classAbility(){
@@ -2203,6 +2239,7 @@ class World extends Phaser.Scene{
     if(isWSub('blademaster')){
       this.comboN=(this.comboT>0)?Math.min(5,(this.comboN||0)+1):0;
       this.comboT=1.5;dmg=Math.round(dmg*(1+0.05*(this.comboN||0)));}
+    if(isRSub('sharpshooter')&&forceAng!=null)dmg=Math.round(dmg*1.4);
     if(Math.random()<M.crit)dmg*=2;
     this.atkAnimT=0.24;if(this.player.anims.isPlaying)this.player.anims.stop();this.player.play('atk');
     {const scr2=Math.cos(ang)-Math.sin(ang);if(scr2<-0.05)this.flip=-1;else if(scr2>0.05)this.flip=1;}
@@ -2237,6 +2274,8 @@ class World extends Phaser.Scene{
     }
   }
   hurtEnemy(e,dmg,ang){
+    if(isRSub('beastmaster')&&(e.marked||0)>0)dmg=Math.round(dmg*1.15);
+    if(isRSub('warden')&&Math.random()<0.15)e.rootT=Math.max(e.rootT||0,0.8);
     e.hp-=dmg;e.flash=0.15;e.s.setTintFill(0xffffff);addSuper(dmg*0.35);sfx('hit');
     if(isWSub('berserker')){
       G.hp=Math.min(G.maxHp,G.hp+dmg*(this.frenzyT>0?0.14:0.08));
@@ -2320,21 +2359,23 @@ class World extends Phaser.Scene{
     if(dx===0&&dy===0)ty2+=1;
     this.buildSel={x:tx2,y:ty2};
     document.getElementById('buildBar').style.display='flex';}
+  effCost(r){if(!isRSub('trapper')||!BUILD_DEF[r.key]||!BUILD_DEF[r.key].trap)return r.cost;
+    const c2={};for(const k in r.cost)c2[k]=Math.max(1,Math.ceil(r.cost[k]/2));return c2;}
   placeBuild(){
     if(!this.buildMode||!this.buildSel)return;
     const bt={x:this.buildSel.x,y:this.buildSel.y,ok:this.buildOk(this.buildSel.x,this.buildSel.y)};
     if(!bt.ok){toast("Can't build there");return;}
-    const r=this.buildRecipe;
+    const r=this.buildRecipe,rc=this.effCost(r);
     if(r.plot&&!ownsAt(bt.x,bt.y)){toast('You must own this land — buy the plot!');sfx('fail');return;}
-    if(!haveCost(r.cost)){toast('Not enough materials');this.cancelBuild();return;}
-    payCost(r.cost);
+    if(!haveCost(rc)){toast('Not enough materials');this.cancelBuild();return;}
+    payCost(rc);
     const def=BUILD_DEF[this.buildMode];
     const maxHp2=Math.round(def.hp*(G.class==='warrior'?1.25:1));
     const b={t:this.buildMode,x:bt.x,y:bt.y,hp:maxHp2,maxHp:maxHp2};
     if(def.tower){b.tier=1;b.ammo=0;}
-    if(def.trap)b.uses=def.uses;
+    if(def.trap)b.uses=def.uses*(isRSub('trapper')?2:1);
     G.builds.push(b);rebuildBuildIndex();this.addBuildSprite(b);gainCraftXp();sfx('coin');save();
-    if(!haveCost(r.cost)){this.cancelBuild();toast('Built! (out of materials)');}
+    if(!haveCost(this.effCost(r))){this.cancelBuild();toast('Built! (out of materials)');}
     else toast('Built! Tap another tile, or ✕ when done');}
   cancelBuild(){this.buildMode=null;this.buildRecipe=null;this.buildSel=null;
     document.getElementById('buildBar').style.display='none';
@@ -2363,6 +2404,7 @@ class World extends Phaser.Scene{
         b.cd=TR.cd;
         if(b.t==='spike'){this.hurtEnemy(e,TR.dmg,0);}
         else e.rootT=TR.root;
+        if(isRSub('trapper')){e.poisonT=3;e.poisonDmg=Math.max(2,Math.round((G._atk||6)*0.15));}
         b.uses--;
         if(b.uses<=0){G.builds.splice(i,1);rebuildBuildIndex();this.removeBuildSprite(b);save();}
         break;}}}
@@ -2408,7 +2450,20 @@ class World extends Phaser.Scene{
     this.abilityCD=Math.max(0,this.abilityCD-dt);this.shieldT=Math.max(0,this.shieldT-dt);
     this.warcryT=Math.max(0,this.warcryT-dt);this.quiverT=Math.max(0,this.quiverT-dt);
     G.time=(G.time+dt/DAY_LEN);if(G.time>=1){G.time-=1;G.day++;toast('☀️ Day '+G.day);}
-    this.updateWaves(dt);this.updateZones(dt);this.updateEshots(dt);if(!dungeon){this.updateTowers(dt);this.updateTraps(dt);this.updateRaid(dt);}
+    this.updateWaves(dt);this.updateZones(dt);this.updateEshots(dt);
+    if(this.wolf){const w=this.wolf;w.cd=Math.max(0,w.cd-dt);
+      let tgt=null,bd2=TILE*5.5;
+      for(const e of this.enemies){const d2=Math.hypot(e.x-this.px,e.y-this.py);if(d2<bd2){bd2=d2;tgt=e;}}
+      const hx=tgt?tgt.x:this.px-44,hy=tgt?tgt.y:this.py-22;
+      const dwx=hx-w.x,dwy=hy-w.y,dwl=Math.hypot(dwx,dwy)||1;
+      const wspd=tgt?190:150;
+      if(dwl>18){w.x+=dwx/dwl*Math.min(wspd*dt,dwl);w.y+=dwy/dwl*Math.min(wspd*dt,dwl);}
+      if(tgt&&dwl<34&&w.cd<=0){w.cd=1.1;
+        tgt.marked=4;
+        this.hurtEnemy(tgt,Math.max(2,Math.round(G._atk*0.45)),Math.atan2(tgt.y-w.y,tgt.x-w.x));}
+      const wsx=isoX(w.x,w.y),wsy=isoY(w.x,w.y)-Math.abs(Math.sin(this.time.now*0.012))*2;
+      w.s.setPosition(wsx,wsy).setDepth(isoY(w.x,w.y)+IH*0.28).setFlipX(dwx<0);
+      w.gl.setPosition(wsx,wsy-10).setDepth(isoY(w.x,w.y)+IH*0.28-1);}if(!dungeon){this.updateTowers(dt);this.updateTraps(dt);this.updateRaid(dt);}
     this.nodeCheckT+=dt;if(this.nodeCheckT>1){this.nodeCheckT=0;
       for(const k in this.nodeSprites){const o=this.nodeSprites[k];
         o.sp.setVisible(nodeReady(o.nd.tx,o.nd.ty));}}
@@ -2460,6 +2515,7 @@ class World extends Phaser.Scene{
       e.flash=Math.max(0,e.flash-dt);
       if(e.flash<=0){e.s.clearTint();
         if(e.burnT>0)e.s.setTint(0xff9a66);
+        else if((e.poisonT||0)>0)e.s.setTint(0x9adf6a);
         else if(e.rare)e.s.setTint(0xd8a8ff);}
       if(e.burnT>0){e.burnT-=dt;
         if(Math.random()<dt*8){this.hitEmit.setPosition(e.s.x+(Math.random()-0.5)*18,e.s.y-16-Math.random()*10);this.hitEmit.explode(1);}
@@ -2467,6 +2523,12 @@ class World extends Phaser.Scene{
         if(e.burnTick<=0){e.burnTick=0.5;
           this.hurtEnemy(e,e.burnDmg||2,Math.random()*6.28);
           if(!this.enemies.includes(e))continue;}}
+      if((e.poisonT||0)>0){e.poisonT-=dt;
+        e.poisonTick=(e.poisonTick===undefined?0.6:e.poisonTick)-dt;
+        if(e.poisonTick<=0){e.poisonTick=0.6;
+          this.hurtEnemy(e,e.poisonDmg||2,Math.random()*6.28);
+          if(!this.enemies.includes(e))continue;}}
+      e.marked=Math.max(0,(e.marked||0)-dt);
       e.touch=Math.max(0,e.touch-dt);e.bob+=dt;
       e.rootT=Math.max(0,(e.rootT||0)-dt);e.slowT=Math.max(0,(e.slowT||0)-dt);
       const sf=e.rootT>0?0:(e.slowT>0?0.45:1);
@@ -2544,7 +2606,10 @@ class World extends Phaser.Scene{
         const pang=Math.atan2((s.vx+s.vy)*IH/2,(s.vx-s.vy)*IW/2);s.core.setRotation(pang);}
       let dead=s.life<=0||solidWorld(s.x,s.y);
       if(!dead)for(const e of this.enemies){
-        if(Math.hypot(e.x-s.x,e.y-s.y)<24){this.hurtEnemy(e,s.dmg,Math.atan2(s.vy,s.vx));
+        if(Math.hypot(e.x-s.x,e.y-s.y)<24){
+          let sd=s.dmg;
+          if(!s.turret&&isRSub('sharpshooter')&&s.x0!==undefined&&Math.hypot(s.x-s.x0,s.y-s.y0)>TILE*4)sd=Math.round(sd*1.5);
+          this.hurtEnemy(e,sd,Math.atan2(s.vy,s.vx));
           if(s.slow)e.slowT=Math.max(e.slowT||0,s.slow);
           if(s.aoe)for(const e2 of this.enemies){if(e2===e)continue;
             if(Math.hypot(e2.x-s.x,e2.y-s.y)<s.aoe*TILE)this.hurtEnemy(e2,Math.max(1,Math.floor(s.dmg*0.7)),Math.atan2(s.vy,s.vx));}
