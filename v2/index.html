@@ -16,30 +16,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 #coins{position:fixed;top:calc(8px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));background:rgba(12,22,14,.6);border:2px solid rgba(0,0,0,.35);border-radius:20px;padding:5px 12px;font-weight:700;color:#ffd23c;font-size:15px;z-index:5;}
 .ui-btn{position:fixed;z-index:7;border:none;border-radius:50%;color:#fff;font-weight:700;display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.28),inset 0 3px 0 rgba(255,255,255,.35);touch-action:none;font-size:30px;}
 .ui-btn:active{transform:translateY(4px);}
-#btnA{right:calc(26px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));width:92px;height:92px;background:linear-gradient(#63d24a,#37981f);}
-#btnDash{position:fixed;z-index:7;right:calc(126px + env(safe-area-inset-right));bottom:calc(126px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;border:none;padding:4px;background:conic-gradient(#5fd0f5 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);transition:transform .06s;}
+#btnA{right:calc(22px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:84px;height:84px;background:linear-gradient(#63d24a,#37981f);}
+#btnDash{position:fixed;z-index:7;right:calc(116px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:50%;border:none;padding:4px;background:conic-gradient(#5fd0f5 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);transition:transform .06s;}
 #btnDash span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#2f8fe0,#1c5fa0);color:#fff;font-size:22px;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
 #btnDash.cd span{filter:grayscale(.7) brightness(.75);}
 #btnDash:active{transform:translateY(3px);}
-#btnAbility.cd span{filter:grayscale(.7) brightness(.75);}
-#btnAbility:active{transform:translateY(3px);}
+.spellSlot{position:fixed;z-index:7;width:46px;height:46px;border-radius:50%;border:none;padding:3.5px;background:conic-gradient(#c07aff 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 4px 0 rgba(0,0,0,.28);display:none;transition:transform .06s;}
+.spellSlot span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#8a56d6,#5a2fa0);color:#fff;font-size:18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.25);}
+.spellSlot.cd span{filter:grayscale(.7) brightness(.75);}
+.spellSlot.armed{animation:sp 0.7s ease-in-out infinite;box-shadow:0 4px 0 rgba(0,0,0,.28),0 0 18px rgba(255,150,60,.85);}
+.spellSlot:active{transform:translateY(3px);}
+#btnS0{right:calc(108px + env(safe-area-inset-right));bottom:calc(100px + env(safe-area-inset-bottom));}
+#btnS1{right:calc(40px + env(safe-area-inset-right));bottom:calc(184px + env(safe-area-inset-bottom));}
+#btnS2{right:calc(176px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));}
 #buildBar{position:fixed;z-index:8;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));display:none;gap:12px;}
 #buildBar button{border:3px solid #1c2716;border-radius:14px;padding:11px 20px;font-family:Fredoka,system-ui;font-size:16px;font-weight:700;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.3);touch-action:none;}
 #buildBar button:active{transform:translateY(3px);}
 #bbPlace{background:linear-gradient(#63d24a,#37981f);}
 #bbCancel{background:linear-gradient(#e8483a,#b02a20);}
-#btnSpell{position:fixed;z-index:7;right:calc(126px + env(safe-area-inset-right));bottom:calc(206px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;padding:4px;background:conic-gradient(#ff9a3c 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);display:none;transition:transform .06s;}
-#btnSpell span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#d6772a,#a04a12);box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
-#btnSpell.cd span{filter:grayscale(.7) brightness(.75);}
-#btnSpell.armed{animation:sp 0.7s ease-in-out infinite;box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 20px rgba(255,150,60,.85);}
-#btnSpell:active{transform:translateY(3px);}
-#btnSuper{position:fixed;z-index:7;right:calc(38px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom));width:70px;height:70px;border-radius:50%;border:none;padding:5px;background:conic-gradient(#ffd23c 0deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);}
+#btnSuper{position:fixed;z-index:7;right:calc(28px + env(safe-area-inset-right));bottom:calc(116px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;border:none;padding:5px;background:conic-gradient(#ffd23c 0deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);}
 #btnSuper span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#6b56d6,#3f2fa0);color:rgba(255,255,255,.6);font-size:26px;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
 #btnSuper.ready span{background:linear-gradient(#ffd84a,#f0a012);color:#5a3a00;}
 #btnSuper.ready{animation:sp 0.9s ease-in-out infinite;}
 @keyframes sp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-#btnAbility{position:fixed;z-index:7;right:calc(40px + env(safe-area-inset-right));bottom:calc(222px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;padding:4px;background:conic-gradient(#c07aff 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);display:none;}
-#btnAbility span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#8a56d6,#5a2fa0);color:#fff;font-size:20px;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
 #ovl{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:26px;background:radial-gradient(circle at 50% 30%,#245a2a,#0b160d 78%);}
 #ovl h1{font-size:min(11vw,44px);color:#eafbe0;text-shadow:0 4px 0 #163f16,0 0 26px rgba(84,194,58,.6);}
 #ovl p{max-width:470px;color:#cfe6c2;font-size:14px;font-weight:500;line-height:1.4;}
@@ -48,7 +47,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 #toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:9;background:rgba(12,22,14,.9);border:2px solid rgba(255,255,255,.15);border-radius:22px;padding:8px 18px;font-weight:600;font-size:14px;color:#fff;opacity:0;transition:opacity .3s;pointer-events:none;}
 #backlink{position:fixed;bottom:6px;left:10px;z-index:8;color:rgba(255,255,255,.55);font-size:11px;text-decoration:none;}
 #clock{position:fixed;top:calc(40px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));background:rgba(12,22,14,.55);border:2px solid rgba(0,0,0,.35);border-radius:18px;padding:4px 11px;font-weight:700;color:#eafbe0;font-size:12px;z-index:5;}
-#btnMenu{right:calc(132px + env(safe-area-inset-right));bottom:calc(40px + env(safe-area-inset-bottom));width:60px;height:60px;font-size:24px;background:linear-gradient(#f4b53c,#d98a1e);}
+#btnMenu{right:calc(12px + env(safe-area-inset-right));top:calc(86px + env(safe-area-inset-top));width:46px;height:46px;font-size:19px;background:linear-gradient(#f4b53c,#d98a1e);}
 #interactTag{position:fixed;z-index:7;transform:translate(-50%,-100%);background:#fff;color:#20301c;font-weight:700;font-size:15px;padding:8px 15px;border-radius:16px;border:3px solid #1c2716;box-shadow:0 4px 0 rgba(0,0,0,.25);display:none;white-space:nowrap;cursor:pointer;}
 #interactTag b{color:#2f8f22;}
 #panel{position:fixed;inset:0;z-index:16;display:none;flex-direction:column;gap:7px;background:rgba(9,16,10,.94);padding:12px;padding-top:calc(10px + env(safe-area-inset-top));overflow:auto;}
@@ -102,8 +101,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 <button class="ui-btn" id="btnA">⚔️</button>
 <button id="btnDash"><span>💨</span></button>
 <button id="btnSuper"><span>✦</span></button>
-<button id="btnAbility"><span>🛡</span></button>
-<button id="btnSpell"><span>🔥</span></button>
+<button class="spellSlot" id="btnS0"><span></span></button>
+<button class="spellSlot" id="btnS1"><span></span></button>
+<button class="spellSlot" id="btnS2"><span></span></button>
 <div id="buildBar"><button id="bbPlace">✓ Place</button><button id="bbCancel">✕ Done</button></div>
 <div id="interactTag"></div>
 <div id="clock">☀️ Day 1</div>
@@ -629,6 +629,19 @@ function addSuper(a){superC=Math.min(100,superC+a*mods().superGain);}
 function abilityKey(){return {mage:'shield',warrior:'warcry',ranger:'quiver'}[(G&&G.class)||'mage'];}
 function abilityRank(){return (G&&G.skills&&G.skills[abilityKey()])||0;}
 function runeKey(){return {mage:'firewall',warrior:'spikewall',ranger:'thornwall'}[(G&&G.class)||'mage'];}
+const SPELLBOOK={
+  strike:{name:()=>({mage:'Power Bolt',warrior:'Heavy Blow',ranger:'Power Shot'}[G.class]),icon:()=>'\ud83d\udca5',cv:0,
+    desc:'Heavy attack \u2014 1.9\u00d7 damage \u00b7 5s cooldown',avail:()=>true},
+  nova:{name:()=>({mage:'Nova Burst',warrior:'Whirlwind',ranger:'Arrow Fan'}[G.class]),icon:()=>'\u2734\ufe0f',cv:0,
+    desc:'All-around burst \u00b7 8s cooldown',avail:()=>((G.skills||{}).multi||0)>0,lock:'Learn Split Shot (Spell tree)'},
+  active:{name:()=>{const n=SKILLS.find(s2=>s2.key===abilityKey());return n?n.name:'Active';},
+    icon:()=>({mage:'shield',warrior:'horn',ranger:'quiver'}[G.class]),cv:1,
+    desc:'Your class ACTIVE skill',avail:()=>abilityRank()>0,lock:'Learn it in the Spell tree'},
+  rune:{name:()=>{const n=SKILLS.find(s2=>s2.key===runeKey());return n?n.name:'Rune';},
+    icon:()=>({mage:'firewall',warrior:'spikes',ranger:'thorns'}[G.class]),cv:1,
+    desc:'SWIPE spell \u2014 tap, then draw its path',avail:()=>runeRank()>0,lock:'Learn it in the Spell tree'}};
+function autoEquip(k){if(!G.loadout)G.loadout=[];
+  if(G.loadout.length<3&&!G.loadout.includes(k)){G.loadout.push(k);return true;}return false;}
 function runeRank(){return (G&&G.skills&&G.skills[runeKey()])||0;}
 function damageHero(d){if(!G)return 0;
   if(scene&&scene.shieldT>0&&scene.shieldHp>0){const a=Math.min(scene.shieldHp,d);scene.shieldHp-=a;d-=a;
@@ -647,7 +660,7 @@ function newGame(cls2){
     equip:{weapon:null,helm:null,armor:null,boots:null,trinket:null,charm:null},gear:[],
     px:(TOWNS[0].cx+1.5)*TILE,py:(TOWNS[0].cy+1.5)*TILE,time:0.35,day:1,berriesPicked:{},
     res:{wood:0,stone:0,fiber:0,ore:0},bank:{wood:0,stone:0,fiber:0,ore:0},tools:{axe:0,pickaxe:0},
-    plots:{},builds:[],craftLvl:1,craftXp:0,nodeT:{},raid:null};
+    plots:{},builds:[],craftLvl:1,craftXp:0,nodeT:{},raid:null,loadout:['strike']};
   recalcHero();G.hp=G.maxHp;save();}
 function save(){try{if(G&&scene){if(dungeon){G.px=dungeon.returnX;G.py=dungeon.returnY;}else{G.px=scene.px;G.py=scene.py;}}localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);
@@ -656,6 +669,7 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
   if(!G.tools)G.tools={axe:0,pickaxe:0};if(!G.plots)G.plots={};if(!G.builds)G.builds=[];
   if(G.craftLvl===undefined)G.craftLvl=1;if(G.craftXp===undefined)G.craftXp=0;
   if(!G.nodeT)G.nodeT={};if(G.raid===undefined)G.raid=null;
+  if(!G.loadout){G.loadout=['strike'];if(abilityRank()>0)autoEquip('active');if(runeRank()>0)autoEquip('rune');}
   recalcHero();return true;}catch(e){return false;}}
 function rollGear(lvl,minR){
   const roll=Math.random();let ri=roll<0.5?0:roll<0.8?1:roll<0.95?2:3;ri=Math.max(ri,minR||0);
@@ -1014,7 +1028,31 @@ function openSkills(sel){const p=document.getElementById('panel');
   let h=`<h2>\u2726 Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
   h+=`<div class="sktabs">
     <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">\u2694 Spells</button>
-    <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button></div>`;
+    <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button>
+    <button class="sktab ${skTab==='loadout'?'on':''}" data-tab="loadout">\u2b50 Loadout</button></div>`;
+  if(skTab==='loadout'){
+    if(!G.loadout)G.loadout=['strike'];
+    h+=`<div class="subline" style="margin-top:4px">Equip up to <b>3</b> spells \u2014 they appear as buttons in battle</div>`;
+    h+='<div class="plist" style="margin-top:6px">';
+    for(const k of Object.keys(SPELLBOOK)){const sb=SPELLBOOK[k];
+      const av=sb.avail(),eq=G.loadout.includes(k),full=G.loadout.length>=3;
+      h+=`<div class="pcard" style="${av?'':'opacity:.55'}">
+        <div style="width:34px;text-align:center;font-size:22px">${sb.cv?`<canvas class="skcv2" data-ic="${sb.icon()}" style="width:28px;height:28px"></canvas>`:sb.icon()}</div>
+        <div style="flex:1;min-width:0"><b>${sb.name()}</b>${eq?' <span style="color:#3f7d34;font-size:11px">\u2714 equipped</span>':''}<br>
+        <small>${av?sb.desc:'\ud83d\udd12 '+(sb.lock||'')}</small></div>
+        <button class="cbtn" data-eqs="${k}" ${av&&(eq||!full)?'':'disabled'}>${eq?'Remove':'Equip'}</button></div>`;}
+    h+='</div>';
+    h+=`<div class="subline" style="margin-top:6px">${G.loadout.length}/3 equipped</div>`;
+    h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
+    p.innerHTML=h;
+    p.querySelectorAll('canvas.skcv2').forEach(cv=>{cv.width=56;cv.height=56;drawMenuIcon(cv,cv.dataset.ic);});
+    p.querySelectorAll('.sktab').forEach(b2=>b2.onclick=()=>{skTab=b2.dataset.tab;sfx('menu');openSkills();});
+    p.querySelectorAll('[data-eqs]').forEach(b2=>b2.onclick=()=>{const k=b2.dataset.eqs;
+      if(G.loadout.includes(k))G.loadout=G.loadout.filter(x=>x!==k);
+      else if(G.loadout.length<3)G.loadout.push(k);
+      sfx('menu');save();openSkills();});
+    document.getElementById('skBack').onclick=openPanel;
+    return;}
   const nd=SKILLS.find(n=>n.key===sel);
   if(nd){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
     const spentT=spentIn(nd.tree),need=(nd.tier-1)*2;
@@ -1048,7 +1086,11 @@ function openSkills(sel){const p=document.getElementById('panel');
     if(rank>=nd2.max||(G.skillPoints||0)<=0||!nodeOpen(nd2))return;
     G.skills[nd2.key]=rank+1;G.skillPoints--;sfx('level');
     const b3=G.maxHp;recalcHero();G.hp+=Math.max(0,G.maxHp-b3);
-    toast(nd2.name+' \u2192 '+(rank+1));save();updateHud();openSkills(nd2.key);};
+    let msg=nd2.name+' \u2192 '+(rank+1);
+    if(rank===0&&nd2.key===abilityKey()&&autoEquip('active'))msg+=' \u00b7 equipped!';
+    if(rank===0&&nd2.key===runeKey()&&autoEquip('rune'))msg+=' \u00b7 equipped!';
+    if(rank===0&&nd2.key==='multi')msg+=' \u00b7 '+SPELLBOOK.nova.name()+' unlocked in Loadout!';
+    toast(msg);save();updateHud();openSkills(nd2.key);};
   document.getElementById('skBack').onclick=openPanel;
   requestAnimationFrame(drawSkillLines);}
 function drawSkillLines(){const tree=document.getElementById('skTree'),cv=document.getElementById('skLines');
@@ -1362,7 +1404,7 @@ class World extends Phaser.Scene{
         if(scene.buildMode){scene.cancelBuild();toast('Build cancelled');return;}openPanel();});
       $('interactTag').addEventListener('pointerdown',e=>{e.preventDefault();scene.doInteract();});
       $('btnSuper').addEventListener('pointerdown',e=>{e.preventDefault();scene.unleashSuper();});
-      $('btnAbility').addEventListener('pointerdown',e=>{e.preventDefault();scene.classAbility();});
+      for(let i=0;i<3;i++)$('btnS'+i).addEventListener('pointerdown',e=>{e.preventDefault();scene.castSlot(i);});
       // A button — tap: attack/interact. Ranged classes: hold & drag to aim, release to fire (Brawl-style)
       const ba=$('btnA');
       ba.addEventListener('pointerdown',e=>{e.preventDefault();
@@ -1377,7 +1419,6 @@ class World extends Phaser.Scene{
         else scene.attack('bolt',0,0,Math.atan2(a.dy/IH-a.dx/IW,a.dx/IW+a.dy/IH));};
       ba.addEventListener('pointerup',rel);
       ba.addEventListener('pointercancel',()=>{scene.aim.active=false;});
-      $('btnSpell').addEventListener('pointerdown',e=>{e.preventDefault();scene.armRune();});
       $('bbPlace').addEventListener('pointerdown',e=>{e.preventDefault();scene.placeBuild();});
       $('bbCancel').addEventListener('pointerdown',e=>{e.preventDefault();scene.cancelBuild();toast('Build mode off');});
     }
@@ -1410,15 +1451,13 @@ class World extends Phaser.Scene{
     this.choppedCD={};
     this.bushSprites=this.bushSprites||{};this.saveT=0;this.survT=0;this.interactT=null;
     this.waves=[];this.waveGfx=this.add.graphics().setDepth(999901);
-    this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;
+    this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;this.strikeCD=0;this.novaCD=0;
     this.spellSwipe={active:false,id:-1,pts:[]};this.fadeTrail=null;
     this.trailGfx=this.add.graphics().setScrollFactor(0).setDepth(9999950);
-    document.getElementById('btnSpell').classList.remove('armed');
     this.buffGfx=this.add.graphics().setDepth(999902);
     this.aimGfx=this.add.graphics().setDepth(999903);
     this.shieldT=0;this.shieldHp=0;this.warcryT=0;this.quiverT=0;this.abilityCD=0;this.abilityMax=1;
-    setBtnIcon(document.getElementById('btnAbility').querySelector('span'),{mage:'shield',warrior:'horn',ranger:'quiver'}[cls],30);
-    setBtnIcon(document.getElementById('btnA'),'w_'+cls,56);
+    setBtnIcon(document.getElementById('btnA'),'w_'+cls,52);
     setBtnIcon(document.querySelector('#btnDash span'),cls==='mage'?'blink':'dash',30);
     applyGearFx();
     updateHud();
@@ -1446,15 +1485,20 @@ class World extends Phaser.Scene{
     else core=this.add.image(0,0,'fireboltTex').setScale(0.8);
     const gl=this.add.image(0,0,'glow').setScale(0.24).setAlpha(0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
     this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce});}
+  castSlot(i){
+    const k=(G.loadout||[])[i];if(!k||!SPELLBOOK[k]||!SPELLBOOK[k].avail())return;
+    if(k==='active')this.classAbility();
+    else if(k==='rune')this.armRune();
+    else if(k==='strike'){if(this.strikeCD>0||this.castCD>0)return;this.strikeCD=5;this.attack('power',0,0);}
+    else if(k==='nova'){if(this.novaCD>0||this.castCD>0)return;this.novaCD=8;this.attack('nova',0,0);}}
   armRune(){
     if(panelOpen||this.buildMode)return;
     const r=runeRank();if(!r)return;
     if(this.spellCD>0){toast('Spell recharging…');return;}
     this.runeArm=!this.runeArm;
-    document.getElementById('btnSpell').classList.toggle('armed',this.runeArm);
     if(this.runeArm)toast({mage:'🔥 Swipe where the Fire Wall should go!',warrior:'⛰ Swipe to shatter the earth!',ranger:'🌿 Swipe to grow the Thorn Wall!'}[cls]);}
   castRune(pts){
-    this.runeArm=false;document.getElementById('btnSpell').classList.remove('armed');
+    this.runeArm=false;
     if(pts.length<3)return;
     const rank=runeRank(),cam=this.cameras.main;
     const segs=[];let last=null;const maxSegs=6+rank*3;
@@ -1637,10 +1681,11 @@ class World extends Phaser.Scene{
     sfx('cast');
     if(cls==='warrior'){
       this.slashes.push({ang,life:0.18,reach:TILE*1.6});
+      if(spell==='nova'){this.slashes.push({ang:ang+2.09,life:0.18,reach:TILE*1.6});this.slashes.push({ang:ang-2.09,life:0.18,reach:TILE*1.6});}
       this.cameras.main.shake(70,0.003);
       for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d>TILE*2.2)continue;
         let da=Math.atan2(e.y-this.py,e.x-this.px)-ang;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;
-        if(Math.abs(da)>1.1)continue;this.hurtEnemy(e,dmg,ang);}
+        if(spell!=='nova'&&Math.abs(da)>1.1)continue;this.hurtEnemy(e,dmg,ang);}
     }else{
       const n=(spell==='nova'?3:1)+M.count;
       for(let i=0;i<n;i++){const a2=ang+(i-(n-1)/2)*0.28;
@@ -1709,7 +1754,7 @@ class World extends Phaser.Scene{
     const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
     return !SOLID.has(t2)&&t2!==','&&!occ;}
   enterBuild(key,r){this.buildMode=key;this.buildRecipe=r;
-    this.runeArm=false;document.getElementById('btnSpell').classList.remove('armed');
+    this.runeArm=false;
     const dx=Math.round(this.face.x),dy=Math.round(this.face.y);
     let tx2=Math.floor(this.px/TILE)+dx,ty2=Math.floor(this.py/TILE)+dy;
     if(dx===0&&dy===0)ty2+=1;
@@ -1791,7 +1836,7 @@ class World extends Phaser.Scene{
       atk:6+lvl*1.8,wander:0,wdir:0,touch:0,flash:0,bob:Math.random()*6,atkCD:0});}
   update(_,dms){
     const dt=Math.min(0.05,dms/1000);
-    this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt);
+    this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt);this.strikeCD=Math.max(0,this.strikeCD-dt);this.novaCD=Math.max(0,this.novaCD-dt);
     this.abilityCD=Math.max(0,this.abilityCD-dt);this.shieldT=Math.max(0,this.shieldT-dt);
     this.warcryT=Math.max(0,this.warcryT-dt);this.quiverT=Math.max(0,this.quiverT-dt);
     G.time=(G.time+dt/DAY_LEN);if(G.time>=1){G.time-=1;G.day++;toast('☀️ Day '+G.day);}
@@ -1974,20 +2019,19 @@ class World extends Phaser.Scene{
     {const sb=document.getElementById('btnSuper');const deg=Math.round(superC*3.6);
      sb.style.background=`conic-gradient(#ffd23c ${deg}deg, rgba(30,32,44,.9) ${deg}deg)`;
      sb.classList.toggle('ready',superC>=100);
-     const ab=document.getElementById('btnAbility');
-     if(abilityRank()>0){ab.style.display='block';
-       const ad=Math.round((1-this.abilityCD/(this.abilityMax||1))*360);
-       ab.style.background=`conic-gradient(#c07aff ${ad}deg, rgba(30,32,44,.9) ${ad}deg)`;
-       ab.classList.toggle('cd',this.abilityCD>0);}
-     else ab.style.display='none';
-     const rb=document.getElementById('btnSpell');
-     if(runeRank()>0){rb.style.display='block';
-       const rd=Math.round((1-this.spellCD/(this.spellMax||1))*360);
-       rb.style.background=`conic-gradient(#ff9a3c ${rd}deg, rgba(30,32,44,.9) ${rd}deg)`;
-       rb.classList.toggle('cd',this.spellCD>0);
-       if(!rb.dataset.ic){rb.dataset.ic='1';
-         setBtnIcon(rb.querySelector('span'),{mage:'firewall',warrior:'spikes',ranger:'thorns'}[cls],30);}}
-     else rb.style.display='none';
+     const SCOL={strike:'#ffd23c',nova:'#7ad0ff',active:'#c07aff',rune:'#ff9a3c'};
+     for(let si=0;si<3;si++){const el=document.getElementById('btnS'+si);const k=(G.loadout||[])[si];
+       if(!k||!SPELLBOOK[k]||!SPELLBOOK[k].avail()){el.style.display='none';continue;}
+       el.style.display='block';
+       const cd=k==='strike'?this.strikeCD:k==='nova'?this.novaCD:k==='active'?this.abilityCD:this.spellCD;
+       const mx=k==='strike'?5:k==='nova'?8:k==='active'?(this.abilityMax||1):(this.spellMax||1);
+       const dd2=Math.round((1-cd/mx)*360);
+       el.style.background=`conic-gradient(${SCOL[k]} ${dd2}deg, rgba(30,32,44,.9) ${dd2}deg)`;
+       el.classList.toggle('cd',cd>0);
+       el.classList.toggle('armed',k==='rune'&&this.runeArm);
+       if(el.dataset.k!==k+cls){el.dataset.k=k+cls;const sp3=el.querySelector('span');
+         if(SPELLBOOK[k].cv)setBtnIcon(sp3,SPELLBOOK[k].icon(),24);
+         else{sp3.innerHTML='';sp3.textContent=SPELLBOOK[k].icon();}}}
      const db=document.getElementById('btnDash');const dd=Math.round((1-this.dashCD/3)*360);
      db.style.background=`conic-gradient(#5fd0f5 ${dd}deg, rgba(30,32,44,.9) ${dd}deg)`;
      db.classList.toggle('cd',this.dashCD>0);}
