@@ -1060,7 +1060,7 @@ function newGame(cls2,elem,name){
     px:(TOWNS[0].cx+1.5)*TILE,py:(TOWNS[0].cy+1.5)*TILE,time:0.35,day:1,berriesPicked:{},
     res:{wood:0,stone:0,fiber:0,ore:0},bank:{wood:0,stone:0,fiber:0,ore:0},tools:{axe:0,pickaxe:0},
     plots:{},builds:[],craftLvl:1,craftXp:0,nodeT:{},raid:null,loadout:['strike'],
-    element:elem||'fire',name:(name||'').slice(0,12)||'Hero',seen:{}};
+    element:elem||'fire',name:(name||'').slice(0,12)||'Hero',seen:{},quests:[],trackQ:null};
   recalcHero();G.hp=G.maxHp;save();}
 function save(){try{if(G&&scene){if(dungeon){G.px=dungeon.returnX;G.py=dungeon.returnY;}else{G.px=scene.px;G.py=scene.py;}}localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);
@@ -1070,7 +1070,9 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
   if(G.craftLvl===undefined)G.craftLvl=1;if(G.craftXp===undefined)G.craftXp=0;
   if(!G.nodeT)G.nodeT={};if(G.raid===undefined)G.raid=null;
   if(!G.loadout){G.loadout=['strike'];if(abilityRank()>0)autoEquip('active');if(runeRank()>0)autoEquip('rune');}
-  if(G.quest===undefined)G.quest=null;if(!G.questsDone)G.questsDone=0;if(!G.bossRespawn)G.bossRespawn=0;
+  if(G.quest&&!G.quests){G.quests=[Object.assign({town:0},G.quest)];G.quest=null;}
+  if(!G.quests)G.quests=[];if(G.trackQ===undefined)G.trackQ=null;
+  if(!G.questsDone)G.questsDone=0;if(!G.bossRespawn)G.bossRespawn=0;
   if(!G.element)G.element={mage:'fire',ranger:'beastmaster',warrior:'berserker'}[G.class]||'fire';
   if(G.class==='warrior'&&!SUBCLASSES.warrior[G.element])
     G.element={fire:'berserker',frost:'juggernaut',storm:'blademaster',arcane:'warlord'}[G.element]||'berserker';
@@ -1390,6 +1392,7 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
     <div class="mtile" id="mSkill"><canvas class="micon" data-ic="skills"></canvas>Skills${(G.skillPoints||0)>0?`<span class="badge">${G.skillPoints}</span>`:''}</div>
     <div class="mtile" id="mCraft"><canvas class="micon" data-ic="craft"></canvas>Craft &amp; Build</div>
     <div class="mtile" id="mMap"><canvas class="micon" data-ic="guide"></canvas>Map</div>
+    <div class="mtile" id="mQuests"><canvas class="micon" data-ic="guide"></canvas>Quests${(G.quests||[]).filter(questDone).length?`<span class="badge">${G.quests.filter(questDone).length}</span>`:''}</div>
     <div class="mtile" id="mSound"><canvas class="micon" data-ic="${G.muted?'soundOff':'soundOn'}"></canvas>Sound ${G.muted?'Off':'On'}</div>
     <div class="mtile" id="mClose"><canvas class="micon" data-ic="resume"></canvas>Resume</div>
   </div>`;
@@ -1400,6 +1403,7 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
   document.getElementById('mInv').onclick=()=>openInventory();
   document.getElementById('mSkill').onclick=()=>openSkills();
   document.getElementById('mMap').onclick=()=>openMap();
+  document.getElementById('mQuests').onclick=()=>openQuests();
   document.getElementById('mCraft').onclick=openCraft;
   document.getElementById('mSound').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('coin');openPanel();};
   document.getElementById('mClose').onclick=()=>pauseGame(false);}
@@ -1409,43 +1413,86 @@ const QUESTS=[
   {key:'wood',txt:'Deliver 12 wood',need:12,kind:'bring',res:'wood'},
   {key:'stone',txt:'Deliver 10 stone',need:10,kind:'bring',res:'stone'},
   {key:'boss',txt:'Slay 💀 Direfang the Ravager',need:1,kind:'kill'}];
-function openQuest(){pauseGame(true);const p=document.getElementById('panel');
-  let h='<h2>❗ Quest Board</h2>';
-  if(!G.quest){
-    const q=QUESTS[(G.day+(G.questsDone||0))%QUESTS.length];
-    const rw=30+G.level*6;
-    h+=`<div class="subline">"Psst, adventurer! Help me out and I\'ll make it worth your while."</div>`;
+const _qpos={};
+function questNpcPos(ti){if(_qpos[ti])return _qpos[ti];const t=TOWNS[ti]||TOWNS[0];
+  for(let r=0;r<10;r++)for(let y=t.cy-r;y<=t.cy+r;y++)for(let x=t.cx-r;x<=t.cx+r;x++)
+    if(grid[y]&&grid[y][x]==='Q'){_qpos[ti]={x,y};return _qpos[ti];}
+  return {x:t.cx,y:t.cy};}
+function townOffer(ti){return QUESTS[(G.day+ti*2+(G.questsDone||0))%QUESTS.length];}
+function questDone(q){const def=QUESTS.find(x=>x.key===q.key);
+  return def.kind==='bring'?(G.res[def.res]||0)>=q.need:(q.n||0)>=q.need;}
+function questProg(q){const def=QUESTS.find(x=>x.key===q.key);
+  return def.kind==='bring'?(G.res[def.res]||0)+'/'+q.need+' carried':(q.n||0)+'/'+q.need;}
+function trackTarget(){if(G.trackQ==null)return null;const q=(G.quests||[])[G.trackQ];if(!q)return null;
+  if(q.key==='boss'&&!questDone(q))return {x:BOSS_LAIR.x,y:BOSS_LAIR.y,ic:'💀'};
+  const p=questNpcPos(q.town||0);return {x:p.x,y:p.y,ic:'❗'};}
+function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById('panel');
+  const tn2=TOWNS[ti]?TOWNS[ti].name:'Town';
+  let h='<h2>❗ '+tn2+' Quest Board</h2>';
+  const mine=G.quests.map((q,i)=>({q,i})).filter(o=>(o.q.town||0)===ti);
+  if(mine.length){
+    h+='<div class="plist" style="margin-top:6px">';
+    for(const o of mine){const q=o.q,def=QUESTS.find(x=>x.key===q.key);
+      const can=questDone(q),rw=30+G.level*6;
+      h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${def.txt}</b> <span class="lv">${questProg(q)}</span><br>
+        <small style="color:#5a4">Reward: ◉ ${rw} + gear</small></div>
+        <button class="cbtn" data-turn="${o.i}" ${can?'':'disabled'}>${def.kind==='bring'?'Deliver':'Claim'}</button></div>`;}
+    h+='</div>';}
+  if(!mine.length&&G.quests.length<3){
+    const q=townOffer(ti),rw=30+G.level*6;
+    h+=`<div class="subline">"Psst, adventurer! Help ${tn2} and I'll make it worth your while."</div>`;
     h+=`<div class="pcard" style="max-width:500px;margin:8px auto 0;width:100%">
       <div style="flex:1;min-width:0"><b>${q.txt}</b><br>
       <small style="color:#5a4">Reward: ◉ ${rw} + a piece of ${q.key==='boss'?'EPIC':'quality'} gear</small></div>
       <button class="cbtn" id="qAccept">Accept</button></div>`;}
-  else{const q=G.quest,def=QUESTS.find(x=>x.key===q.key);
-    let prog,can=false;
-    if(def.kind==='bring'){prog=(G.res[def.res]||0)+'/'+q.need+' carried';can=(G.res[def.res]||0)>=q.need;}
-    else{prog=(q.n||0)+'/'+q.need;can=(q.n||0)>=q.need;}
-    const rw=30+G.level*6;
-    h+=`<div class="pcard" style="max-width:500px;margin:8px auto 0;width:100%">
-      <div style="flex:1;min-width:0"><b>${def.txt}</b> <span class="lv">${prog}</span><br>
-      <small style="color:#5a4">Reward: ◉ ${rw} + gear</small></div>
-      <button class="cbtn" id="qTurn" ${can?'':'disabled'}>${def.kind==='bring'?'Deliver':'Claim'}</button></div>`;
-    h+=`<div class="prow" style="margin-top:6px"><button class="cbtn" id="qDrop" style="opacity:.7">✕ Abandon</button></div>`;}
+  else if(!mine.length)h+='<div class="subline" style="margin-top:8px">Your quest log is full (3/3).</div>';
+  h+='<div class="subline" style="margin-top:8px">📜 Manage & track quests in the menu → Quests</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="qClose">Leave</button></div>';
   p.innerHTML=h;p.style.display='flex';
   const acc=document.getElementById('qAccept');
-  if(acc)acc.onclick=()=>{const q=QUESTS[(G.day+(G.questsDone||0))%QUESTS.length];
-    G.quest={key:q.key,need:q.need,n:0};sfx('menu');toast('Quest accepted: '+q.txt);save();openQuest();};
-  const tn=document.getElementById('qTurn');
-  if(tn)tn.onclick=()=>{const q=G.quest,def=QUESTS.find(x=>x.key===q.key);
-    if(def.kind==='bring'){if((G.res[def.res]||0)<q.need)return;G.res[def.res]-=q.need;}
-    else if((q.n||0)<q.need)return;
+  if(acc)acc.onclick=()=>{const q=townOffer(ti);
+    G.quests.push({key:q.key,need:q.need,n:0,town:ti});
+    if(G.trackQ==null)G.trackQ=G.quests.length-1;
+    sfx('menu');toast('Quest accepted: '+q.txt);save();openQuest(ti);};
+  p.querySelectorAll('[data-turn]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.turn,q=G.quests[i];
+    if(!q||!questDone(q))return;
+    const def=QUESTS.find(x=>x.key===q.key);
+    if(def.kind==='bring')G.res[def.res]-=q.need;
     const rw=30+G.level*6;G.coins+=rw;
     const it=rollGear(G.level+1,q.key==='boss'?3:1);
     if(G.gear.length<15){G.gear.push(it);toast('🎁 Quest done! +'+rw+'c · '+it.name+' → bag');}
     else{scene.dropGear(scene.px,scene.py,it);toast('🎁 Quest done! +'+rw+'c · gear dropped (bag full)');}
-    G.quest=null;G.questsDone=(G.questsDone||0)+1;sfx('level');save();updateHud();openQuest();};
-  const dr=document.getElementById('qDrop');
-  if(dr)dr.onclick=()=>{G.quest=null;sfx('menu');save();openQuest();};
+    G.quests.splice(i,1);
+    if(G.trackQ===i)G.trackQ=null;else if(G.trackQ>i)G.trackQ--;
+    G.questsDone=(G.questsDone||0)+1;sfx('level');save();updateHud();openQuest(ti);});
   document.getElementById('qClose').onclick=()=>pauseGame(false);}
+function openQuests(){const p=document.getElementById('panel');
+  let h='<h2>📜 Quest Log</h2>';
+  h+=`<div class="subline">Active: ${G.quests.length}/3 · tap TRACK to follow one on screen</div>`;
+  if(G.quests.length){h+='<div class="plist" style="margin-top:6px">';
+    G.quests.forEach((q,i)=>{const def=QUESTS.find(x=>x.key===q.key);
+      const tn2=TOWNS[q.town||0].name,can=questDone(q),tracked=G.trackQ===i;
+      h+=`<div class="pcard" style="${tracked?'border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
+        <div style="flex:1;min-width:0"><b>${def.txt}</b> <span class="lv">${questProg(q)}</span><br>
+        <small style="color:#5a4">${tn2}${can?' · <b style="color:#3f7d34">READY — return to ❗</b>':''}</small></div>
+        <button class="cbtn" data-tq="${i}">${tracked?'Untrack':'Track'}</button>
+        <button class="cbtn" data-aq="${i}" style="opacity:.7">✕</button></div>`;});
+    h+='</div>';}
+  else h+='<div class="subline" style="margin-top:8px">No active quests — visit a ❗ villager in any town.</div>';
+  h+='<div class="subline" style="margin-top:10px;color:#f2c14e;font-weight:700">OFFERED IN TOWNS</div><div class="plist" style="margin-top:4px">';
+  TOWNS.forEach((t,i)=>{
+    if(G.quests.some(q2=>(q2.town||0)===i)){h+=`<div class="pcard" style="opacity:.6"><div style="flex:1"><b>${t.name}</b><br><small>quest already taken</small></div></div>`;return;}
+    const q=townOffer(i);
+    h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${t.name}</b><br><small style="color:#5a4">${q.txt} — visit the ❗ villager to accept</small></div></div>`;});
+  h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="qlBack">◀ Menu</button></div>';
+  p.innerHTML=h;
+  p.querySelectorAll('[data-tq]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.tq;
+    G.trackQ=(G.trackQ===i)?null:i;sfx('menu');save();openQuests();});
+  p.querySelectorAll('[data-aq]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.aq;
+    G.quests.splice(i,1);
+    if(G.trackQ===i)G.trackQ=null;else if(G.trackQ>i)G.trackQ--;
+    sfx('menu');save();openQuests();});
+  document.getElementById('qlBack').onclick=openPanel;}
 function openMap(){const p=document.getElementById('panel');
   let h='<h2>🗺 World Map</h2>';
   h+='<div style="text-align:center;line-height:0;margin-top:4px"><canvas id="mapCv" width="'+(MW*8)+'" height="'+(MH*8)+'" style="width:min(96vw,480px);border:4px solid #2a2118;border-radius:14px;background:#0b1220;box-shadow:0 0 24px rgba(0,0,0,.6)"></canvas></div>';
@@ -1499,6 +1546,10 @@ function openMap(){const p=document.getElementById('panel');
   const vg=c.createRadialGradient(MW*S/2,MH*S/2,MH*S*0.35,MW*S/2,MH*S/2,MW*S*0.62);
   vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(5,8,14,.5)');
   c.fillStyle=vg;c.fillRect(0,0,MW*S,MH*S);
+  {const tt3=trackTarget();
+   if(tt3){c.font='30px system-ui';
+     c.fillStyle='rgba(255,210,60,.35)';c.beginPath();c.arc((tt3.x+0.5)*S,(tt3.y+0.5)*S,S*3,0,7);c.fill();
+     c.fillText(tt3.ic,(tt3.x+0.5)*S,(tt3.y-0.6)*S);}}
   if(!dungeon&&scene){
     const pxT=scene.px/TILE,pyT=scene.py/TILE;
     const g2=c.createRadialGradient(pxT*S,pyT*S,1,pxT*S,pyT*S,S*3.2);
@@ -2198,7 +2249,7 @@ class World extends Phaser.Scene{
   doInteract(){const t2=this.interactT;if(!t2)return;
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
     if(t2.vault){enterDungeon('sewer',t2.vault.x,t2.vault.y,'Castle Vault');return;}
-    if(t2.quest){openQuest();return;}
+    if(t2.quest){openQuest(t2.quest.town||0);return;}
     if(t2.sewer){enterDungeon('sewer',t2.sewer.x,t2.sewer.y);return;}
     if(t2.stairs){exitDungeon();return;}
     if(t2.treasure){const{x,y}=t2.treasure;
@@ -2424,13 +2475,14 @@ class World extends Phaser.Scene{
       grantXp((6+e.lvl*3)*(e.boss?6:e.alpha?3:e.rare?2:1));sfx('coin');
       if(e.boss){G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;G.coins+=100+e.lvl*8;
         this.dropGear(e.x,e.y,rollGear(e.lvl,3));this.dropGear(e.x+30,e.y,rollGear(e.lvl,2));
-        if(G.quest&&G.quest.key==='boss')G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);
+        for(const q2 of G.quests||[])if(q2.key==='boss')q2.n=Math.min(q2.need,(q2.n||0)+1);
         toast('💀 '+BOSS_NAME+' DEFEATED! Epic loot + '+(100+e.lvl*8)+'c');sfx('level');}
       else if(e.alpha){this.dropGear(e.x,e.y,rollGear(e.lvl,2));toast('⭐ Defeated the ALPHA '+e.sp+'!');}
       else if(e.rare)this.dropGear(e.x,e.y,rollGear(e.lvl,1));
       else if(Math.random()<0.06)this.dropGear(e.x,e.y,rollGear(e.lvl,0));
-      if(G.quest&&!e.raider){if(G.quest.key==='slay')G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);
-        if(G.quest.key==='rare'&&(e.rare||e.alpha))G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);}
+      if(!e.raider)for(const q2 of G.quests||[]){
+        if(q2.key==='slay')q2.n=Math.min(q2.need,(q2.n||0)+1);
+        if(q2.key==='rare'&&(e.rare||e.alpha))q2.n=Math.min(q2.need,(q2.n||0)+1);}
       if(isMSub('fire')&&(e.burnT||0)>0){
         this.hitEmit.setPosition(e.s.x,e.s.y-10);this.hitEmit.explode(18);
         this.cameras.main.shake(90,0.004);
@@ -2849,6 +2901,26 @@ class World extends Phaser.Scene{
        if(el.dataset.k!==k+cls){el.dataset.k=k+cls;const sp3=el.querySelector('span');
          if(SPELLBOOK[k].cv)setBtnIcon(sp3,SPELLBOOK[k].icon(),24);
          else{sp3.innerHTML='';sp3.textContent=SPELLBOOK[k].icon();}}}
+     const tt2=trackTarget(),ta=document.getElementById('trackArrow');
+     if(tt2&&!dungeon){
+       const cam3=this.cameras.main;
+       const twx=(tt2.x+0.5)*TILE,twy=(tt2.y+0.5)*TILE;
+       const tix=isoX(twx,twy),tiy=isoY(twx,twy);
+       const tsx=(tix-cam3.worldView.x)*cam3.zoom,tsy=(tiy-cam3.worldView.y)*cam3.zoom;
+       const SW=this.scale.width,SH=this.scale.height,MG=52;
+       const tang=Math.atan2(tsy-SH/2,tsx-SW/2);
+       const dist2=Math.hypot(twx-this.px,twy-this.py);
+       let ex2=tsx,ey2=tsy-64,off2=false;
+       if(tsx<MG||tsx>SW-MG||tsy<MG||tsy>SH-MG){off2=true;
+         const tmax=Math.min((SW/2-MG)/Math.max(1e-6,Math.abs(Math.cos(tang))),(SH/2-MG)/Math.max(1e-6,Math.abs(Math.sin(tang))));
+         ex2=SW/2+Math.cos(tang)*tmax;ey2=SH/2+Math.sin(tang)*tmax;}
+       ta.style.display='flex';ta.style.left=ex2+'px';ta.style.top=ey2+'px';
+       document.getElementById('taIc').textContent=tt2.ic;
+       document.getElementById('taDist').textContent=dist2<TILE*1.8?'HERE!':Math.round(dist2/TILE)+'m';
+       const tr=document.getElementById('taRot');
+       tr.style.display=off2?'block':'none';
+       tr.style.transform='rotate('+tang+'rad)';
+     }else ta.style.display='none';
      const db=document.getElementById('btnDash');const dd=Math.round((1-this.dashCD/(isWSub('blademaster')?2:3))*360);
      db.style.background=`conic-gradient(#5fd0f5 ${dd}deg, rgba(30,32,44,.9) ${dd}deg)`;
      db.classList.toggle('cd',this.dashCD>0);}
@@ -2865,7 +2937,10 @@ class World extends Phaser.Scene{
         else if(t2==='M')setT(dd,TILE*1.2,{shop:1},'Shop');
         else if(t2==='R')setT(dd,TILE*1.2,{registrar:1},'Land Office');
         else if(t2==='V')setT(dd,TILE*1.2,{talk:{x:xx,y:yy}},'Talk');
-        else if(t2==='Q')setT(dd,TILE*1.3,{quest:1},G.quest?'❗ Quest progress':'❗ New Quest');
+        else if(t2==='Q'){let bt2=0,bd4=1e9;
+          TOWNS.forEach((t3,ti2)=>{const d4=Math.hypot(t3.cx-xx,t3.cy-yy);if(d4<bd4){bd4=d4;bt2=ti2;}});
+          const has=G.quests.some(q2=>(q2.town||0)===bt2);
+          setT(dd,TILE*1.3,{quest:{town:bt2}},has?'❗ Quest progress':'❗ New Quest');}
         else if(t2==='S')setT(dd,TILE*1.2,{sign:1},'Read');
         else if(t2==='T'&&!dungeon&&!((this.choppedCD[xx+','+yy]||0)>this.time.now))setT(dd,TILE*1.25,{tree:{x:xx,y:yy}},'Chop');
         else if(t2==='C')setT(dd,TILE*1.3,{cave:{x:xx,y:yy}},'Enter Cave');
