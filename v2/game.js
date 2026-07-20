@@ -1108,22 +1108,51 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
   document.getElementById('mCraft').onclick=openCraft;
   document.getElementById('mSound').onclick=()=>{G.muted=!G.muted;save();if(!G.muted)sfx('coin');openPanel();};
   document.getElementById('mClose').onclick=()=>pauseGame(false);}
-function openInventory(){const p=document.getElementById('panel');const it=G.items;
+const INV_DEF={
+  berry:{ic:'🫐',nm:'Berry',fx:'Heals 35% HP · +25 hunger',lore:'Plump forest berries — sweet, juicy, and just a little magical.',use:1},
+  potion:{ic:'🧪',nm:'Potion',fx:'Restores 60 HP',lore:'A swirling red brew from the nurse\'s own recipe.',use:1},
+  ration:{ic:'🍖',nm:'Ration',fx:'Fully fills hunger',lore:'Smoked meat wrapped in leaves. A traveler\'s best friend.',use:1},
+  wood:{ic:'🪵',nm:'Wood',fx:'Building & crafting material',lore:'Sturdy timber chopped from wild trees.'},
+  stone:{ic:'🪨',nm:'Stone',fx:'Building & crafting material',lore:'Rough grey stone pried from rocky outcrops.'},
+  fiber:{ic:'🌿',nm:'Fiber',fx:'Crafting material · tower ammo',lore:'Tough plant fibers, good for rope and snares.'},
+  ore:{ic:'⛏️',nm:'Ore',fx:'Smithing material (needs pickaxe)',lore:'Glinting ore veins only a pickaxe can crack open.'},
+  axe:{ic:'🪓',nm:'Axe',fx:'Chop trees for wood',lore:'The woodsman\'s answer to every problem.'},
+  pickaxe:{ic:'⛏',nm:'Pickaxe',fx:'Mine stone & ore nodes',lore:'Bites through rock like it holds a grudge.'}};
+function openInventory(sel){if(typeof sel!=='string')sel=null;
+  const p=document.getElementById('panel');const it=G.items,R=G.res;
+  const cnt=k=>k==='axe'||k==='pickaxe'?(G.tools[k]||0):(INV_DEF[k].use?(it[k]||0):(R[k]||0));
+  if(!sel){sel=['berry','potion','ration'].find(k=>cnt(k)>0)||'berry';}
   let h='<h2>🎒 Inventory</h2>';
-  h+=`<div class="subline">🍖 hunger ${Math.round(G.hunger)}% · ❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp}</div>`;
-  h+='<div class="plist">';
-  [['berry','🫐 Berry','heals 35% HP + hunger'],['potion','🧪 Potion','restores 60 HP'],['ration','🍖 Ration','fully fills hunger']]
-    .forEach(([k,nm2,fx])=>{h+=`<div class="pcard"><div style="flex:1"><b>${nm2}</b> <span class="lv">×${it[k]||0}</span><br><small style="color:#8a6d3a">${fx}</small></div>
-    <button class="cbtn" data-item="${k}" ${!(it[k]>0)?'disabled':''}>Use</button></div>`;});
-  h+=`</div><div class="subline" style="margin-top:6px">⚔ Gear lives in the <b>Character</b> screen${G.gear.length?` — ${G.gear.length} in bag`:''}</div>`;
+  h+=`<div class="subline">🍖 hunger ${Math.round(G.hunger)}% · ❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ◉ ${G.coins}</div>`;
+  // Zelda-style detail card for the selected item
+  const D=INV_DEF[sel];
+  if(D){const n=cnt(sel),isTool=sel==='axe'||sel==='pickaxe';
+    h+=`<div class="pcard" style="max-width:500px;margin:5px auto 0;width:100%">
+      <div style="width:44px;text-align:center;font-size:30px;flex:none">${D.ic}</div>
+      <div style="flex:1;min-width:0"><b style="color:#c98b3a">${D.nm}</b> <span class="lv">${isTool?(n?'tier '+n:'not crafted'):'×'+n}</span><br>
+      <small style="color:#7a6a4a;font-style:italic">${D.lore}</small><br>
+      <small style="color:#3f7d34">${D.fx}</small></div>
+      ${D.use?`<button class="cbtn" id="invUse" ${n>0?'':'disabled'}>Use</button>`:''}</div>`;}
+  const grid=(title,keys)=>{
+    h+=`<div class="subline" style="margin-top:7px;color:#f2c14e;font-weight:700">${title}</div><div class="baggrid">`;
+    for(const k of keys){const n=cnt(k),D2=INV_DEF[k];
+      h+=`<div class="bagslot ${sel===k?'sel':''}" data-inv="${k}" style="${n>0?'':'opacity:.45;'}">
+        ${D2.ic}<span class="eqlv">${k==='axe'||k==='pickaxe'?(n?['I','II','III'][n-1]||n:'—'):n}</span></div>`;}
+    h+='</div>';};
+  grid('CONSUMABLES',['berry','potion','ration']);
+  grid('MATERIALS',['wood','stone','fiber','ore']);
+  grid('TOOLS',['axe','pickaxe']);
+  h+=`<div class="subline" style="margin-top:7px">⚔ Gear lives in the <b>Character</b> screen${G.gear.length?` — ${G.gear.length} in bag`:''}</div>`;
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="invBack">◀ Menu</button></div>';
   p.innerHTML=h;
-  p.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>{const k=b.dataset.item;
+  p.querySelectorAll('[data-inv]').forEach(el=>el.onclick=()=>{sfx('menu');openInventory(el.dataset.inv);});
+  const ub=document.getElementById('invUse');
+  if(ub)ub.onclick=()=>{const k=sel;
     if(!(G.items[k]>0))return;G.items[k]--;
     if(k==='berry'){G.hunger=Math.min(100,G.hunger+25);G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.35));toast('Ate a Berry');}
     else if(k==='potion'){G.hp=Math.min(G.maxHp,G.hp+60);toast('Used a Potion');}
     else{G.hunger=100;toast('Hunger restored');}
-    save();updateHud();openInventory();});
+    sfx('heal');save();updateHud();openInventory(k);};
   document.getElementById('invBack').onclick=openPanel;}
 function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');const M=mods();
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
