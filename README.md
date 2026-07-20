@@ -130,7 +130,7 @@ Built as a starter project — fork it, tweak the `SPECIES` and `MAP_STR` tables
 
 ## 🚀 v2 — New Engine (beta)
 
-The game has been ported to **Phaser 3 (WebGL)** keeping its signature hand-drawn Brawl-Stars-style art — every sprite is baked from the game's own procedural drawings onto GPU textures, then lit with bloom, additive glow, particles, camera shake, and dynamic day/night light pools. Try it at [**/v2/**](https://0pixelz.github.io/critter-survival/v2/).
+The game has been ported to **Phaser 3 (WebGL)** keeping its signature hand-drawn Brawl-Stars-style art — every sprite is baked from the game's own procedural drawings onto GPU textures, then lit with bloom, additive glow, particles, camera shake, and dynamic day/night light pools. It IS the main game now at [**0pixelz.github.io/critter-survival**](https://0pixelz.github.io/critter-survival/) — the original canvas version lives on at [/classic/](https://0pixelz.github.io/critter-survival/classic/).
 
 The port now includes essentially the whole game:
 
@@ -142,4 +142,4 @@ The port now includes essentially the whole game:
 - **Dungeons** — Diablo-style caves & town sewers with darkness + light pools, treasure rooms, ⭐ Guardians
 - Full save/continue (including underground), day/night, hunger, 17-node skill tree
 
-The classic canvas version remains playable at the root link above.
+
