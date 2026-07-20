@@ -28,6 +28,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 #buildBar button:active{transform:translateY(3px);}
 #bbPlace{background:linear-gradient(#63d24a,#37981f);}
 #bbCancel{background:linear-gradient(#e8483a,#b02a20);}
+#btnSpell{position:fixed;z-index:7;right:calc(126px + env(safe-area-inset-right));bottom:calc(206px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;padding:4px;background:conic-gradient(#ff9a3c 360deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);display:none;transition:transform .06s;}
+#btnSpell span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#d6772a,#a04a12);box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
+#btnSpell.cd span{filter:grayscale(.7) brightness(.75);}
+#btnSpell.armed{animation:sp 0.7s ease-in-out infinite;box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 20px rgba(255,150,60,.85);}
+#btnSpell:active{transform:translateY(3px);}
 #btnSuper{position:fixed;z-index:7;right:calc(38px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom));width:70px;height:70px;border-radius:50%;border:none;padding:5px;background:conic-gradient(#ffd23c 0deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);}
 #btnSuper span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#6b56d6,#3f2fa0);color:rgba(255,255,255,.6);font-size:26px;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
 #btnSuper.ready span{background:linear-gradient(#ffd84a,#f0a012);color:#5a3a00;}
@@ -84,6 +89,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 <button id="btnDash"><span>💨</span></button>
 <button id="btnSuper"><span>✦</span></button>
 <button id="btnAbility"><span>🛡</span></button>
+<button id="btnSpell"><span>🔥</span></button>
 <div id="buildBar"><button id="bbPlace">✓ Place</button><button id="bbCancel">✕ Done</button></div>
 <div id="interactTag"></div>
 <div id="clock">☀️ Day 1</div>
@@ -404,6 +410,22 @@ function bakeHero(cls2,frame){
   ctx.restore();
   return cv;}
 function bakeMisc(kind){
+  if(kind==='flame'){const cv=mkCv(30,40),cx=15;
+    ctx.strokeStyle='#12160f';ctx.lineWidth=2.6;ctx.lineJoin='round';
+    const g=ctx.createLinearGradient(0,6,0,36);g.addColorStop(0,'#ffd23c');g.addColorStop(1,'#ff6a1e');
+    ctx.fillStyle=g;ctx.beginPath();
+    ctx.moveTo(cx,3);ctx.quadraticCurveTo(26,16,24,25);ctx.quadraticCurveTo(23,35,cx,37);
+    ctx.quadraticCurveTo(7,35,6,25);ctx.quadraticCurveTo(4,16,cx,3);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff2c8';ctx.beginPath();ctx.ellipse(cx,27,4.5,7,0,0,7);ctx.fill();return cv;}
+  if(kind==='thorn'){const cv=mkCv(38,30),line='#12160f';
+    ctx.strokeStyle=line;ctx.lineWidth=2.4;ctx.lineJoin='round';
+    ctx.fillStyle='#3f7d34';
+    for(const[bx,h]of[[7,14],[15,20],[24,15],[31,18]]){ctx.beginPath();
+      ctx.moveTo(bx-5,27);ctx.quadraticCurveTo(bx-2,27-h,bx,27-h-2);ctx.quadraticCurveTo(bx+2,27-h,bx+5,27);
+      ctx.closePath();ctx.fill();ctx.stroke();}
+    ctx.fillStyle='#5da53f';for(const[bx,h]of[[15,20],[31,18]]){ctx.beginPath();
+      ctx.moveTo(bx-2.5,26);ctx.quadraticCurveTo(bx-1,26-h*0.7,bx,26-h*0.75);ctx.quadraticCurveTo(bx+1,26-h*0.7,bx+2.5,26);
+      ctx.closePath();ctx.fill();}return cv;}
   if(kind==='sign'){const cv=mkCv(50,50),cx=25,base=42,line='#12160f';
     shadow(cx,base,14,6);ctx.strokeStyle=line;ctx.lineWidth=3;
     ctx.fillStyle='#4e341c';rr(cx-2,base-18,5,18,2);ctx.fill();ctx.stroke();
@@ -505,7 +527,10 @@ const SKILLS=[
   {br:'Mastery',key:'crit',name:'Critical Strike',max:5,eff:'+3% chance of 2× damage / rank'},
   {br:'Mastery',key:'shield',cls:'mage',name:'Spell Shield',max:3,eff:'ACTIVE: absorb damage 8s (stronger / rank)'},
   {br:'Mastery',key:'warcry',cls:'warrior',name:'War Cry',max:3,eff:'ACTIVE: roar — heal & −40% damage 10s'},
-  {br:'Mastery',key:'quiver',cls:'ranger',name:'Swift Quiver',max:3,eff:'ACTIVE: 3× fire rate (4+rank s)'}];
+  {br:'Mastery',key:'quiver',cls:'ranger',name:'Swift Quiver',max:3,eff:'ACTIVE: 3× fire rate (4+rank s)'},
+  {br:'Mastery',key:'firewall',cls:'mage',name:'Fire Wall',max:3,eff:'SWIPE SPELL: draw a wall of flame that burns foes (longer+stronger / rank)'},
+  {br:'Mastery',key:'spikewall',cls:'warrior',name:'Earthshatter',max:3,eff:'SWIPE SPELL: draw a line of stone spikes that roots foes'},
+  {br:'Mastery',key:'thornwall',cls:'ranger',name:'Thorn Wall',max:3,eff:'SWIPE SPELL: draw a hedge of thorns that slows foes'}];
 function skillReq(nd){if(!nd.req)return true;for(const k in nd.req){if(((G.skills||{})[k]||0)<nd.req[k])return false;}return true;}
 function xpToNext(l){return 16+l*l*4;}
 let G=null;
@@ -587,6 +612,8 @@ let superC=0;
 function addSuper(a){superC=Math.min(100,superC+a*mods().superGain);}
 function abilityKey(){return {mage:'shield',warrior:'warcry',ranger:'quiver'}[(G&&G.class)||'mage'];}
 function abilityRank(){return (G&&G.skills&&G.skills[abilityKey()])||0;}
+function runeKey(){return {mage:'firewall',warrior:'spikewall',ranger:'thornwall'}[(G&&G.class)||'mage'];}
+function runeRank(){return (G&&G.skills&&G.skills[runeKey()])||0;}
 function damageHero(d){if(!G)return 0;
   if(scene&&scene.shieldT>0&&scene.shieldHp>0){const a=Math.min(scene.shieldHp,d);scene.shieldHp-=a;d-=a;
     if(scene.shieldHp<=0){scene.shieldT=0;toast('🛡 Shield broke!');sfx('fail');}}
@@ -814,6 +841,28 @@ function drawMenuIcon(cv,kind){
     c.beginPath();c.moveTo(s*0.34,s*0.5);c.quadraticCurveTo(m,s*0.58,s*0.66,s*0.5);c.stroke();
     c.fillStyle='#ffd23c';c.strokeStyle=OL;c.lineWidth=W*0.5;c.beginPath();c.arc(m,s*0.33,s*0.055,0,7);c.fill();c.stroke();
     c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.ellipse(s*0.38,s*0.3,s*0.05,s*0.09,-0.3,0,7);c.fill();break;}
+  case 'firewall':{ // flame
+    const gf=c.createLinearGradient(0,s*0.15,0,s*0.85);gf.addColorStop(0,'#ffd23c');gf.addColorStop(1,'#ff6a1e');
+    c.fillStyle=gf;c.beginPath();
+    c.moveTo(m,s*0.1);c.quadraticCurveTo(s*0.82,s*0.42,s*0.76,s*0.6);
+    c.quadraticCurveTo(s*0.72,s*0.84,m,s*0.88);c.quadraticCurveTo(s*0.28,s*0.84,s*0.24,s*0.6);
+    c.quadraticCurveTo(s*0.18,s*0.42,m,s*0.1);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#fff2c8';c.beginPath();c.ellipse(m,s*0.64,s*0.11,s*0.16,0,0,7);c.fill();break;}
+  case 'spikes':{ // stone spikes
+    c.fillStyle='#a8b0b8';
+    for(const[bx,h]of[[0.28,0.34],[0.5,0.52],[0.72,0.38]]){c.beginPath();
+      c.moveTo(s*(bx-0.13),s*0.82);c.lineTo(s*bx,s*(0.82-h));c.lineTo(s*(bx+0.13),s*0.82);
+      c.closePath();c.fill();c.stroke();}
+    c.fillStyle='rgba(255,255,255,.3)';c.beginPath();
+    c.moveTo(s*0.44,s*0.72);c.lineTo(s*0.5,s*0.36);c.lineTo(s*0.5,s*0.72);c.closePath();c.fill();break;}
+  case 'thorns':{ // thorny vines
+    c.strokeStyle='#3f7d34';c.lineWidth=W*1.3;
+    c.beginPath();c.moveTo(s*0.14,s*0.72);c.quadraticCurveTo(s*0.4,s*0.2,s*0.86,s*0.4);c.stroke();
+    c.beginPath();c.moveTo(s*0.16,s*0.4);c.quadraticCurveTo(s*0.5,s*0.75,s*0.84,s*0.66);c.stroke();
+    c.fillStyle='#5da53f';c.strokeStyle=OL;c.lineWidth=W*0.5;
+    for(const[tx2,ty2,a]of[[0.34,0.42,-0.6],[0.58,0.3,0.4],[0.5,0.62,2.6],[0.72,0.56,1.8]]){
+      c.save();c.translate(s*tx2,s*ty2);c.rotate(a);
+      c.beginPath();c.moveTo(-s*0.05,0);c.lineTo(0,-s*0.12);c.lineTo(s*0.05,0);c.closePath();c.fill();c.stroke();c.restore();}break;}
   case 'dash':{ // speed streaks + body
     c.strokeStyle='#eaf6ff';c.lineWidth=W*1.15;
     for(const[dy,x0,l]of[[-0.15,0.14,0.3],[0,0.1,0.42],[0.15,0.16,0.26]]){
@@ -1138,7 +1187,7 @@ class World extends Phaser.Scene{
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
     tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));
-    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));
+    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
     if(!this.textures.exists('rwall')){const da=bakeDungeonArt();
@@ -1222,18 +1271,27 @@ class World extends Phaser.Scene{
     this.joy={active:false,id:-1,ox:0,oy:0,nx:0,ny:0};this.gest={active:false,id:-1,pts:[]};
     this.input.addPointer(3);
     this.input.on('pointerdown',p=>{
+      if(this.runeArm&&!this.spellSwipe.active){
+        this.spellSwipe={active:true,id:p.id,pts:[{x:p.x,y:p.y}]};return;}
       if(this.buildMode){const a=p.worldX/(IW/2),b2=p.worldY/(IH/2);
         this.buildSel={x:Math.floor((a+b2)/2),y:Math.floor((b2-a)/2)};return;}
       if(p.x<this.scale.width/2&&!this.joy.active){this.joy.active=true;this.joy.id=p.id;this.joy.ox=p.x;this.joy.oy=p.y;this.joy.nx=0;this.joy.ny=0;}
       else if(!this.gest.active){this.gest.active=true;this.gest.id=p.id;this.gest.pts=[{x:p.x,y:p.y}];}});
     this.input.on('pointermove',p=>{
+      if(this.spellSwipe.active&&p.id===this.spellSwipe.id){
+        const l=this.spellSwipe.pts[this.spellSwipe.pts.length-1];
+        if(Math.hypot(p.x-l.x,p.y-l.y)>4)this.spellSwipe.pts.push({x:p.x,y:p.y});return;}
       if(this.joy.active&&p.id===this.joy.id){let dx=p.x-this.joy.ox,dy=p.y-this.joy.oy;const d=Math.hypot(dx,dy),R=55;
         if(d>R){dx*=R/d;dy*=R/d;}this.joy.nx=dx/R;this.joy.ny=dy/R;}
       else if(this.gest.active&&p.id===this.gest.id){const l=this.gest.pts[this.gest.pts.length-1];
         if(Math.hypot(p.x-l.x,p.y-l.y)>4)this.gest.pts.push({x:p.x,y:p.y});}});
     const up=p=>{
+      if(this.spellSwipe.active&&p.id===this.spellSwipe.id){
+        const pts=this.spellSwipe.pts;this.spellSwipe={active:false,id:-1,pts:[]};
+        this.fadeTrail={pts,t:this.time.now,col:0xff9a3c};this.castRune(pts);return;}
       if(this.joy.active&&p.id===this.joy.id){this.joy.active=false;this.joy.nx=0;this.joy.ny=0;}
       else if(this.gest.active&&p.id===this.gest.id){const g2=this.gest.pts;this.gest.active=false;
+        if(g2.length>1)this.fadeTrail={pts:g2,t:this.time.now,col:cls==='mage'?0xffb054:cls==='ranger'?0xa8e063:0xd8c9a0};
         if(g2.length){const spell=classifyGesture(g2),a=g2[0],b=g2[g2.length-1];this.attack(spell,b.x-a.x,b.y-a.y);}}};
     this.input.on('pointerup',up);this.input.on('pointerupoutside',up);
     this.keys=this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,J,Q,SHIFT');
@@ -1260,6 +1318,7 @@ class World extends Phaser.Scene{
         else scene.attack('bolt',0,0,Math.atan2(a.dy/IH-a.dx/IW,a.dx/IW+a.dy/IH));};
       ba.addEventListener('pointerup',rel);
       ba.addEventListener('pointercancel',()=>{scene.aim.active=false;});
+      $('btnSpell').addEventListener('pointerdown',e=>{e.preventDefault();scene.armRune();});
       $('bbPlace').addEventListener('pointerdown',e=>{e.preventDefault();scene.placeBuild();});
       $('bbCancel').addEventListener('pointerdown',e=>{e.preventDefault();scene.cancelBuild();toast('Build mode off');});
     }
@@ -1292,6 +1351,10 @@ class World extends Phaser.Scene{
     this.choppedCD={};
     this.bushSprites=this.bushSprites||{};this.saveT=0;this.survT=0;this.interactT=null;
     this.waves=[];this.waveGfx=this.add.graphics().setDepth(999901);
+    this.zones=[];this.spellCD=0;this.spellMax=14;this.runeArm=false;
+    this.spellSwipe={active:false,id:-1,pts:[]};this.fadeTrail=null;
+    this.trailGfx=this.add.graphics().setScrollFactor(0).setDepth(9999950);
+    document.getElementById('btnSpell').classList.remove('armed');
     this.buffGfx=this.add.graphics().setDepth(999902);
     this.aimGfx=this.add.graphics().setDepth(999903);
     this.shieldT=0;this.shieldHp=0;this.warcryT=0;this.quiverT=0;this.abilityCD=0;this.abilityMax=1;
@@ -1324,6 +1387,55 @@ class World extends Phaser.Scene{
     else core=this.add.image(0,0,'fireboltTex').setScale(0.8);
     const gl=this.add.image(0,0,'glow').setScale(0.24).setAlpha(0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
     this.shots.push({core,gl,x:this.px,y:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce});}
+  armRune(){
+    if(panelOpen||this.buildMode)return;
+    const r=runeRank();if(!r)return;
+    if(this.spellCD>0){toast('Spell recharging…');return;}
+    this.runeArm=!this.runeArm;
+    document.getElementById('btnSpell').classList.toggle('armed',this.runeArm);
+    if(this.runeArm)toast({mage:'🔥 Swipe where the Fire Wall should go!',warrior:'⛰ Swipe to shatter the earth!',ranger:'🌿 Swipe to grow the Thorn Wall!'}[cls]);}
+  castRune(pts){
+    this.runeArm=false;document.getElementById('btnSpell').classList.remove('armed');
+    if(pts.length<3)return;
+    const rank=runeRank(),cam=this.cameras.main;
+    const segs=[];let last=null;const maxSegs=6+rank*3;
+    for(const q of pts){
+      const wp=cam.getWorldPoint(q.x,q.y);
+      const a=wp.x/(IW/2),b2=wp.y/(IH/2);
+      const wx=TILE*(a+b2)/2,wy=TILE*(b2-a)/2;
+      if(Math.floor(wx/TILE)<1||Math.floor(wy/TILE)<1||Math.floor(wx/TILE)>=GW-1||Math.floor(wy/TILE)>=GH-1)continue;
+      if(SOLID.has(tileAt(Math.floor(wx/TILE),Math.floor(wy/TILE))))continue;
+      if(!last||Math.hypot(wx-last.x,wy-last.y)>TILE*0.55){segs.push({x:wx,y:wy});last=segs[segs.length-1];
+        if(segs.length>=maxSegs)break;}}
+    if(!segs.length){toast('Swipe across open ground');return;}
+    this.spellCD=this.spellMax=14;
+    const dur=5+rank*2,dmg=Math.max(4,Math.round(G._atk*(0.55+0.25*rank)*mods().dmg));
+    const texKey=cls==='mage'?'flameTex':cls==='warrior'?'b_spike':'thornTex';
+    const gcol=cls==='mage'?0xff9a3c:cls==='warrior'?0xc8d0d8:0x7dd05a;
+    for(const sg of segs){
+      const sx2=isoX(sg.x,sg.y),sy2=isoY(sg.x,sg.y);
+      const sp2=this.add.image(sx2,sy2,texKey).setOrigin(0.5,0.85).setDepth(sy2+IH*0.28);
+      const gl=this.add.image(sx2,sy2-8,'glow').setScale(0.45).setTint(gcol)
+        .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.4).setDepth(sy2+IH*0.28-1);
+      const fs=cls==='warrior'?0.75:1;
+      sp2.setScale(0.1);this.tweens.add({targets:sp2,scaleX:fs,scaleY:fs,duration:180,ease:'Back.Out'});
+      this.zones.push({x:sg.x,y:sg.y,sp:sp2,gl,life:dur,max:dur,tick:0.3+Math.random()*0.3,dmg,seed:Math.random()*6.28,fs});}
+    sfx('super');this.cameras.main.shake(120,0.004);
+    toast({mage:'🔥 FIRE WALL!',warrior:'⛰ EARTHSHATTER!',ranger:'🌿 THORN WALL!'}[cls]);}
+  updateZones(dt){
+    for(let i=this.zones.length-1;i>=0;i--){const z=this.zones[i];z.life-=dt;
+      if(z.life<=0){z.sp.destroy();z.gl.destroy();this.zones.splice(i,1);continue;}
+      const fl=1+Math.sin(this.time.now*0.012+z.seed)*0.08;
+      if(z.life<z.max-0.25)z.sp.setScale(z.fs*fl);
+      const fade=Math.min(1,z.life/1.2);
+      z.sp.setAlpha(fade);z.gl.setAlpha(0.4*fade*fl);
+      z.tick-=dt;
+      if(z.tick<=0){z.tick=0.45;
+        for(const e of [...this.enemies]){
+          if(Math.hypot(e.x-z.x,e.y-z.y)>TILE*0.8)continue;
+          if(cls==='warrior')e.rootT=Math.max(e.rootT||0,1.0);
+          if(cls==='ranger')e.slowT=Math.max(e.slowT||0,1.5);
+          this.hurtEnemy(e,Math.max(1,Math.round(z.dmg*(0.85+Math.random()*0.3))),Math.atan2(e.y-z.y,e.x-z.x));}}}}
   classAbility(){
     if(panelOpen)return;
     const rank=abilityRank();if(!rank||this.abilityCD>0)return;
@@ -1538,6 +1650,7 @@ class World extends Phaser.Scene{
     const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
     return !SOLID.has(t2)&&t2!==','&&!occ;}
   enterBuild(key,r){this.buildMode=key;this.buildRecipe=r;
+    this.runeArm=false;document.getElementById('btnSpell').classList.remove('armed');
     const dx=Math.round(this.face.x),dy=Math.round(this.face.y);
     let tx2=Math.floor(this.px/TILE)+dx,ty2=Math.floor(this.py/TILE)+dy;
     if(dx===0&&dy===0)ty2+=1;
@@ -1619,11 +1732,11 @@ class World extends Phaser.Scene{
       atk:6+lvl*1.8,wander:0,wdir:0,touch:0,flash:0,bob:Math.random()*6,atkCD:0});}
   update(_,dms){
     const dt=Math.min(0.05,dms/1000);
-    this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);
+    this.castCD=Math.max(0,this.castCD-dt);this.dashCD=Math.max(0,this.dashCD-dt);this.hurtCD=Math.max(0,this.hurtCD-dt);this.spellCD=Math.max(0,this.spellCD-dt);
     this.abilityCD=Math.max(0,this.abilityCD-dt);this.shieldT=Math.max(0,this.shieldT-dt);
     this.warcryT=Math.max(0,this.warcryT-dt);this.quiverT=Math.max(0,this.quiverT-dt);
     G.time=(G.time+dt/DAY_LEN);if(G.time>=1){G.time-=1;G.day++;toast('☀️ Day '+G.day);}
-    this.updateWaves(dt);if(!dungeon){this.updateTowers(dt);this.updateTraps(dt);this.updateRaid(dt);}
+    this.updateWaves(dt);this.updateZones(dt);if(!dungeon){this.updateTowers(dt);this.updateTraps(dt);this.updateRaid(dt);}
     this.nodeCheckT+=dt;if(this.nodeCheckT>1){this.nodeCheckT=0;
       for(const k in this.nodeSprites){const o=this.nodeSprites[k];
         o.sp.setVisible(nodeReady(o.nd.tx,o.nd.ty));}}
@@ -1753,6 +1866,21 @@ class World extends Phaser.Scene{
     // charm orbit fx
     if(this.charmFx&&this.charmFx.visible){const a=this.time.now*0.003;
       this.charmFx.setPosition(sx+Math.cos(a)*22,sy-34+Math.sin(a*2)*7);}
+    // swipe trails (gesture spells + rune swipe)
+    this.trailGfx.clear();
+    const drawTrail=(pts,col,alpha)=>{if(pts.length<2)return;
+      for(let ti=1;ti<pts.length;ti++){const k=ti/pts.length;
+        this.trailGfx.lineStyle(2.5+k*7,col,alpha*(0.2+k*0.8));
+        this.trailGfx.beginPath();this.trailGfx.moveTo(pts[ti-1].x,pts[ti-1].y);
+        this.trailGfx.lineTo(pts[ti].x,pts[ti].y);this.trailGfx.strokePath();}
+      const lp=pts[pts.length-1];
+      this.trailGfx.fillStyle(0xffffff,alpha*0.9);this.trailGfx.fillCircle(lp.x,lp.y,4);};
+    if(this.gest.active&&this.gest.pts.length>1)
+      drawTrail(this.gest.pts,cls==='mage'?0xffb054:cls==='ranger'?0xa8e063:0xd8c9a0,0.75);
+    if(this.spellSwipe.active&&this.spellSwipe.pts.length>1)
+      drawTrail(this.spellSwipe.pts,0xff9a3c,0.95);
+    if(this.fadeTrail){const ft=(this.time.now-this.fadeTrail.t)/450;
+      if(ft>=1)this.fadeTrail=null;else drawTrail(this.fadeTrail.pts,this.fadeTrail.col,0.8*(1-ft));}
     // aim preview (hold A + drag)
     this.aimGfx.clear();
     if(this.aim.active&&Math.hypot(this.aim.dx,this.aim.dy)>=16){
@@ -1793,6 +1921,14 @@ class World extends Phaser.Scene{
        ab.style.background=`conic-gradient(#c07aff ${ad}deg, rgba(30,32,44,.9) ${ad}deg)`;
        ab.classList.toggle('cd',this.abilityCD>0);}
      else ab.style.display='none';
+     const rb=document.getElementById('btnSpell');
+     if(runeRank()>0){rb.style.display='block';
+       const rd=Math.round((1-this.spellCD/(this.spellMax||1))*360);
+       rb.style.background=`conic-gradient(#ff9a3c ${rd}deg, rgba(30,32,44,.9) ${rd}deg)`;
+       rb.classList.toggle('cd',this.spellCD>0);
+       if(!rb.dataset.ic){rb.dataset.ic='1';
+         setBtnIcon(rb.querySelector('span'),{mage:'firewall',warrior:'spikes',ranger:'thorns'}[cls],30);}}
+     else rb.style.display='none';
      const db=document.getElementById('btnDash');const dd=Math.round((1-this.dashCD/3)*360);
      db.style.background=`conic-gradient(#5fd0f5 ${dd}deg, rgba(30,32,44,.9) ${dd}deg)`;
      db.classList.toggle('cd',this.dashCD>0);}
