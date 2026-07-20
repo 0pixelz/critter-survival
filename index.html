@@ -63,6 +63,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 #rollName{background:linear-gradient(#241e14,#151009);border:3px solid #4a3d28;border-radius:12px;font-size:17px;padding:8px 11px;cursor:pointer;color:#d8c9a8;}
 #beginBtn{background:linear-gradient(#c84a2e,#8a2a16);color:#ffe9c8;border:3px solid #2a1008;border-radius:16px;padding:13px 30px;font-family:inherit;font-size:17px;font-weight:700;letter-spacing:1px;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.45),0 0 24px rgba(200,74,46,.4),inset 0 3px 0 rgba(255,255,255,.15);}
 #beginBtn:active{transform:translateY(4px);}
+.zbtn{display:flex;align-items:center;gap:12px;width:min(86vw,300px);background:linear-gradient(#241e14,#151009);border:3px solid #4a3d28;border-radius:15px;padding:12px 16px;color:#e8dcc0;font-family:inherit;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.45);text-align:left;position:relative;flex-direction:row;flex-wrap:wrap;}
+.zbtn small{display:block;width:100%;color:#a8916b;font-size:10.5px;font-weight:600;margin-top:1px;}
+.zbtn .zic{font-size:19px;flex:none;width:24px;text-align:center;}
+.zbtn:active{transform:translateY(3px);}
+.zbtn.gold{border-color:#ffd23c;background:linear-gradient(#3a2c12,#241a09);box-shadow:0 4px 0 rgba(0,0,0,.45),0 0 18px rgba(255,200,60,.25);}
+.zbtn.off{opacity:.55;cursor:default;}
+.zbtn.off:active{transform:none;}
+.zbtn .soon{margin-left:auto;background:#3a3020;color:#c0a060;font-size:9px;padding:3px 7px;border-radius:8px;letter-spacing:1px;}
+.zbtn.slim{padding:10px 14px;font-size:14px;}
+.zbtn.danger{border-color:#8a2a1c;color:#e8a090;}
+.zpanel{width:min(90vw,420px);background:rgba(20,16,10,.7);border:3px solid #3a3123;border-radius:16px;padding:12px 16px;text-align:left;color:#d8c9a8;}
+.zpanel b{color:#ffd84a;font-size:13px;}
+.zpanel p{font-size:11.5px;line-height:1.45;color:#b8a888;margin:3px 0 9px;font-weight:500;}
+.zpanel .zrow{display:flex;justify-content:space-between;font-size:12.5px;padding:4.5px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.zpanel .zrow span{color:#a8916b;font-weight:600;}
+.zpanel .zrow b{color:#e8dcc0;font-size:12.5px;}
 .mklab{color:#8a7a5c;font-size:10px;font-weight:700;letter-spacing:2px;margin-top:3px;}
 #pwaBar{position:fixed;z-index:40;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));display:none;align-items:center;gap:10px;background:linear-gradient(#241e14,#151009);border:3px solid #ffd23c;border-radius:16px;padding:10px 14px;box-shadow:0 6px 20px rgba(0,0,0,.6),0 0 18px rgba(255,210,60,.25);max-width:92vw;}
 #pwaBar img{width:40px;height:40px;border-radius:10px;flex:none;}
@@ -156,7 +172,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 <a id="backlink" href="classic/">◀ classic version</a>
 <div id="ovl">
   <h1>Critter Wilds</h1>
-  <div class="dsub">— forge your hero —</div>
+  <div class="dsub">— a wild survival adventure —</div>
   <div id="mkBody"></div>
 </div>
 <script src="phaser.min.js"></script>

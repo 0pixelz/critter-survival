@@ -2232,7 +2232,7 @@ class World extends Phaser.Scene{
       const ct=this.add.text(e.s.x,e.s.y-24,'+'+c+'c',{fontFamily:'Fredoka',fontSize:'14px',color:'#ffd23c',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(9999000);
       this.tweens.add({targets:ct,y:ct.y-26,alpha:0,duration:800,onComplete:()=>ct.destroy()});
       grantXp((6+e.lvl*3)*(e.boss?6:e.alpha?3:e.rare?2:1));sfx('coin');
-      if(e.boss){G.bossRespawn=G.day+2;G.coins+=100+e.lvl*8;
+      if(e.boss){G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;G.coins+=100+e.lvl*8;
         this.dropGear(e.x,e.y,rollGear(e.lvl,3));this.dropGear(e.x+30,e.y,rollGear(e.lvl,2));
         if(G.quest&&G.quest.key==='boss')G.quest.n=Math.min(G.quest.need,(G.quest.n||0)+1);
         toast('💀 '+BOSS_NAME+' DEFEATED! Epic loot + '+(100+e.lvl*8)+'c');sfx('level');}
@@ -2657,13 +2657,78 @@ function boot(){
     render:{antialias:true},scene:World});
   toast('Left thumb moves · right thumb attacks · ☰ menu');}
 let mkCls='mage',mkElem='fire';
+function menuUI(){
+  const bd=document.getElementById('mkBody');
+  const hasSave=!!G;
+  let h='<div style="height:2vh"></div>';
+  if(hasSave)h+=`<button class="zbtn gold" id="zCont"><span class="zic">▶</span>Continue<small>${G.name} the ${subDef(G.class,G.element).nm} · Lv.${G.level} · Day ${G.day}</small></button>`;
+  h+=`<button class="zbtn" id="zSingle"><span class="zic">⚔</span>${hasSave?'New Adventure':'Single Player'}${hasSave?'<small>forge a new hero (replaces your save)</small>':'<small>forge your hero and set out</small>'}</button>`;
+  h+=`<button class="zbtn off"><span class="zic">🌐</span>Multiplayer<span class="soon">COMING SOON</span></button>`;
+  h+=`<button class="zbtn" id="zHow"><span class="zic">📖</span>How to Play</button>`;
+  if(hasSave)h+=`<button class="zbtn" id="zRec"><span class="zic">🏆</span>Records</button>`;
+  h+=`<button class="zbtn" id="zOpt"><span class="zic">⚙</span>Options</button>`;
+  h+=`<div style="margin-top:6px;color:#5f5540;font-size:10px;font-weight:700">CRITTER WILDS · <a href="classic/" style="color:#8a7a5c">classic version</a></div>`;
+  bd.innerHTML=h;
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn;};
+  on('zCont',()=>{cls=G.class;boot();});
+  on('zSingle',()=>creationUI());
+  on('zHow',()=>howUI());
+  on('zRec',()=>recordsUI());
+  on('zOpt',()=>optionsUI());
+}
+function backBtn(){return '<button class="zbtn slim" id="zBack"><span class="zic">◀</span>Back</button>';}
+function howUI(){
+  const bd=document.getElementById('mkBody');
+  bd.innerHTML=`<div class="zpanel">
+    <b>🕹 Controls</b>
+    <p>Left thumb — move (virtual stick). Right thumb — swipe to attack in a direction, or draw a <b>V</b> / <b>Z</b> / <b>circle</b> for gesture spells. Hold the weapon button and drag to aim, release to fire.</p>
+    <b>⚔ Fighting</b>
+    <p>Fill the ✦ Super by dealing damage. Equip up to 3 spells in Skills → Loadout. Your subclass makes every hit burn, chill, arc lightning or pierce.</p>
+    <b>🏕 Surviving</b>
+    <p>Eat berries, rest at huts, bank materials in a chest — banked goods survive death. Buy land, build walls & towers; raids come at night.</p>
+    <b>🗺 Exploring</b>
+    <p>The map is shrouded until you explore. Find caves, sewers, castles, the world boss 💀 — and take quests from the ❗ villager in each town.</p>
+  </div>`+backBtn();
+  document.getElementById('zBack').onclick=menuUI;}
+function recordsUI(){
+  const bd=document.getElementById('mkBody');
+  const seenN=Object.keys(G.seen||{}).length,tot=Math.ceil(MW/CHUNK)*Math.ceil(MH/CHUNK);
+  const rows=[
+    ['Hero',`${G.name} the ${subDef(G.class,G.element).nm}`],
+    ['Level',G.level+' · '+G.xp+' xp'],
+    ['Days survived',G.day],
+    ['Coins',G.coins],
+    ['World explored',Math.round(seenN/tot*100)+'%'],
+    ['Gear collected',(G.gear.length+Object.values(G.equip).filter(Boolean).length)+' pieces'],
+    ['Set pieces worn',setCount()+'/6'],
+    ['Quests completed',G.questsDone||0],
+    ['Bosses slain',G.bossKills||0],
+    ['Plots owned',Object.keys(G.plots||{}).length],
+    ['Buildings standing',(G.builds||[]).length],
+    ['Crafting level',G.craftLvl]];
+  bd.innerHTML='<div class="zpanel">'+rows.map(([k,v])=>`<div class="zrow"><span>${k}</span><b>${v}</b></div>`).join('')+'</div>'+backBtn();
+  document.getElementById('zBack').onclick=menuUI;}
+function optionsUI(){
+  const bd=document.getElementById('mkBody');
+  let h='<div class="zpanel">';
+  if(G)h+=`<button class="zbtn slim" id="zMute"><span class="zic">${G.muted?'🔇':'🔊'}</span>Sound: ${G.muted?'Off':'On'}</button>`;
+  h+=`<button class="zbtn slim" id="zInstall"><span class="zic">📲</span>Install to Home Screen</button>`;
+  if(G)h+=`<button class="zbtn slim danger" id="zErase"><span class="zic">🗑</span>Erase Save</button>`;
+  h+='</div>'+backBtn();
+  bd.innerHTML=h;
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn;};
+  on('zMute',()=>{G.muted=!G.muted;save();optionsUI();});
+  on('zInstall',()=>{localStorage.removeItem('cw-pwa-no');
+    const evb=window._pwaDeferred;
+    if(evb)evb.prompt();
+    else alert('iPhone: tap the Share ⬆ button, then "Add to Home Screen".');});
+  on('zErase',()=>{if(confirm('Erase '+(G.name||'your hero')+' forever?')){localStorage.removeItem(SAVE_KEY);location.reload();}});
+  document.getElementById('zBack').onclick=menuUI;}
 const MK_NAMES=['Ash','Rook','Vex','Kael','Nyx','Bram','Sol','Wren','Dax','Mira','Torin','Lira','Fenn','Oren','Sable','Juno'];
 const MK_TAG={mage:'Dark sorcerer<br>spells · blink · fire walls',ranger:'Hooded hunter<br>arrows · dash · thorn walls',warrior:'Iron knight<br>cleaves · rage · earthshatter'};
 function creationUI(){
   const bd=document.getElementById('mkBody');
   let h='';
-  const hasSave=!!G;
-  if(hasSave)h+=`<button id="mkCont" class="classbtn" style="background:linear-gradient(#ffd84a,#f0a012);margin-bottom:2px">▶ Continue ${G.name||''} the ${subDef(G.class,G.element).nm} · Lv.${G.level}</button>`;
   h+='<div class="mklab">CHOOSE YOUR CLASS</div><div class="crow">';
   for(const c of['mage','ranger','warrior'])
     h+=`<div class="ccard ${mkCls===c?'sel':''}" data-mkc="${c}"><canvas data-cv="${c}" width="164" height="164"></canvas><b>${{mage:'Mage',ranger:'Ranger',warrior:'Warrior'}[c]}</b><small>${MK_TAG[c]}</small></div>`;
@@ -2674,6 +2739,7 @@ function creationUI(){
   h+=`<div class="mklab">NAME YOUR HERO</div>
   <div id="nameRow"><input id="heroName" maxlength="12" value="${window._mkName||MK_NAMES[Math.floor(Math.random()*MK_NAMES.length)]}" spellcheck="false"><button id="rollName">🎲</button></div>`;
   h+='<button id="beginBtn">⚔ BEGIN YOUR LEGEND</button>';
+  h+=backBtn();
   bd.innerHTML=h;
   bd.querySelectorAll('[data-cv]').forEach(cv2=>{
     const c2=cv2.getContext('2d');c2.imageSmoothingEnabled=true;
@@ -2685,11 +2751,10 @@ function creationUI(){
   document.getElementById('beginBtn').onclick=()=>{
     const nm=(document.getElementById('heroName').value||'Hero').trim().slice(0,12)||'Hero';
     cls=mkCls;newGame(mkCls,mkElem,nm);boot();};
-  const cb=document.getElementById('mkCont');
-  if(cb)cb.onclick=()=>{cls=G.class;boot();};
+  document.getElementById('zBack').onclick=menuUI;
 }
 const _hasSave=load();
-creationUI();
+menuUI();
 
 /* ---- PWA: service worker + install-to-homescreen popup ---- */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -2711,6 +2776,6 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
       if(ch&&ch.outcome==='accepted')localStorage.setItem('cw-pwa-no','1');};
     document.getElementById('pwaClose').onclick=()=>{localStorage.setItem('cw-pwa-no','1');d.remove();};
   }
-  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;showBar(false);});
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;window._pwaDeferred=e;showBar(false);});
   if(isIOS)setTimeout(()=>showBar(true),1800);
 })();
