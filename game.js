@@ -64,6 +64,12 @@ function petDef(){return PETS[(G&&G.pet)||'wolf']||PETS.wolf;}
 function petDmg(){return Math.max(2,Math.round((G._atk||6)*petDef().dmg*(1+0.2*((G.skills||{}).feralfang||0))));}
 function petRate(){return petDef().rate*Math.max(0.55,1-0.12*((G.skills||{}).alphabond||0));}
 function petMark(){return 4+((G.skills||{}).alphabond||0);}
+function wallDef(){
+  if(!G||G.class!=='mage')return {nm:'Fire Wall',ic:'🔥',hex:0xff9a3c};
+  return {fire:{nm:'Fire Wall',ic:'🔥',hex:0xff9a3c},
+    storm:{nm:'Storm Wall',ic:'⚡',hex:0xffd23c},
+    chrono:{nm:'Frost Wall',ic:'❄️',hex:0x7ad0ff},
+    necro:{nm:'Soul Wall',ic:'💀',hex:0xc07aff}}[G.element]||{nm:'Fire Wall',ic:'🔥',hex:0xff9a3c};}
 const BOSS_LAIR={x:88,y:56};
 const CHUNK=6;
 function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
@@ -788,16 +794,34 @@ function bakeMisc(kind){
     ctx.fillStyle='#ff5a1e';ctx.beginPath();ctx.moveTo(cx-9,base);ctx.quadraticCurveTo(cx,base-28,cx+9,base);ctx.closePath();ctx.fill();
     ctx.fillStyle='#ffb02e';ctx.beginPath();ctx.moveTo(cx-6,base);ctx.quadraticCurveTo(cx,base-19,cx+6,base);ctx.closePath();ctx.fill();
     ctx.fillStyle='#ffe86a';ctx.beginPath();ctx.moveTo(cx-3,base-2);ctx.quadraticCurveTo(cx,base-11,cx+3,base-2);ctx.closePath();ctx.fill();return cv;}
-  if(kind==='firebolt'){const cv=mkCv(36,16);ctx.translate(18,8);
-    ctx.shadowColor='#ff9a3c';ctx.shadowBlur=6;
-    ctx.fillStyle='#ff7a2a';ctx.beginPath();
+  if(kind==='firebolt'||kind==='chronobolt'||kind==='necrobolt'){
+    const P2={firebolt:['#ff9a3c','#ff7a2a','#ffc23c','#fff6d8'],
+      chronobolt:['#7ad0ff','#3a8fd0','#a8e0ff','#f0faff'],
+      necrobolt:['#c07aff','#8a4ad0','#d8aaff','#f4eaff']}[kind];
+    const cv=mkCv(36,16);ctx.translate(18,8);
+    ctx.shadowColor=P2[0];ctx.shadowBlur=6;
+    ctx.fillStyle=P2[1];ctx.beginPath();
     ctx.moveTo(14,0);ctx.quadraticCurveTo(6,-6,-6,-4);ctx.quadraticCurveTo(-15,-2,-17,0);
     ctx.quadraticCurveTo(-15,2,-6,4);ctx.quadraticCurveTo(6,6,14,0);ctx.closePath();ctx.fill();
     ctx.shadowBlur=0;
-    ctx.fillStyle='#ffc23c';ctx.beginPath();
+    ctx.fillStyle=P2[2];ctx.beginPath();
     ctx.moveTo(12,0);ctx.quadraticCurveTo(4,-3.6,-4,-2.4);ctx.quadraticCurveTo(-10,-1,-11,0);
     ctx.quadraticCurveTo(-10,1,-4,2.4);ctx.quadraticCurveTo(4,3.6,12,0);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#fff6d8';ctx.beginPath();ctx.ellipse(7,0,4.5,1.9,0,0,7);ctx.fill();return cv;}
+    ctx.fillStyle=P2[3];ctx.beginPath();ctx.ellipse(7,0,4.5,1.9,0,0,7);ctx.fill();
+    if(kind==='chronobolt'){ // crystalline shards
+      ctx.strokeStyle='#e8f6ff';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(2,-4);ctx.lineTo(6,-1);ctx.moveTo(-3,3);ctx.lineTo(1,1);ctx.stroke();}
+    return cv;}
+  if(kind==='stormbolt'){ // jagged lightning bolt
+    const cv=mkCv(38,18);ctx.translate(19,9);
+    ctx.shadowColor='#ffd23c';ctx.shadowBlur=7;
+    ctx.strokeStyle='#ffd84a';ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-16,1);ctx.lineTo(-6,-4);ctx.lineTo(-1,2);ctx.lineTo(7,-3);ctx.lineTo(14,0);ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='#fff8d0';ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(-14,1);ctx.lineTo(-6,-3);ctx.lineTo(-1,2);ctx.lineTo(7,-2);ctx.lineTo(13,0);ctx.stroke();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(14,0,2.6,0,7);ctx.fill();
+    return cv;}
   if(kind==='arrow'){const cv=mkCv(44,20);ctx.translate(22,10);
     ctx.strokeStyle='#c9a15a';ctx.lineWidth=2.8;
     ctx.beginPath();ctx.moveTo(-16,0);ctx.lineTo(11,0);ctx.stroke();
@@ -978,7 +1002,7 @@ const SPELLBOOK={
   active:{name:()=>{const n=SKILLS.find(s2=>s2.key===abilityKey());return n?n.name:'Active';},
     icon:()=>({mage:'shield',warrior:'horn',ranger:'quiver'}[G.class]),cv:1,
     desc:'Your class ACTIVE skill',avail:()=>abilityRank()>0,lock:'Learn it in the Spell tree'},
-  rune:{name:()=>{const n=SKILLS.find(s2=>s2.key===runeKey());return n?n.name:'Rune';},
+  rune:{name:()=>{if(G.class==='mage')return wallDef().nm;const n=SKILLS.find(s2=>s2.key===runeKey());return n?n.name:'Rune';},
     icon:()=>({mage:'firewall',warrior:'spikes',ranger:'thorns'}[G.class]),cv:1,
     desc:'SWIPE spell \u2014 tap, then draw its path',avail:()=>runeRank()>0,lock:'Learn it in the Spell tree'}};
 function autoEquip(k){if(!G.loadout)G.loadout=[];
@@ -1614,12 +1638,13 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
     return;}
   const nd=SKILLS.find(n=>n.key===sel);
   if(nd){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
+    const dispNm=nd.key==='firewall'?wallDef().nm:nd.name;
     const spentT=spentIn(nd.tree),need=(nd.tier-1)*2;
     let lockTxt='';
     if(spentT<need)lockTxt=`\ud83d\udd12 Needs ${need} points spent in this tree`;
     else if(!skillReq(nd))lockTxt='\ud83d\udd12 Requires '+Object.entries(nd.req).map(([k,v])=>((SKILLS.find(n=>n.key===k)||{name:k}).name)+' '+v).join(', ');
     h+=`<div class="pcard" style="max-width:500px;margin:4px auto 0;width:100%">
-      <div style="flex:1;min-width:0"><b>${nd.name}</b> <span class="lv">${rank}/${nd.max}</span><br>
+      <div style="flex:1;min-width:0"><b>${dispNm}</b> <span class="lv">${rank}/${nd.max}</span><br>
       <small>${nd.eff}</small>${lockTxt?`<br><small style="color:#e8483a">${lockTxt}</small>`:''}</div>
       <button class="cbtn" id="skLearn" data-k="${nd.key}" ${(!maxed&&ok&&(G.skillPoints||0)>0)?'':'disabled'}>${maxed?'MAX':'Learn'}</button></div>`;}
   else h+='<div class="subline" style="margin-top:4px">Tap a skill to inspect it</div>';
@@ -1854,7 +1879,7 @@ class World extends Phaser.Scene{
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
     tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('wolfTex',bakeMisc('wolf'));tx('hawkTex',bakeMisc('hawk'));tx('boarTex',bakeMisc('boar'));
-    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
+    tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));tx('chronoboltTex',bakeMisc('chronobolt'));tx('necroboltTex',bakeMisc('necrobolt'));tx('stormboltTex',bakeMisc('stormbolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
     if(!this.textures.exists('rwall')){const da=bakeDungeonArt();
@@ -2054,7 +2079,7 @@ class World extends Phaser.Scene{
       for(let i=0;i<24;i++){const a=i/24*6.283;this.spawnShot(a,640,Math.max(5,Math.floor(base*1.3)),4,0xa8e063,true);}
       this.waves.push({x:this.px,y:this.py,r:12,maxR:TILE*4,dmg:Math.max(8,Math.floor(base*1.6)),kb:0,hit:new Set()});
     }else{
-      for(let i=0;i<14;i++){const a=i/14*6.283;this.spawnShot(a,480,Math.max(6,Math.floor(base*1.6)),2,0xff8844);}
+      for(let i=0;i<14;i++){const a=i/14*6.283;this.spawnShot(a,480,Math.max(6,Math.floor(base*1.6)),2,subVis().hex);}
       this.waves.push({x:this.px,y:this.py,r:12,maxR:TILE*5,dmg:Math.max(10,Math.floor(base*2.2)),kb:0,hit:new Set()});
     }
     for(let k=0;k<3;k++){this.hitEmit.setPosition(isoX(this.px,this.py),isoY(this.px,this.py)-10);this.hitEmit.explode(14);}
@@ -2062,7 +2087,8 @@ class World extends Phaser.Scene{
   spawnShot(a2,spd,dmg,pierce,tint,arrow,big){
     let core;
     if(arrow||cls==='ranger')core=this.add.image(0,0,'arrowTex').setScale(big?1.4:0.9);
-    else core=this.add.image(0,0,'fireboltTex').setScale(big?1.5:0.8);
+    else{const bk={fire:'fireboltTex',storm:'stormboltTex',chrono:'chronoboltTex',necro:'necroboltTex'}[G.element]||'fireboltTex';
+      core=this.add.image(0,0,bk).setScale(big?1.5:0.8);}
     if(big)core.setTint(0xffe9a0);
     const gl=this.add.image(0,0,'glow').setScale(big?0.55:0.24).setAlpha(big?0.7:0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
     this.shots.push({core,gl,x:this.px,y:this.py,x0:this.px,y0:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big});}
@@ -2077,7 +2103,7 @@ class World extends Phaser.Scene{
     const r=runeRank();if(!r)return;
     if(this.spellCD>0){toast('Spell recharging…');return;}
     this.runeArm=!this.runeArm;
-    if(this.runeArm)toast({mage:'🔥 Swipe where the Fire Wall should go!',warrior:'⛰ Swipe to shatter the earth!',ranger:'🌿 Swipe to grow the Thorn Wall!'}[cls]);}
+    if(this.runeArm)toast({mage:wallDef().ic+' Swipe where the '+wallDef().nm+' should go!',warrior:'⛰ Swipe to shatter the earth!',ranger:'🌿 Swipe to grow the Thorn Wall!'}[cls]);}
   castRune(pts){
     this.runeArm=false;
     if(pts.length<3)return;
@@ -2096,17 +2122,19 @@ class World extends Phaser.Scene{
     let dur=5+rank*2;if(isRSub('warden'))dur=Math.round(dur*1.5);
     const dmg=Math.max(4,Math.round(G._atk*(0.55+0.25*rank)*mods().dmg));
     const texKey=cls==='mage'?'flameTex':cls==='warrior'?'b_spike':'thornTex';
-    const gcol=cls==='mage'?0xff9a3c:cls==='warrior'?0xc8d0d8:0x7dd05a;
+    const wd=wallDef();
+    const gcol=cls==='mage'?wd.hex:cls==='warrior'?0xc8d0d8:0x7dd05a;
     for(const sg of segs){
       const sx2=isoX(sg.x,sg.y),sy2=isoY(sg.x,sg.y);
       const sp2=this.add.image(sx2,sy2,texKey).setOrigin(0.5,0.85).setDepth(sy2+IH*0.28);
+      if(cls==='mage'&&G.element!=='fire')sp2.setTint(wd.hex);
       const gl=this.add.image(sx2,sy2-8,'glow').setScale(0.45).setTint(gcol)
         .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.4).setDepth(sy2+IH*0.28-1);
       const fs=cls==='warrior'?0.75:1;
       sp2.setScale(0.1);this.tweens.add({targets:sp2,scaleX:fs,scaleY:fs,duration:180,ease:'Back.Out'});
       this.zones.push({x:sg.x,y:sg.y,sp:sp2,gl,life:dur,max:dur,tick:0.3+Math.random()*0.3,dmg,seed:Math.random()*6.28,fs});}
     sfx('super');this.cameras.main.shake(120,0.004);
-    toast({mage:'🔥 FIRE WALL!',warrior:'⛰ EARTHSHATTER!',ranger:'🌿 THORN WALL!'}[cls]);}
+    toast({mage:wallDef().ic+' '+wallDef().nm.toUpperCase()+'!',warrior:'⛰ EARTHSHATTER!',ranger:'🌿 THORN WALL!'}[cls]);}
   updateZones(dt){
     for(let i=this.zones.length-1;i>=0;i--){const z=this.zones[i];z.life-=dt;
       if(z.life<=0){z.sp.destroy();z.gl.destroy();this.zones.splice(i,1);continue;}
@@ -2120,7 +2148,8 @@ class World extends Phaser.Scene{
           if(Math.hypot(e.x-z.x,e.y-z.y)>TILE*0.95)continue;
           if(cls==='warrior')e.rootT=Math.max(e.rootT||0,1.0);
           if(cls==='ranger'){if(isRSub('warden'))e.rootT=Math.max(e.rootT||0,1.2);else e.slowT=Math.max(e.slowT||0,1.5);}
-          if(cls==='mage'){e.burnT=3;e.burnDmg=Math.max(2,Math.round(z.dmg*0.35));}
+          if(isMSub('fire')){e.burnT=3;e.burnDmg=Math.max(2,Math.round(z.dmg*0.35));}
+          if(isMSub('chrono'))e.slowT=Math.max(e.slowT||0,2.2);
           this.hurtEnemy(e,Math.max(1,Math.round(z.dmg*(0.85+Math.random()*0.3))),Math.atan2(e.y-z.y,e.x-z.x));}}}}
   classAbility(){
     if(panelOpen)return;
@@ -2142,7 +2171,7 @@ class World extends Phaser.Scene{
           if(w.dmg>0)this.hurtEnemy(e,Math.max(1,Math.round(w.dmg*(0.9+Math.random()*0.2))),Math.atan2(e.y-w.y,e.x-w.x));
           if(w.kb){const dd=d||1;e.vx+=(e.x-w.x)/dd*w.kb*6;e.vy+=(e.y-w.y)/dd*w.kb*6;}}}
       const k=1-w.r/w.maxR;
-      this.waveGfx.lineStyle(8*k+2,cls==='warrior'?0xffb454:cls==='ranger'?0xa8e063:0xff8844,Math.max(0,k*0.8));
+      this.waveGfx.lineStyle(8*k+2,cls==='warrior'?0xffb454:cls==='ranger'?0xa8e063:subVis().hex,Math.max(0,k*0.8));
       this.waveGfx.beginPath();
       for(let a=0;a<=6.4;a+=0.25){const p={x:isoX(w.x+Math.cos(a)*w.r,w.y+Math.sin(a)*w.r),y:isoY(w.x+Math.cos(a)*w.r,w.y+Math.sin(a)*w.r)-8};
         if(a===0)this.waveGfx.moveTo(p.x,p.y);else this.waveGfx.lineTo(p.x,p.y);}
@@ -2711,7 +2740,7 @@ class World extends Phaser.Scene{
       s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
       const ssx=isoX(s.x,s.y),ssy=isoY(s.x,s.y)-10;
       s.core.setPosition(ssx,ssy).setDepth(999000);s.gl.setPosition(ssx,ssy).setDepth(998999);
-      if(s.core.texture.key==='arrowTex'||s.core.texture.key==='fireboltTex'){
+      if(s.core.texture.key==='arrowTex'||s.core.texture.key.indexOf('bolt')>0){
         const pang=Math.atan2((s.vx+s.vy)*IH/2,(s.vx-s.vy)*IW/2);s.core.setRotation(pang);}
       let dead=s.life<=0||solidWorld(s.x,s.y);
       if(!dead)for(const e of this.enemies){
