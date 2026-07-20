@@ -23,6 +23,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 #btnDash:active{transform:translateY(3px);}
 #btnAbility.cd span{filter:grayscale(.7) brightness(.75);}
 #btnAbility:active{transform:translateY(3px);}
+#buildBar{position:fixed;z-index:8;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));display:none;gap:12px;}
+#buildBar button{border:3px solid #1c2716;border-radius:14px;padding:11px 20px;font-family:Fredoka,system-ui;font-size:16px;font-weight:700;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.3);touch-action:none;}
+#buildBar button:active{transform:translateY(3px);}
+#bbPlace{background:linear-gradient(#63d24a,#37981f);}
+#bbCancel{background:linear-gradient(#e8483a,#b02a20);}
 #btnSuper{position:fixed;z-index:7;right:calc(38px + env(safe-area-inset-right));bottom:calc(140px + env(safe-area-inset-bottom));width:70px;height:70px;border-radius:50%;border:none;padding:5px;background:conic-gradient(#ffd23c 0deg, rgba(30,32,44,.9) 0deg);box-shadow:0 5px 0 rgba(0,0,0,.28);}
 #btnSuper span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(#6b56d6,#3f2fa0);color:rgba(255,255,255,.6);font-size:26px;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);}
 #btnSuper.ready span{background:linear-gradient(#ffd84a,#f0a012);color:#5a3a00;}
@@ -79,6 +84,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0c140d;touch-action
 <button id="btnDash"><span>💨</span></button>
 <button id="btnSuper"><span>✦</span></button>
 <button id="btnAbility"><span>🛡</span></button>
+<div id="buildBar"><button id="bbPlace">✓ Place</button><button id="bbCancel">✕ Done</button></div>
 <div id="interactTag"></div>
 <div id="clock">☀️ Day 1</div>
 <div id="panel"></div>
@@ -686,7 +692,7 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
   p.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>{const r=RECIPES.find(x=>x.key===b.dataset.craft);
     if(G.craftLvl<r.lvl||!haveCost(r.cost)||(r.station&&!nearStation(r.station)))return;
     if(r.item){payCost(r.cost);G.items[r.key]=(G.items[r.key]||0)+1;gainCraftXp();sfx('coin');toast('Crafted '+r.key);save();openCraft();}
-    else{scene.buildMode=r.key;scene.buildRecipe=r;pauseGame(false);toast('Placing '+BUILD_DEF[r.key].name+' — tap A to place, ☰ to cancel');}});
+    else{scene.enterBuild(r.key,r);pauseGame(false);toast('Placing '+BUILD_DEF[r.key].name+' — tap a tile to aim it, ✓ to build');}});
   document.getElementById('craftClose').onclick=()=>pauseGame(false);}
 function openBank(){pauseGame(true);const p=document.getElementById('panel');
   let h='<h2>📦 Storage Chest</h2><div class="subline">Banked materials survive death.</div><div class="plist">';
@@ -1216,6 +1222,8 @@ class World extends Phaser.Scene{
     this.joy={active:false,id:-1,ox:0,oy:0,nx:0,ny:0};this.gest={active:false,id:-1,pts:[]};
     this.input.addPointer(3);
     this.input.on('pointerdown',p=>{
+      if(this.buildMode){const a=p.worldX/(IW/2),b2=p.worldY/(IH/2);
+        this.buildSel={x:Math.floor((a+b2)/2),y:Math.floor((b2-a)/2)};return;}
       if(p.x<this.scale.width/2&&!this.joy.active){this.joy.active=true;this.joy.id=p.id;this.joy.ox=p.x;this.joy.oy=p.y;this.joy.nx=0;this.joy.ny=0;}
       else if(!this.gest.active){this.gest.active=true;this.gest.id=p.id;this.gest.pts=[{x:p.x,y:p.y}];}});
     this.input.on('pointermove',p=>{
@@ -1241,7 +1249,6 @@ class World extends Phaser.Scene{
       // A button — tap: attack/interact. Ranged classes: hold & drag to aim, release to fire (Brawl-style)
       const ba=$('btnA');
       ba.addEventListener('pointerdown',e=>{e.preventDefault();
-        if(scene.interactT){scene.doInteract();return;}
         if(cls==='warrior'){scene.attack('bolt',0,0);return;}
         scene.aim={active:true,id:e.pointerId,ox:e.clientX,oy:e.clientY,dx:0,dy:0};
         try{ba.setPointerCapture(e.pointerId);}catch(_){}});
@@ -1253,6 +1260,8 @@ class World extends Phaser.Scene{
         else scene.attack('bolt',0,0,Math.atan2(a.dy/IH-a.dx/IW,a.dx/IW+a.dy/IH));};
       ba.addEventListener('pointerup',rel);
       ba.addEventListener('pointercancel',()=>{scene.aim.active=false;});
+      $('bbPlace').addEventListener('pointerdown',e=>{e.preventDefault();scene.placeBuild();});
+      $('bbCancel').addEventListener('pointerdown',e=>{e.preventDefault();scene.cancelBuild();toast('Build mode off');});
     }
     // crown texture for alpha monsters
     if(!this.textures.exists('crownTex')){const g=this.make.graphics({add:false});
@@ -1278,7 +1287,8 @@ class World extends Phaser.Scene{
       this.refreshPlots();
       rebuildBuildIndex();
       for(const b of G.builds)this.addBuildSprite(b);}
-    this.buildMode=null;this.buildRecipe=null;this.ghost=null;
+    this.buildMode=null;this.buildRecipe=null;this.ghost=null;this.buildSel=null;
+    document.getElementById('buildBar').style.display='none';
     this.choppedCD={};
     this.bushSprites=this.bushSprites||{};this.saveT=0;this.survT=0;this.interactT=null;
     this.waves=[];this.waveGfx=this.add.graphics().setDepth(999901);
@@ -1340,7 +1350,6 @@ class World extends Phaser.Scene{
         if(a===0)this.waveGfx.moveTo(p.x,p.y);else this.waveGfx.lineTo(p.x,p.y);}
       this.waveGfx.closePath();this.waveGfx.strokePath();}}
   doInteract(){const t2=this.interactT;if(!t2)return;
-    if(this.buildMode){this.placeBuild();return;}
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
     if(t2.sewer){enterDungeon('sewer',t2.sewer.x,t2.sewer.y);return;}
     if(t2.stairs){exitDungeon();return;}
@@ -1525,15 +1534,18 @@ class World extends Phaser.Scene{
     if(b.hp<=0){const i=G.builds.indexOf(b);if(i>=0)G.builds.splice(i,1);
       rebuildBuildIndex();this.removeBuildSprite(b);
       toast('💥 Your '+BUILD_DEF[b.t].name+' was destroyed!');noiseBurst(0.25,0.18);save();}}
-  buildTargetTile(){
+  buildOk(tx2,ty2){const t2=tileAt(tx2,ty2);
+    const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
+    return !SOLID.has(t2)&&t2!==','&&!occ;}
+  enterBuild(key,r){this.buildMode=key;this.buildRecipe=r;
     const dx=Math.round(this.face.x),dy=Math.round(this.face.y);
     let tx2=Math.floor(this.px/TILE)+dx,ty2=Math.floor(this.py/TILE)+dy;
     if(dx===0&&dy===0)ty2+=1;
-    const t2=tileAt(tx2,ty2);
-    const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
-    return {x:tx2,y:ty2,ok:!SOLID.has(t2)&&t2!==','&&!occ};}
+    this.buildSel={x:tx2,y:ty2};
+    document.getElementById('buildBar').style.display='flex';}
   placeBuild(){
-    if(!this.buildMode)return;const bt=this.buildTargetTile();
+    if(!this.buildMode||!this.buildSel)return;
+    const bt={x:this.buildSel.x,y:this.buildSel.y,ok:this.buildOk(this.buildSel.x,this.buildSel.y)};
     if(!bt.ok){toast("Can't build there");return;}
     const r=this.buildRecipe;
     if(r.plot&&!ownsAt(bt.x,bt.y)){toast('You must own this land — buy the plot!');sfx('fail');return;}
@@ -1545,8 +1557,11 @@ class World extends Phaser.Scene{
     if(def.tower){b.tier=1;b.ammo=0;}
     if(def.trap)b.uses=def.uses;
     G.builds.push(b);rebuildBuildIndex();this.addBuildSprite(b);gainCraftXp();sfx('coin');save();
-    if(!haveCost(r.cost))this.cancelBuild();else toast('Built! Tap to place another · ☰ to stop');}
-  cancelBuild(){this.buildMode=null;this.buildRecipe=null;if(this.ghost){this.ghost.destroy();this.ghost=null;}}
+    if(!haveCost(r.cost)){this.cancelBuild();toast('Built! (out of materials)');}
+    else toast('Built! Tap another tile, or ✕ when done');}
+  cancelBuild(){this.buildMode=null;this.buildRecipe=null;this.buildSel=null;
+    document.getElementById('buildBar').style.display='none';
+    if(this.ghost){this.ghost.destroy();this.ghost=null;}}
   updateTowers(dt){
     for(const b of G.builds){const T2=TOWERS[b.t];if(!T2)continue;
       b.cd=(b.cd||0)-dt;if(b.cd>0||!(b.ammo>0))continue;
@@ -1612,14 +1627,15 @@ class World extends Phaser.Scene{
     this.nodeCheckT+=dt;if(this.nodeCheckT>1){this.nodeCheckT=0;
       for(const k in this.nodeSprites){const o=this.nodeSprites[k];
         o.sp.setVisible(nodeReady(o.nd.tx,o.nd.ty));}}
-    // build ghost follows facing tile
-    if(this.buildMode){
-      const bt=this.buildTargetTile();
+    // build ghost sits on the tapped tile
+    if(this.buildMode&&this.buildSel){
+      const bt=this.buildSel;
       const key=this.buildMode==='hut'?'houseR2':this.buildMode==='campfire'?'campfire':this.buildMode==='chest'?'b_chestB':'b_'+this.buildMode;
-      if(!this.ghost)this.ghost=this.add.image(0,0,key).setAlpha(0.5).setOrigin(0.5,0.82);
+      if(!this.ghost)this.ghost=this.add.image(0,0,key).setOrigin(0.5,0.82);
       const wx=(bt.x+0.5)*TILE,wy=(bt.y+0.5)*TILE;
-      const bad=!bt.ok||(this.buildRecipe.plot&&!ownsAt(bt.x,bt.y));
-      this.ghost.setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0xffffff);
+      const bad=!this.buildOk(bt.x,bt.y)||(this.buildRecipe.plot&&!ownsAt(bt.x,bt.y));
+      this.ghost.setAlpha(0.55+Math.sin(this.time.now*0.008)*0.15)
+        .setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0xffffff);
     }else if(this.ghost){this.ghost.destroy();this.ghost=null;}
     this.survT+=dt;if(this.survT>0.5){this.survT=0;
       G.hunger=Math.max(0,G.hunger-(Math.hypot(this.vx,this.vy)>20?0.4:0.2));
