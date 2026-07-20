@@ -31,11 +31,33 @@ const CLASSES={
 const TOWNS=[{name:'Oakvale',cx:14,cy:12,s:6},{name:'Emberport',cx:78,cy:16,s:6},{name:'Mossholm',cx:46,cy:52,s:6}];
 const CASTLES=[];
 const ELEMS={
-  fire:{nm:'Fire',ic:'🔥',col:'#ff8844',hex:0xff8844,desc:'Your hits ignite foes — burning damage over time'},
-  frost:{nm:'Frost',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff,desc:'Your hits chill foes, slowing their movement'},
-  storm:{nm:'Storm',ic:'⚡',col:'#ffd23c',hex:0xffd23c,desc:'Your hits may arc lightning to a nearby foe'},
-  arcane:{nm:'Arcane',ic:'🔮',col:'#c07aff',hex:0xc07aff,desc:'+8% damage and your shots pierce one extra foe'}};
+  fire:{nm:'Fire',ic:'🔥',col:'#ff8844',hex:0xff8844},
+  frost:{nm:'Frost',ic:'❄️',col:'#7ad0ff',hex:0x7ad0ff},
+  storm:{nm:'Storm',ic:'⚡',col:'#ffd23c',hex:0xffd23c},
+  arcane:{nm:'Arcane',ic:'🔮',col:'#c07aff',hex:0xc07aff}};
+const SUBCLASSES={
+  mage:{
+    fire:{nm:'Pyromancer',ic:'🔥',desc:'Your bolts ignite foes — burning damage over time'},
+    frost:{nm:'Cryomancer',ic:'❄️',desc:'Your bolts chill foes, slowing their movement'},
+    storm:{nm:'Stormweaver',ic:'⚡',desc:'Your bolts may arc lightning to a nearby foe'},
+    arcane:{nm:'Voidcaller',ic:'🔮',desc:'+8% damage and bolts pierce one extra foe'}},
+  warrior:{
+    fire:{nm:'Flamebrand',ic:'🔥',desc:'Your blade sets foes ablaze — they burn over time'},
+    frost:{nm:'Frostguard',ic:'❄️',desc:'Chilling blows — struck foes are slowed'},
+    storm:{nm:'Thunderlord',ic:'⚡',desc:'Strikes may arc lightning to a nearby foe'},
+    arcane:{nm:'Runeblade',ic:'🔮',desc:'+8% damage from runic engravings on your steel'}},
+  ranger:{
+    fire:{nm:'Wildfire',ic:'🔥',desc:'Burning arrows — foes take damage over time'},
+    frost:{nm:'Winterchill',ic:'❄️',desc:'Frosted arrowheads slow whatever they strike'},
+    storm:{nm:'Stormcaller',ic:'⚡',desc:'Arrows may arc lightning to a nearby foe'},
+    arcane:{nm:'Spiritshot',ic:'🔮',desc:'+8% damage and arrows pierce one extra foe'}}};
+function subDef(c2,el){return (SUBCLASSES[c2]||SUBCLASSES.mage)[el||'fire'];}
 const BOSS_LAIR={x:88,y:56};
+const CHUNK=6;
+function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
+  const cx2=Math.floor(wx/TILE/CHUNK),cy2=Math.floor(wy/TILE/CHUNK);
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)G.seen[(cx2+dx)+'_'+(cy2+dy)]=1;}
+function chunkSeen(tx2,ty2){return !!(G&&G.seen&&G.seen[Math.floor(tx2/CHUNK)+'_'+Math.floor(ty2/CHUNK)]);}
 const BOSS_NAME='Direfang the Ravager';
 function hash(a,b){const n=Math.sin(a*127.1+b*311.7)*43758.5453;return n-Math.floor(n);}
 function shadeCol(hex,amt){let h=hex.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');
@@ -901,7 +923,7 @@ function newGame(cls2,elem,name){
     px:(TOWNS[0].cx+1.5)*TILE,py:(TOWNS[0].cy+1.5)*TILE,time:0.35,day:1,berriesPicked:{},
     res:{wood:0,stone:0,fiber:0,ore:0},bank:{wood:0,stone:0,fiber:0,ore:0},tools:{axe:0,pickaxe:0},
     plots:{},builds:[],craftLvl:1,craftXp:0,nodeT:{},raid:null,loadout:['strike'],
-    element:elem||'fire',name:(name||'').slice(0,12)||'Hero'};
+    element:elem||'fire',name:(name||'').slice(0,12)||'Hero',seen:{}};
   recalcHero();G.hp=G.maxHp;save();}
 function save(){try{if(G&&scene){if(dungeon){G.px=dungeon.returnX;G.py=dungeon.returnY;}else{G.px=scene.px;G.py=scene.py;}}localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
 function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=JSON.parse(r);
@@ -914,6 +936,7 @@ function load(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;G=
   if(G.quest===undefined)G.quest=null;if(!G.questsDone)G.questsDone=0;if(!G.bossRespawn)G.bossRespawn=0;
   if(!G.element)G.element={mage:'fire',ranger:'storm',warrior:'frost'}[G.class]||'fire';
   if(!G.name)G.name={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
+  if(!G.seen){G.seen={};for(const t of TOWNS)revealAt((t.cx+0.5)*TILE,(t.cy+0.5)*TILE);revealAt(G.px,G.py);}
   recalcHero();return true;}catch(e){return false;}}
 function rollGear(lvl,minR){
   const roll=Math.random();let ri=roll<0.5?0:roll<0.8?1:roll<0.95?2:3;ri=Math.max(ri,minR||0);
@@ -1280,30 +1303,62 @@ function openQuest(){pauseGame(true);const p=document.getElementById('panel');
   document.getElementById('qClose').onclick=()=>pauseGame(false);}
 function openMap(){const p=document.getElementById('panel');
   let h='<h2>🗺 World Map</h2>';
-  h+='<div style="text-align:center;line-height:0;margin-top:4px"><canvas id="mapCv" width="'+(MW*8)+'" height="'+(MH*8)+'" style="width:min(96vw,480px);border:3px solid #1c2716;border-radius:12px;background:#254a2a"></canvas></div>';
-  h+='<div class="subline" style="margin-top:6px">⭐ you · 🏘 towns · 🏰 castles · ⬤ caves · 💀 boss lair</div>';
+  h+='<div style="text-align:center;line-height:0;margin-top:4px"><canvas id="mapCv" width="'+(MW*8)+'" height="'+(MH*8)+'" style="width:min(96vw,480px);border:4px solid #2a2118;border-radius:14px;background:#0b1220;box-shadow:0 0 24px rgba(0,0,0,.6)"></canvas></div>';
+  h+='<div class="subline" style="margin-top:6px">⭐ you · unexplored lands are shrouded — go discover them!</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="mapBack">◀ Menu</button></div>';
   p.innerHTML=h;
   const cv=document.getElementById('mapCv'),c=cv.getContext('2d'),S=8;
-  const COL={'.':'#4d9440',',':'#41803a','T':'#2e5f28','W':'#2f6ea8','P':'#8a6d42','~':'#7d6f47',
+  const COL={'.':'#5a9e4c',',':'#4a8a40','T':'#33682c','W':'#2e6ba6','P':'#9a7a4c','~':'#8a7a50',
     'H':'#d9a24a','N':'#e08a9a','M':'#5f8fc0','S':'#c9a15a','B':'#b0885a','R':'#8a7ad0','V':'#c9a15a','Q':'#c07ad6',
     'Y':'#8a95a0','X':'#6e7880','C':'#3a3531','U':'#555e66','K':'#ffd23c'};
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
-    c.fillStyle=COL[grid[y][x]]||'#4d9440';c.fillRect(x*S,y*S,S,S);}
+    const t=grid[y][x];let col=COL[t]||'#5a9e4c';
+    const jit=(hash(x*7.3,y*9.1)-0.5)*0.14;
+    c.fillStyle=shadeCol(col,jit);c.fillRect(x*S,y*S,S,S);
+    if(t==='T'){c.fillStyle=shadeCol('#2a5a24',jit-0.05);
+      c.beginPath();c.arc(x*S+S/2,y*S+S*0.42,S*0.42,0,7);c.fill();
+      c.fillStyle='rgba(255,255,255,.10)';c.beginPath();c.arc(x*S+S*0.36,y*S+S*0.3,S*0.16,0,7);c.fill();}
+    if(t==='W'){
+      let shore=false;
+      for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const n=(grid[y+dy]||[])[x+dx];if(n&&n!=='W'){shore=true;break;}}
+      if(shore){c.fillStyle='rgba(160,220,255,.35)';c.fillRect(x*S,y*S,S,S*0.35);}
+      else if(hash(x*3.1,y*4.7)<0.06){c.fillStyle='rgba(255,255,255,.25)';c.fillRect(x*S+S*0.2,y*S+S*0.4,S*0.5,1.5);}}
+    if((t==='P'||t==='~')&&hash(x*5.7,y*3.9)<0.3){c.fillStyle='rgba(0,0,0,.10)';c.fillRect(x*S+S*0.3,y*S+S*0.3,S*0.35,S*0.35);}}
+  const lg=c.createLinearGradient(0,0,MW*S,MH*S);
+  lg.addColorStop(0,'rgba(255,240,200,.10)');lg.addColorStop(0.5,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(10,20,40,.18)');
+  c.fillStyle=lg;c.fillRect(0,0,MW*S,MH*S);
   c.strokeStyle='rgba(255,210,60,.9)';c.lineWidth=2;
-  for(const pl of PLOTS){if(!G.plots[pl.id])continue;
-    c.strokeRect(pl.x*S,pl.y*S,pl.w*S,pl.h*S);}
+  for(const pl of PLOTS){if(!G.plots[pl.id])continue;c.strokeRect(pl.x*S,pl.y*S,pl.w*S,pl.h*S);}
+  const fg=document.createElement('canvas');fg.width=MW*S;fg.height=MH*S;
+  const f=fg.getContext('2d');
+  for(let cy2=0;cy2<Math.ceil(MH/CHUNK);cy2++)for(let cx2=0;cx2<Math.ceil(MW/CHUNK);cx2++){
+    if(G.seen&&G.seen[cx2+'_'+cy2])continue;
+    f.fillStyle='#0c1322';f.fillRect(cx2*CHUNK*S,cy2*CHUNK*S,CHUNK*S,CHUNK*S);}
+  f.globalCompositeOperation='source-atop';
+  for(let i=0;i<260;i++){const rx=hash(i*3.7,i*1.3)*MW*S,ry=hash(i*9.1,i*5.3)*MH*S;
+    f.fillStyle='rgba(70,90,130,'+(0.05+hash(i*1.1,i*7.7)*0.09)+')';
+    f.beginPath();f.ellipse(rx,ry,10+hash(i*2.3,i*4.1)*26,7+hash(i*6.1,i*8.3)*14,hash(i,i)*3,0,7);f.fill();}
+  f.globalCompositeOperation='source-over';
+  c.save();c.filter='blur(5px)';c.drawImage(fg,0,0);c.filter='none';
+  c.globalAlpha=0.85;c.drawImage(fg,0,0);c.globalAlpha=1;c.restore();
   c.font='bold 22px Fredoka,system-ui';c.textAlign='center';
-  c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=4;
-  for(const t of TOWNS){c.strokeText(t.name,t.cx*S,(t.cy-4)*S);c.fillText(t.name,t.cx*S,(t.cy-4)*S);}
+  for(const t of TOWNS){if(!chunkSeen(t.cx,t.cy))continue;
+    c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=4;
+    c.strokeText(t.name,t.cx*S,(t.cy-4)*S);c.fillText(t.name,t.cx*S,(t.cy-4)*S);}
   c.font='26px system-ui';
-  for(const ca of CASTLES)c.fillText('🏰',ca.x*S,(ca.y-1)*S);
-  c.fillText('💀',BOSS_LAIR.x*S,BOSS_LAIR.y*S);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(grid[y][x]==='C'){
+  for(const ca of CASTLES)if(chunkSeen(ca.x,ca.y))c.fillText('🏰',ca.x*S,(ca.y-1)*S);
+  if(chunkSeen(BOSS_LAIR.x,BOSS_LAIR.y))c.fillText('💀',BOSS_LAIR.x*S,BOSS_LAIR.y*S);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(grid[y][x]==='C'&&chunkSeen(x,y)){
     c.fillStyle='#12160f';c.beginPath();c.arc(x*S+S/2,y*S+S/2,S*0.9,0,7);c.fill();
     c.fillStyle='#8a6d3a';c.beginPath();c.arc(x*S+S/2,y*S+S/2,S*0.5,0,7);c.fill();}
+  const vg=c.createRadialGradient(MW*S/2,MH*S/2,MH*S*0.35,MW*S/2,MH*S/2,MW*S*0.62);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(5,8,14,.5)');
+  c.fillStyle=vg;c.fillRect(0,0,MW*S,MH*S);
   if(!dungeon&&scene){
     const pxT=scene.px/TILE,pyT=scene.py/TILE;
+    const g2=c.createRadialGradient(pxT*S,pyT*S,1,pxT*S,pyT*S,S*3.2);
+    g2.addColorStop(0,'rgba(255,220,90,.6)');g2.addColorStop(1,'rgba(255,220,90,0)');
+    c.fillStyle=g2;c.beginPath();c.arc(pxT*S,pyT*S,S*3.2,0,7);c.fill();
     c.fillStyle='#ffd23c';c.strokeStyle='#fff';c.lineWidth=3;
     c.beginPath();c.arc(pxT*S,pyT*S,S*1.1,0,7);c.fill();c.stroke();
     c.fillStyle='#12160f';c.beginPath();c.arc(pxT*S,pyT*S,S*0.4,0,7);c.fill();}
@@ -1357,8 +1412,8 @@ function openInventory(sel){if(typeof sel!=='string')sel=null;
 function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');const M=mods();
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   const SN=SETS[G.class].name,sc=setCount();
-  const EL=ELEMS[G.element||'fire'];
-  let h=`<h2>${G.name||nm} <span style="font-size:13px;color:${EL.col}">${EL.ic} ${EL.nm} ${nm}</span> — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">🌟</span>':''}</h2>`;
+  const EL=ELEMS[G.element||'fire'],SD=subDef(G.class,G.element);
+  let h=`<h2>${G.name||nm} <span style="font-size:13px;color:${EL.col}">${SD.ic} ${SD.nm}</span> — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">🌟</span>':''}</h2>`;
   h+=`<div class="subline">❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ⚔ ${G._atk} · 🛡 ${G._def}`+
      `${M.speed>1?` · 👟 +${Math.round((M.speed-1)*100)}%`:''}${M.xp>1?` · ✦ +${Math.round((M.xp-1)*100)}%`:''}${M.coins>1?` · ◉ +${Math.round((M.coins-1)*100)}%`:''}</div>`;
   if(sc>0)h+=`<div class="subline" style="color:#2fd06a;font-weight:700">${SN} set: ${sc}/6${fullSet()?' — COMPLETE! +12% ⚔🛡, +8% ❤':''}</div>`;
@@ -2333,6 +2388,7 @@ class World extends Phaser.Scene{
         .setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0xffffff);
     }else if(this.ghost){this.ghost.destroy();this.ghost=null;}
     this.survT+=dt;if(this.survT>0.5){this.survT=0;
+      if(!dungeon)revealAt(this.px,this.py);
       G.hunger=Math.max(0,G.hunger-(Math.hypot(this.vx,this.vy)>20?0.4:0.2));
       if(G.hunger<=0)G.hp=Math.max(0,G.hp-1);
       const rg=mods().regen;if(rg>0&&G.hp>0&&G.hp<G.maxHp)G.hp=Math.min(G.maxHp,G.hp+rg);
@@ -2607,13 +2663,14 @@ function creationUI(){
   const bd=document.getElementById('mkBody');
   let h='';
   const hasSave=!!G;
-  if(hasSave)h+=`<button id="mkCont" class="classbtn" style="background:linear-gradient(#ffd84a,#f0a012);margin-bottom:2px">▶ Continue ${G.name||''} Lv.${G.level} ${G.class}</button>`;
+  if(hasSave)h+=`<button id="mkCont" class="classbtn" style="background:linear-gradient(#ffd84a,#f0a012);margin-bottom:2px">▶ Continue ${G.name||''} the ${subDef(G.class,G.element).nm} · Lv.${G.level}</button>`;
   h+='<div class="mklab">CHOOSE YOUR CLASS</div><div class="crow">';
   for(const c of['mage','ranger','warrior'])
     h+=`<div class="ccard ${mkCls===c?'sel':''}" data-mkc="${c}"><canvas data-cv="${c}" width="164" height="164"></canvas><b>${{mage:'Mage',ranger:'Ranger',warrior:'Warrior'}[c]}</b><small>${MK_TAG[c]}</small></div>`;
-  h+='</div><div class="mklab">CHOOSE YOUR ELEMENT</div><div class="crow">';
-  for(const k in ELEMS)h+=`<button class="echip ${mkElem===k?'sel':''}" data-mke="${k}">${ELEMS[k].ic} ${ELEMS[k].nm}</button>`;
-  h+=`</div><div id="elemDesc">${ELEMS[mkElem].desc}</div>`;
+  h+='</div><div class="mklab">CHOOSE YOUR SUBCLASS</div><div class="crow">';
+  for(const k in ELEMS){const sd=subDef(mkCls,k);
+    h+=`<button class="echip ${mkElem===k?'sel':''}" data-mke="${k}">${sd.ic} ${sd.nm}</button>`;}
+  h+=`</div><div id="elemDesc">${subDef(mkCls,mkElem).desc}</div>`;
   h+=`<div class="mklab">NAME YOUR HERO</div>
   <div id="nameRow"><input id="heroName" maxlength="12" value="${window._mkName||MK_NAMES[Math.floor(Math.random()*MK_NAMES.length)]}" spellcheck="false"><button id="rollName">🎲</button></div>`;
   h+='<button id="beginBtn">⚔ BEGIN YOUR LEGEND</button>';
