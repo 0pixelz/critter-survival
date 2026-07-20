@@ -56,6 +56,14 @@ function subVis(){const d=G?subDef(G.class,G.element):null;return d||{col:'#ff88
 function isWSub(k){return G&&G.class==='warrior'&&G.element===k;}
 function isRSub(k){return G&&G.class==='ranger'&&G.element===k;}
 function isMSub(k){return G&&G.class==='mage'&&G.element===k;}
+const PETS={
+  wolf:{tex:'wolfTex',ic:'🐺',nm:'Wolf',dmg:0.45,rate:1.1,spd:190,desc:'Balanced hunter — solid bites, marks prey'},
+  hawk:{tex:'hawkTex',ic:'🦅',nm:'Hawk',dmg:0.30,rate:0.75,spd:255,desc:'Lightning-fast strikes — lower damage, relentless marking',lock:()=>((G.skills||{}).feralfang||0)>=2,lockTxt:'Feral Fangs rank 2'},
+  boar:{tex:'boarTex',ic:'🐗',nm:'Boar',dmg:0.70,rate:1.7,spd:165,stun:0.5,desc:'Crushing charges — heavy damage and a stunning knockdown',lock:()=>((G.skills||{}).alphabond||0)>=1,lockTxt:'Alpha Bond rank 1'}};
+function petDef(){return PETS[(G&&G.pet)||'wolf']||PETS.wolf;}
+function petDmg(){return Math.max(2,Math.round((G._atk||6)*petDef().dmg*(1+0.2*((G.skills||{}).feralfang||0))));}
+function petRate(){return petDef().rate*Math.max(0.55,1-0.12*((G.skills||{}).alphabond||0));}
+function petMark(){return 4+((G.skills||{}).alphabond||0);}
 const BOSS_LAIR={x:88,y:56};
 const CHUNK=6;
 function revealAt(wx,wy){if(!G)return;if(!G.seen)G.seen={};
@@ -718,6 +726,40 @@ function bakeMisc(kind){
     ctx.fillStyle='#7ad0ff';ctx.shadowColor='#7ad0ff';ctx.shadowBlur=5;  // spirit eye
     ctx.beginPath();ctx.arc(47,18,2,0,7);ctx.fill();ctx.shadowBlur=0;
     return cv;}
+  if(kind==='hawk'){const cv=mkCv(52,44),line='#12160f';
+    shadow(26,40,12,4);
+    ctx.strokeStyle=line;ctx.lineWidth=2.6;ctx.lineJoin='round';
+    ctx.fillStyle='#8a6a44';
+    for(const dx of[-1,1]){ctx.save();ctx.translate(26,20);ctx.scale(dx,1);
+      ctx.beginPath();ctx.moveTo(4,0);ctx.quadraticCurveTo(16,-14,24,-8);
+      ctx.quadraticCurveTo(18,-2,14,4);ctx.quadraticCurveTo(9,2,4,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
+    const g=ctx.createLinearGradient(0,10,0,34);g.addColorStop(0,'#b09068');g.addColorStop(1,'#7a5c3a');
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(26,22,8,11,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f0e8d8';ctx.beginPath();ctx.ellipse(26,26,4.5,6,0,0,7);ctx.fill();
+    ctx.fillStyle='#b09068';ctx.beginPath();ctx.arc(26,11,5.5,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.moveTo(26,12);ctx.lineTo(31,14);ctx.lineTo(26,16);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7ad0ff';ctx.shadowColor='#7ad0ff';ctx.shadowBlur=4;
+    ctx.beginPath();ctx.arc(24,10,1.6,0,7);ctx.fill();ctx.shadowBlur=0;
+    return cv;}
+  if(kind==='boar'){const cv=mkCv(58,46),line='#12160f';
+    shadow(29,40,16,5);
+    ctx.strokeStyle=line;ctx.lineWidth=2.8;ctx.lineJoin='round';
+    const g=ctx.createLinearGradient(0,12,0,38);g.addColorStop(0,'#8a6a52');g.addColorStop(1,'#5c4436');
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.moveTo(8,34);ctx.quadraticCurveTo(6,18,20,15);
+    ctx.quadraticCurveTo(34,12,44,18);ctx.quadraticCurveTo(50,22,49,32);
+    ctx.quadraticCurveTo(38,39,8,34);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#4a3428';ctx.beginPath();ctx.moveTo(14,15);ctx.lineTo(20,8);ctx.lineTo(24,15);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#4a3428';ctx.lineWidth=4;
+    for(const lx of[15,23,35,43]){ctx.beginPath();ctx.moveTo(lx,35);ctx.lineTo(lx-1,42);ctx.stroke();}
+    ctx.strokeStyle=line;ctx.lineWidth=2.4;
+    ctx.fillStyle='#8a6a52';ctx.beginPath();ctx.ellipse(48,24,7,6,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#d8a8a0';ctx.beginPath();ctx.ellipse(54,25,3,3.4,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f0e8d8';
+    ctx.beginPath();ctx.moveTo(46,28);ctx.quadraticCurveTo(43,34,48,34);ctx.lineTo(47,29);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#7ad0ff';ctx.shadowColor='#7ad0ff';ctx.shadowBlur=4;
+    ctx.beginPath();ctx.arc(45,20,1.8,0,7);ctx.fill();ctx.shadowBlur=0;
+    return cv;}
   if(kind==='quester'){const cv=mkCv(44,74),cx=22,base=66,line='#12160f';
     shadow(cx,base,12,5);
     ctx.strokeStyle=line;ctx.lineWidth=3;
@@ -823,6 +865,8 @@ const SKILLS=[
   {tree:'spell',tier:4,icon:'firewall',cv:1,key:'firewall',cls:'mage',name:'Fire Wall',max:3,eff:'SWIPE SPELL: draw a wall of flame (longer+stronger / rank)',req:{shield:1}},
   {tree:'spell',tier:4,icon:'spikes',cv:1,key:'spikewall',cls:'warrior',name:'Earthshatter',max:3,eff:'SWIPE SPELL: draw stone spikes that root foes',req:{warcry:1}},
   {tree:'spell',tier:4,icon:'thorns',cv:1,key:'thornwall',cls:'ranger',name:'Thorn Wall',max:3,eff:'SWIPE SPELL: draw a hedge of thorns that slows foes',req:{quiver:1}},
+  {tree:'spell',tier:2,icon:'🐾',key:'feralfang',cls:'ranger',sub:'beastmaster',name:'Feral Fangs',max:5,eff:'+20% companion damage / rank'},
+  {tree:'spell',tier:3,icon:'🐺',key:'alphabond',cls:'ranger',sub:'beastmaster',name:'Alpha Bond',max:3,eff:'Companion attacks 12% faster & MARK lasts +1s / rank'},
   // == PASSIVE TREE ==
   {tree:'passive',tier:1,icon:'\u2764\ufe0f',key:'vitality',name:'Vitality',max:5,eff:'+6% max HP / rank'},
   {tree:'passive',tier:1,icon:'\ud83d\udcaa',key:'might',name:'Might',max:5,eff:'+4% ATK / rank'},
@@ -1521,7 +1565,7 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
     G.equip[slot]=null;G.gear.push(it);recalcHero();if(G.hp>G.maxHp)G.hp=G.maxHp;save();updateHud();applyGearFx();openCharacter();});
   document.getElementById('charBack').onclick=openPanel;}
 let skTab='spell';
-function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cls||nd.cls===G.class))t+=(G.skills||{})[nd.key]||0;return t;}
+function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cls||nd.cls===G.class)&&(!nd.sub||nd.sub===G.element))t+=(G.skills||{})[nd.key]||0;return t;}
 function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
 function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');
   const RN=['I','II','III','IV'];
@@ -1532,6 +1576,17 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
     <button class="sktab ${skTab==='loadout'?'on':''}" data-tab="loadout">\u2b50 Loadout</button></div>`;
   if(skTab==='loadout'){
     if(!G.loadout)G.loadout=['strike'];
+    if(isRSub('beastmaster')){
+      if(!G.pet)G.pet='wolf';
+      h+='<div class="subline" style="margin-top:4px;color:#f2c14e;font-weight:700">COMPANION</div><div class="plist" style="margin-top:4px">';
+      for(const pk in PETS){const P2=PETS[pk];
+        const locked=P2.lock&&!P2.lock();
+        h+=`<div class="pcard" style="${locked?'opacity:.55':''}${G.pet===pk?';border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
+          <div style="width:34px;text-align:center;font-size:23px">${P2.ic}</div>
+          <div style="flex:1;min-width:0"><b>${P2.nm}</b>${G.pet===pk?' <span style="color:#3f7d34;font-size:11px">✔ active</span>':''}<br>
+          <small>${locked?'🔒 Unlock: '+P2.lockTxt:P2.desc+' · '+Math.round(P2.dmg*100)+'% ATK every '+P2.rate+'s'}</small></div>
+          <button class="cbtn" data-pet="${pk}" ${locked||G.pet===pk?'disabled':''}>${G.pet===pk?'✓':'Choose'}</button></div>`;}
+      h+='</div>';}
     h+=`<div class="subline" style="margin-top:4px">Equip up to <b>3</b> spells \u2014 they appear as buttons in battle</div>`;
     h+='<div class="plist" style="margin-top:6px">';
     for(const k of Object.keys(SPELLBOOK)){const sb=SPELLBOOK[k];
@@ -1551,6 +1606,10 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
       if(G.loadout.includes(k))G.loadout=G.loadout.filter(x=>x!==k);
       else if(G.loadout.length<3)G.loadout.push(k);
       sfx('menu');save();openSkills();});
+    p.querySelectorAll('[data-pet]').forEach(b2=>b2.onclick=()=>{const pk=b2.dataset.pet;
+      const P2=PETS[pk];if(!P2||(P2.lock&&!P2.lock()))return;
+      G.pet=pk;if(scene&&scene.wolf)scene.wolf.s.setTexture(P2.tex);
+      sfx('level');toast(P2.ic+' '+P2.nm+' is now your companion!');save();openSkills();});
     document.getElementById('skBack').onclick=openPanel;
     return;}
   const nd=SKILLS.find(n=>n.key===sel);
@@ -1567,7 +1626,7 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
   h+=`<div id="skTree"><canvas id="skLines"></canvas>`;
   const spent=spentIn(skTab);
   for(let t=1;t<=4;t++){
-    const nodes=SKILLS.filter(n=>n.tree===skTab&&n.tier===t&&(!n.cls||n.cls===G.class));
+    const nodes=SKILLS.filter(n=>n.tree===skTab&&n.tier===t&&(!n.cls||n.cls===G.class)&&(!n.sub||n.sub===G.element));
     if(!nodes.length)continue;
     const need=(t-1)*2,open=spent>=need;
     if(t>1)h+=`<div class="sktsep ${open?'':'dim'}">TIER ${RN[t-1]}${open?'':' \ud83d\udd12 '+need+' pts in tree'}</div>`;
@@ -1600,7 +1659,7 @@ function drawSkillLines(){const tree=document.getElementById('skTree'),cv=docume
   const c=cv.getContext('2d');c.scale(2,2);c.lineCap='round';
   const pos=k=>{const el=tree.querySelector(`[data-sk="${k}"]`);if(!el)return null;
     return {x:el.offsetLeft+el.offsetWidth/2,y:el.offsetTop+el.offsetHeight/2};};
-  for(const nd of SKILLS){if(nd.tree!==skTab||!nd.req)continue;if(nd.cls&&nd.cls!==G.class)continue;
+  for(const nd of SKILLS){if(nd.tree!==skTab||!nd.req)continue;if(nd.cls&&nd.cls!==G.class)continue;if(nd.sub&&nd.sub!==G.element)continue;
     const b2=pos(nd.key);if(!b2)continue;
     for(const rk in nd.req){const a2=pos(rk);if(!a2)continue;
       const ok=((G.skills||{})[rk]||0)>=nd.req[rk];
@@ -1794,7 +1853,7 @@ class World extends Phaser.Scene{
     tx('nurse',bakeHouse({wallL:'#d0ccc0',wallR:'#efece2',roof:['#d06a8a','#a84a68'],sign:'cross'}));
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
-    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('wolfTex',bakeMisc('wolf'));
+    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('wolfTex',bakeMisc('wolf'));tx('hawkTex',bakeMisc('hawk'));tx('boarTex',bakeMisc('boar'));
     tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));tx('fireboltTex',bakeMisc('firebolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
@@ -1969,8 +2028,9 @@ class World extends Phaser.Scene{
     this.rage=0;this.frenzyT=0;this.parryT=0;this.comboT=0;this.comboN=0;
     this.minions=[];this.rewindCD=0;
     if(isRSub('beastmaster')){
+      if(!G.pet)G.pet='wolf';
       this.wolf={x:this.px-40,y:this.py-20,cd:0,
-        s:this.add.sprite(0,0,'wolfTex').setOrigin(0.5,0.85).setScale(0.9),
+        s:this.add.sprite(0,0,petDef().tex).setOrigin(0.5,0.85).setScale(0.9),
         gl:this.add.image(0,0,'glow').setScale(0.35).setTint(0x7ad0ff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.25)};}
     this.spellSwipe={active:false,id:-1,pts:[]};this.fadeTrail=null;
     this.trailGfx=this.add.graphics().setScrollFactor(0).setDepth(9999950);
@@ -2489,11 +2549,12 @@ class World extends Phaser.Scene{
       for(const e of this.enemies){const d2=Math.hypot(e.x-this.px,e.y-this.py);if(d2<bd2){bd2=d2;tgt=e;}}
       const hx=tgt?tgt.x:this.px-44,hy=tgt?tgt.y:this.py-22;
       const dwx=hx-w.x,dwy=hy-w.y,dwl=Math.hypot(dwx,dwy)||1;
-      const wspd=tgt?190:150;
+      const PD=petDef(),wspd=tgt?PD.spd:PD.spd*0.8;
       if(dwl>18){w.x+=dwx/dwl*Math.min(wspd*dt,dwl);w.y+=dwy/dwl*Math.min(wspd*dt,dwl);}
-      if(tgt&&dwl<34&&w.cd<=0){w.cd=1.1;
-        tgt.marked=4;
-        this.hurtEnemy(tgt,Math.max(2,Math.round(G._atk*0.45)),Math.atan2(tgt.y-w.y,tgt.x-w.x));}
+      if(tgt&&dwl<34&&w.cd<=0){w.cd=petRate();
+        tgt.marked=petMark();
+        if(PD.stun)tgt.rootT=Math.max(tgt.rootT||0,PD.stun);
+        tgt._noProc=1;this.hurtEnemy(tgt,petDmg(),Math.atan2(tgt.y-w.y,tgt.x-w.x));tgt._noProc=0;}
       const wsx=isoX(w.x,w.y),wsy=isoY(w.x,w.y)-Math.abs(Math.sin(this.time.now*0.012))*2;
       w.s.setPosition(wsx,wsy).setDepth(isoY(w.x,w.y)+IH*0.28).setFlipX(dwx<0);
       w.gl.setPosition(wsx,wsy-10).setDepth(isoY(w.x,w.y)+IH*0.28-1);}
