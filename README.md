@@ -130,4 +130,4 @@ Built as a starter project — fork it, tweak the `SPECIES` and `MAP_STR` tables
 
 ## 🚀 v2 — New Engine (beta)
 
-The game is being ported to **Phaser 3 (WebGL)** with **real pixel art** from the CC0 [Ninja Adventure](https://github.com/sparklinlabs/superpowers-asset-packs) asset pack (by Pixel-Boy & AAA, public domain): animated characters and monsters, a hand-drawn village tileset, GPU bloom/vignette, particles, and dynamic day/night lighting. Try it at [**/v2/**](https://0pixelz.github.io/critter-survival/v2/) — currently a combat & exploration slice while the full systems (gear, dungeons, building, raids) are ported over.
+The game is being ported to **Phaser 3 (WebGL)** keeping its signature hand-drawn Brawl-Stars-style art — every sprite is baked from the game's own procedural drawings onto GPU textures, then lit with bloom, additive glow, particles, camera shake, and dynamic day/night light pools. Try it at [**/v2/**](https://0pixelz.github.io/critter-survival/v2/) — currently a combat & exploration slice while the full systems (gear, dungeons, building, raids) are ported over. The classic version remains the complete game.
