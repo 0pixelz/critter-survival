@@ -903,6 +903,9 @@ let _hitT=0;
 function sfx(n){switch(n){
   case 'cast':elemCastSfx();break;
   case 'ecast':tone(320,0.14,'sawtooth',0.07,110);fNoise(0.16,0.06,500,180,'lowpass');break;
+  case 'crit':{if(performance.now()-_hitT<70)return;_hitT=performance.now();
+    tone(1750,0.1,'square',0.12,2600);tone(220,0.12,'sawtooth',0.12,70);
+    noiseBurst(0.12,0.14);bell(2100,0.22,0.08);break;}
   case 'wall':{const el=(G&&G.element)||'fire';
     if(G&&G.class==='warrior'){fNoise(0.4,0.2,150,60,'lowpass');noiseBurst(0.3,0.14);}
     else if(G&&G.class==='ranger'){fNoise(0.35,0.14,700,250);tone(240,0.2,'triangle',0.08,120);}
@@ -2261,6 +2264,7 @@ class World extends Phaser.Scene{
     for(let k=0;k<3;k++){this.hitEmit.setPosition(isoX(this.px,this.py),isoY(this.px,this.py)-10);this.hitEmit.explode(14);}
     toast(cls==='warrior'?'⚔ WARCRY SHOCKWAVE!':cls==='ranger'?'🏹 ARROW VOLLEY!':'✨ ARCANE NOVA!');}
   spawnShot(a2,spd,dmg,pierce,tint,arrow,big){
+    const critF=!!this._critShot;
     let core;
     if(arrow||cls==='ranger'){
       const ak=cls==='ranger'&&SUBCLASSES.ranger[G.element]?'arrow_'+G.element:'arrowTex';
@@ -2269,7 +2273,7 @@ class World extends Phaser.Scene{
       core=this.add.image(0,0,bk).setScale(big?1.5:0.8);}
     if(big)core.setTint(0xffe9a0);
     const gl=this.add.image(0,0,'glow').setScale(big?0.55:0.24).setAlpha(big?0.7:0.5).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
-    this.shots.push({core,gl,x:this.px,y:this.py,x0:this.px,y0:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big});}
+    this.shots.push({core,gl,x:this.px,y:this.py,x0:this.px,y0:this.py,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,dmg,life:1.1,pierce,big,critF});}
   castSlot(i){
     const k=(G.loadout||[])[i];if(!k||!SPELLBOOK[k]||!SPELLBOOK[k].avail())return;
     if(k==='active')this.classAbility();
@@ -2522,7 +2526,10 @@ class World extends Phaser.Scene{
       this.comboN=(this.comboT>0)?Math.min(5,(this.comboN||0)+1):0;
       this.comboT=1.5;dmg=Math.round(dmg*(1+0.05*(this.comboN||0)));}
     if(isRSub('sharpshooter')&&forceAng!=null)dmg=Math.round(dmg*1.4);
-    if(Math.random()<M.crit)dmg*=2;
+    let crit=forceAng!=null&&cls!=='warrior';
+    if(!crit&&Math.random()<M.crit)crit=true;
+    if(crit)dmg*=2;
+    this._critShot=crit;
     this.atkAnimT=0.24;if(this.player.anims.isPlaying)this.player.anims.stop();this.player.play('atk');
     {const scr2=Math.cos(ang)-Math.sin(ang);if(scr2<-0.05)this.flip=-1;else if(scr2>0.05)this.flip=1;}
     sfx('cast');
@@ -2536,7 +2543,7 @@ class World extends Phaser.Scene{
       else this.cameras.main.shake(70,0.003);
       for(const e of this.enemies){const d=Math.hypot(e.x-this.px,e.y-this.py);if(d>(spell==='power'?TILE*3:TILE*2.2))continue;
         let da=Math.atan2(e.y-this.py,e.x-this.px)-ang;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;
-        if(spell!=='nova'&&Math.abs(da)>1.1)continue;this.hurtEnemy(e,dmg,ang);}
+        if(spell!=='nova'&&Math.abs(da)>1.1)continue;this.hurtEnemy(e,dmg,ang,crit);}
     }else if(spell==='nova'){
       // ring burst all around
       const n=8+M.count;
@@ -2554,8 +2561,9 @@ class World extends Phaser.Scene{
         this.spawnShot(a2,cls==='ranger'?600:480,dmg,(spell==='chain'?2:(cls==='ranger'?1:0))+M.pierce,subVis().hex);
       }
     }
+    this._critShot=false;
   }
-  hurtEnemy(e,dmg,ang){
+  hurtEnemy(e,dmg,ang,crit){
     if(isRSub('beastmaster')&&(e.marked||0)>0)dmg=Math.round(dmg*1.15);
     if(isRSub('warden')&&Math.random()<0.15)e.rootT=Math.max(e.rootT||0,0.8);
     e.hp-=dmg;e.flash=0.15;e.s.setTintFill(0xffffff);addSuper(dmg*0.35);sfx('hit');
@@ -2578,8 +2586,11 @@ class World extends Phaser.Scene{
           from=best;jd=Math.round(jd*0.6);}}}
     e.vx+=Math.cos(ang)*140;e.vy+=Math.sin(ang)*140;
     this.hitEmit.setPosition(e.s.x,e.s.y-14);this.hitEmit.explode(8);
-    const t=this.add.text(e.s.x,e.s.y-34,''+dmg,{fontFamily:'Fredoka',fontSize:'15px',color:'#fff',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(9999000);
-    this.tweens.add({targets:t,y:t.y-22,alpha:0,duration:600,onComplete:()=>t.destroy()});
+    const t=this.add.text(e.s.x,e.s.y-34,crit?dmg+'!':''+dmg,
+      {fontFamily:'Fredoka',fontSize:crit?'20px':'15px',color:crit?'#ffb454':'#fff',stroke:'#000',strokeThickness:crit?4:3}).setOrigin(0.5).setDepth(9999000);
+    if(crit){sfx('crit');t.setScale(0.6);
+      this.tweens.add({targets:t,scale:1.15,duration:110,yoyo:true});}
+    this.tweens.add({targets:t,y:t.y-(crit?30:22),alpha:0,duration:crit?750:600,onComplete:()=>t.destroy()});
     if(e.hp<=0){
       this.hitEmit.setPosition(e.s.x,e.s.y-12);this.hitEmit.explode(16);
       const c=Math.round((4+e.lvl*2.5)*(e.alpha?3:e.rare?2:1)*mods().coins);G.coins+=c;
@@ -2932,7 +2943,7 @@ class World extends Phaser.Scene{
         if(Math.hypot(e.x-s.x,e.y-s.y)<24){
           let sd=s.dmg;
           if(!s.turret&&isRSub('sharpshooter')&&s.x0!==undefined&&Math.hypot(s.x-s.x0,s.y-s.y0)>TILE*4)sd=Math.round(sd*1.5);
-          this.hurtEnemy(e,sd,Math.atan2(s.vy,s.vx));
+          this.hurtEnemy(e,sd,Math.atan2(s.vy,s.vx),s.critF);
           if(s.slow)e.slowT=Math.max(e.slowT||0,s.slow);
           if(s.aoe)for(const e2 of this.enemies){if(e2===e)continue;
             if(Math.hypot(e2.x-s.x,e2.y-s.y)<s.aoe*TILE)this.hurtEnemy(e2,Math.max(1,Math.floor(s.dmg*0.7)),Math.atan2(s.vy,s.vx));}
