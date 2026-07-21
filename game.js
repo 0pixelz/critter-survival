@@ -141,8 +141,9 @@ function gen(){
       for(let y=py;y<py+h;y++)for(let x=px;x<px+w;x++){if(grid[y][x]!=='P')grid[y][x]='.';plotIndex[x+','+y]=PLOTS[PLOTS.length-1];}});});
 }
 function tileAt(x,y){if(x<0||y<0||x>=GW||y>=GH)return dungeon?'r':'T';return grid[y][x];}
-let buildAt={};
-function rebuildBuildIndex(){buildAt={};if(G&&G.builds)for(const b of G.builds)buildAt[b.x+','+b.y]=b;}
+let buildAt={},buildAt2={};
+const ELEV=34;
+function rebuildBuildIndex(){buildAt={};buildAt2={};if(G&&G.builds)for(const b of G.builds)(b.z?buildAt2:buildAt)[b.x+','+b.y]=b;}
 function solidWorld(wx,wy,forE){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
   if(SOLID.has(tileAt(tx,ty)))return true;
   const b=buildAt[tx+','+ty];if(!b)return false;
@@ -713,6 +714,36 @@ function bakeMisc(kind){
     ctx.fillStyle='#5da53f';for(const[bx,h]of[[15,20],[31,18]]){ctx.beginPath();
       ctx.moveTo(bx-2.5,26);ctx.quadraticCurveTo(bx-1,26-h*0.7,bx,26-h*0.75);ctx.quadraticCurveTo(bx+1,26-h*0.7,bx+2.5,26);
       ctx.closePath();ctx.fill();}return cv;}
+  if(kind==='floorSlab'){const cv=mkCv(76,46),cx=38,cy=22,line='#12160f';
+    ctx.strokeStyle=line;ctx.lineWidth=2.8;ctx.lineJoin='round';
+    const g=ctx.createLinearGradient(0,4,0,40);g.addColorStop(0,'#b08a5a');g.addColorStop(1,'#8a6a40');
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.moveTo(cx,4);ctx.lineTo(cx+34,cy);ctx.lineTo(cx,40);ctx.lineTo(cx-34,cy);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=1.8;   // planks along one iso axis
+    for(const f of[0.25,0.5,0.75]){
+      ctx.beginPath();ctx.moveTo(cx-34+f*34,cy-f*18+ (f*36-18)*0 + (4-cy)*0 + (cy-4)*0 ,0);ctx.stroke();}
+    for(const f of[0.25,0.5,0.75]){
+      const x1=cx-34*(1-f),y1=cy-18*f+18*(0);
+      ctx.beginPath();
+      ctx.moveTo(cx-34+34*f,cy+18*f- (18*f*2)*0 -18*f+18*f);ctx.lineTo(cx+34*f,4+18*(1-f)+18*f-18);
+      ctx.stroke();}
+    ctx.strokeStyle='rgba(0,0,0,.25)';
+    for(const f of[0.33,0.66]){
+      ctx.beginPath();ctx.moveTo(cx-34+f*34,cy-f*18);ctx.lineTo(cx+f*34,40-f*18);ctx.stroke();}
+    ctx.fillStyle='rgba(255,255,255,.12)';
+    ctx.beginPath();ctx.moveTo(cx,7);ctx.lineTo(cx+28,cy);ctx.lineTo(cx,13);ctx.closePath();ctx.fill();
+    return cv;}
+  if(kind==='stairsB'){const cv=mkCv(64,64),line='#12160f';
+    shadow(32,56,20,7);
+    ctx.strokeStyle=line;ctx.lineWidth=2.8;ctx.lineJoin='round';
+    for(let i=0;i<4;i++){ // steps ascending toward upper-right (north)
+      const x0=14+i*9,y0=52-i*11;
+      const g=ctx.createLinearGradient(0,y0-8,0,y0);g.addColorStop(0,'#b08a5a');g.addColorStop(1,'#7a5a34');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+28,y0-8);ctx.lineTo(x0+28,y0-16);ctx.lineTo(x0,y0-8);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c9a870';
+      ctx.beginPath();ctx.moveTo(x0,y0-8);ctx.lineTo(x0+28,y0-16);ctx.lineTo(x0+34,y0-13);ctx.lineTo(x0+6,y0-5);ctx.closePath();ctx.fill();ctx.stroke();}
+    return cv;}
   if(kind==='sign'){const cv=mkCv(50,50),cx=25,base=42,line='#12160f';
     shadow(cx,base,14,6);ctx.strokeStyle=line;ctx.lineWidth=3;
     ctx.fillStyle='#4e341c';rr(cx-2,base-18,5,18,2);ctx.fill();ctx.stroke();
@@ -1033,6 +1064,8 @@ const BUILD_DEF={
   wall:{name:'Wall',hp:160,solid:1,eSolid:1,fam:'wall',autotile:1},
   door:{name:'Door',hp:120,solid:1,eSolid:1,fam:'wall',openable:1},
   window:{name:'Window',hp:100,solid:1,eSolid:1,fam:'wall',shotPass:1},
+  floor2:{name:'Upper Floor',hp:120,fam:'floor2',z:1},
+  stairs:{name:'Stairs',hp:140,eSolid:1,fam:'stairs'},
   hut:{name:'Hut',hp:320,solid:1,eSolid:1,light:1},chest:{name:'Chest',hp:120,eSolid:1},
   table:{name:'Craft Table',hp:100,eSolid:1},forge:{name:'Forge',hp:160,eSolid:1,light:1},
   spike:{name:'Spike Trap',hp:30,trap:1,uses:4},snare:{name:'Snare Trap',hp:20,trap:1,uses:3},
@@ -1050,6 +1083,8 @@ const RECIPES=[
   {key:'wall',cost:{wood:2,stone:2},lvl:1,plot:1,desc:'Blocks enemies.'},
   {key:'door',cost:{wood:4},lvl:1,plot:1,desc:'Tap to open & close. Blocks all when shut.'},
   {key:'window',cost:{wood:3,stone:2},lvl:1,plot:1,desc:'Blocks movement — you can shoot through.'},
+  {key:'floor2',cost:{wood:4,stone:2},lvl:2,plot:1,desc:'2nd-story floor. Needs a wall (≤2 tiles) below.'},
+  {key:'stairs',cost:{wood:6},lvl:2,plot:1,desc:'Climb to upper floors built next to it.'},
   {key:'chest',cost:{wood:6},lvl:1,plot:1,desc:'Bank materials — safe on death!'},
   {key:'table',cost:{wood:6,stone:2},lvl:1,plot:1,desc:'Unlocks advanced recipes nearby.'},
   {key:'forge',cost:{stone:10,wood:4},lvl:2,plot:1,station:'table',desc:'Smith tier-2+ tools nearby.'},
@@ -1223,7 +1258,7 @@ function nearStation(kind){if(!scene)return false;
 const _bIcon={};
 function buildIconSrc(key){
   if(_bIcon[key])return _bIcon[key];
-  const cv=key==='hut'?bakeHouse({roofIdx:2}):key==='campfire'?bakeMisc('campfire'):key==='chest'?bakeBuild('chestB'):bakeBuild(key);
+  const cv=key==='hut'?bakeHouse({roofIdx:2}):key==='campfire'?bakeMisc('campfire'):key==='chest'?bakeBuild('chestB'):key==='floor2'?bakeMisc('floorSlab'):key==='stairs'?bakeMisc('stairsB'):bakeBuild(key);
   _bIcon[key]=cv;return cv;}
 function blitBuildIcons(p){
   p.querySelectorAll('canvas.bicon').forEach(cv=>{
@@ -2181,7 +2216,7 @@ class World extends Phaser.Scene{
     tx('nurse',bakeHouse({wallL:'#d0ccc0',wallR:'#efece2',roof:['#d06a8a','#a84a68'],sign:'cross'}));
     tx('mart',bakeHouse({roof:['#3f6fa0','#2c4f78'],sign:'coin'}));
     tx('registrar',bakeHouse({wallL:'#cfc7b3',wallR:'#e5decb',roof:['#6b56d6','#4a3aa0'],sign:'scroll'}));
-    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('wolfTex',bakeMisc('wolf'));tx('hawkTex',bakeMisc('hawk'));tx('boarTex',bakeMisc('boar'));
+    tx('sign',bakeMisc('sign'));tx('berry',bakeMisc('berry'));tx('villager',bakeMisc('villager'));tx('quester',bakeMisc('quester'));tx('floorSlab',bakeMisc('floorSlab'));tx('stairsB',bakeMisc('stairsB'));tx('wolfTex',bakeMisc('wolf'));tx('hawkTex',bakeMisc('hawk'));tx('boarTex',bakeMisc('boar'));
     tx('campfire',bakeMisc('campfire'));tx('arrowTex',bakeMisc('arrow'));for(const rk of['beastmaster','trapper','sharpshooter','warden'])tx('arrow_'+rk,bakeMisc('arrow_'+rk));tx('fireboltTex',bakeMisc('firebolt'));tx('chronoboltTex',bakeMisc('chronobolt'));tx('necroboltTex',bakeMisc('necrobolt'));tx('stormboltTex',bakeMisc('stormbolt'));tx('flameTex',bakeMisc('flame'));tx('thornTex',bakeMisc('thorn'));
     for(const k of['wood','stone','fiber','ore'])tx('nd_'+k,bakeNode(k));
     for(const k of['torch','wall','door','chestB','table','forge','spike','snare','tarrow','tfrost','tcata'])tx('b_'+k,bakeBuild(k));
@@ -2355,6 +2390,8 @@ class World extends Phaser.Scene{
       rebuildBuildIndex();
       for(const b of G.builds)this.addBuildSprite(b);}
     this.buildMode=null;this.buildRecipe=null;this.ghost=null;this.buildSel=null;
+    this.zf=G.zf||0;
+    if(this.zf===1&&!buildAt2[Math.floor(this.px/TILE)+','+Math.floor(this.py/TILE)]){this.zf=0;G.zf=0;}
     document.getElementById('buildBar').style.display='none';
     this.choppedCD={};
     this.bushSprites=this.bushSprites||{};this.saveT=0;this.survT=0;this.interactT=null;
@@ -2499,6 +2536,12 @@ class World extends Phaser.Scene{
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
     if(t2.vault){enterDungeon('sewer',t2.vault.x,t2.vault.y,'Castle Vault');return;}
     if(t2.quest){openQuest(t2.quest.town||0);return;}
+    if(t2.up){this.zf=1;G.zf=1;
+      this.px=(t2.up.x+0.5)*TILE;this.py=(t2.up.y+0.5)*TILE;
+      this.setFloorAlpha();sfx('menu');toast('⬆ Upstairs — walk only on floors!');save();return;}
+    if(t2.down){this.zf=0;G.zf=0;
+      this.px=(t2.down.x+0.5)*TILE;this.py=(t2.down.y+0.5)*TILE;
+      this.setFloorAlpha();sfx('menu');toast('⬇ Back on the ground');save();return;}
     if(t2.doorB){const b=t2.doorB;b.open=b.open?0:1;
       this.refreshWall(b.x,b.y);
       fNoise(0.14,0.12,500,180,'lowpass');tone(b.open?320:240,0.08,'triangle',0.1,b.open?520:120);
@@ -2779,7 +2822,12 @@ class World extends Phaser.Scene{
       this.hitEmit.setPosition(isoX(this.px,this.py),isoY(this.px,this.py)-10);this.hitEmit.explode(12);}
     else{this.dashT=0.16;this.dashDir={x:dx,y:dy};}
   }
-  collides(x,y){for(const[ox,oy]of[[PR,0],[-PR,0],[0,PR],[0,-PR]])if(solidWorld(x+ox,y+oy))return true;return false;}
+  collides(x,y){
+    if(this.zf===1){ // upstairs: can only stand on floor tiles
+      for(const[ox,oy]of[[PR,0],[-PR,0],[0,PR],[0,-PR]])
+        if(!buildAt2[Math.floor((x+ox)/TILE)+','+Math.floor((y+oy)/TILE)])return true;
+      return false;}
+    for(const[ox,oy]of[[PR,0],[-PR,0],[0,PR],[0,-PR]])if(solidWorld(x+ox,y+oy))return true;return false;}
   refreshPlots(){
     this.plotGfx.clear();this.plotTexts.forEach(t2=>t2.destroy());this.plotTexts=[];
     for(const pl of PLOTS){const own=G.plots[pl.id];
@@ -2814,14 +2862,20 @@ class World extends Phaser.Scene{
   addBuildSprite(b){
     const wx=(b.x+0.5)*TILE,wy=(b.y+0.5)*TILE,sx=isoX(wx,wy),sy=isoY(wx,wy);
     const d=BUILD_DEF[b.t];
-    let key=b.t==='hut'?'houseR2':b.t==='campfire'?'campfire':b.t==='chest'?'b_chestB':'b_'+b.t;
+    if(b.z){ // upper floor slab
+      const sp3=this.add.image(sx,sy-ELEV,'floorSlab').setOrigin(0.5,0.5)
+        .setDepth(sy+IH*0.28+400).setAlpha((G.zf||0)===1?1:0.35);
+      this.buildSprites[b.x+','+b.y+',1']=sp3;return;}
+    let key=b.t==='hut'?'houseR2':b.t==='campfire'?'campfire':b.t==='chest'?'b_chestB':b.t==='stairs'?'stairsB':'b_'+b.t;
     if(d&&d.fam==='wall')key=this.wallTexFor(b);
     const sp2=this.add.image(sx,sy,key).setDepth(sy+IH*0.28).setOrigin(0.5,d&&d.fam==='wall'?0.75:(b.t==='hut'?0.8:0.82));
     this.buildSprites[b.x+','+b.y]=sp2;
     if(BUILD_DEF[b.t].light){const gl=this.add.image(sx,sy-14,'glow').setScale(0.9).setTint(b.t==='tfrost'?0x7ad0ff:0xff9a3c)
       .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.45).setDepth(sy+IH*0.28+1);sp2._gl=gl;}}
-  removeBuildSprite(b){const k=b.x+','+b.y,sp2=this.buildSprites[k];
+  removeBuildSprite(b){const k=b.x+','+b.y+(b.z?',1':''),sp2=this.buildSprites[k];
     if(sp2){if(sp2._gl)sp2._gl.destroy();sp2.destroy();delete this.buildSprites[k];}}
+  setFloorAlpha(){const a=(G.zf||0)===1?1:0.35;
+    for(const k in this.buildSprites)if(k.endsWith(',1'))this.buildSprites[k].setAlpha(a);}
   damageBuild(b,d){b.hp-=d;
     if(b.hp<=0){const i=G.builds.indexOf(b);if(i>=0)G.builds.splice(i,1);
       rebuildBuildIndex();this.removeBuildSprite(b);this.refreshWallsAround(b.x,b.y);
@@ -2829,6 +2883,16 @@ class World extends Phaser.Scene{
   buildOk(tx2,ty2){const t2=tileAt(tx2,ty2);
     const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
     return !SOLID.has(t2)&&t2!==','&&!occ;}
+  wallTop(x,y){const b=buildAt[x+','+y];return !!(b&&BUILD_DEF[b.t]&&(BUILD_DEF[b.t].fam==='wall'||BUILD_DEF[b.t].tower));}
+  supportOK(x,y){
+    if(this.wallTop(x,y))return true;
+    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx,ny=y+dy;
+      if(!buildAt2[nx+','+ny])continue;
+      if(this.wallTop(nx,ny))return true;
+      for(const[dx2,dy2]of[[1,0],[-1,0],[0,1],[0,-1]])if(this.wallTop(nx+dx2,ny+dy2))return true;}
+    return false;}
+  floorOk(tx2,ty2){return !buildAt2[tx2+','+ty2]&&this.supportOK(tx2,ty2);}
   enterBuild(key,r){this.buildMode=key;this.buildRecipe=r;
     this.runeArm=false;
     const dx=Math.round(this.face.x),dy=Math.round(this.face.y);
@@ -2840,8 +2904,10 @@ class World extends Phaser.Scene{
     const c2={};for(const k in r.cost)c2[k]=Math.max(1,Math.ceil(r.cost[k]/2));return c2;}
   placeBuild(){
     if(!this.buildMode||!this.buildSel)return;
-    const bt={x:this.buildSel.x,y:this.buildSel.y,ok:this.buildOk(this.buildSel.x,this.buildSel.y)};
-    if(!bt.ok){toast("Can't build there");return;}
+    const defZ=BUILD_DEF[this.buildMode]&&BUILD_DEF[this.buildMode].z;
+    const bt={x:this.buildSel.x,y:this.buildSel.y,
+      ok:defZ?this.floorOk(this.buildSel.x,this.buildSel.y):this.buildOk(this.buildSel.x,this.buildSel.y)};
+    if(!bt.ok){toast(defZ?'Needs wall support below (≤2 tiles)':"Can't build there");return;}
     const r=this.buildRecipe,rc=this.effCost(r);
     if(r.plot&&!ownsAt(bt.x,bt.y)){toast('You must own this land — buy the plot!');sfx('fail');return;}
     if(!haveCost(rc)){toast('Not enough materials');this.cancelBuild();return;}
@@ -2849,6 +2915,7 @@ class World extends Phaser.Scene{
     const def=BUILD_DEF[this.buildMode];
     const maxHp2=Math.round(def.hp*(G.class==='warrior'?1.25:1));
     const b={t:this.buildMode,x:bt.x,y:bt.y,hp:maxHp2,maxHp:maxHp2};
+    if(BUILD_DEF[this.buildMode].z)b.z=1;
     if(def.tower){b.tier=1;b.ammo=0;}
     if(def.trap)b.uses=def.uses*(isRSub('trapper')?2:1);
     G.builds.push(b);rebuildBuildIndex();this.addBuildSprite(b);this.refreshWallsAround(b.x,b.y);gainCraftXp();sfx('coin');save();
@@ -2965,14 +3032,15 @@ class World extends Phaser.Scene{
     // build ghost sits on the tapped tile
     if(this.buildMode&&this.buildSel){
       const bt=this.buildSel,d=BUILD_DEF[this.buildMode];
-      let key=this.buildMode==='hut'?'houseR2':this.buildMode==='campfire'?'campfire':this.buildMode==='chest'?'b_chestB':'b_'+this.buildMode;
+      let key=this.buildMode==='hut'?'houseR2':this.buildMode==='campfire'?'campfire':this.buildMode==='chest'?'b_chestB':this.buildMode==='stairs'?'stairsB':this.buildMode==='floor2'?'floorSlab':'b_'+this.buildMode;
       if(d&&d.fam==='wall')key=this.wallTexFor({t:this.buildMode,x:bt.x,y:bt.y,open:0});
-      if(!this.ghost)this.ghost=this.add.image(0,0,key).setOrigin(0.5,d&&d.fam==='wall'?0.75:0.82);
+      if(!this.ghost)this.ghost=this.add.image(0,0,key).setOrigin(0.5,d&&d.fam==='wall'?0.75:(d&&d.z?0.5:0.82));
       else if(this.ghost.texture.key!==key)this.ghost.setTexture(key);
       const wx=(bt.x+0.5)*TILE,wy=(bt.y+0.5)*TILE;
-      const bad=!this.buildOk(bt.x,bt.y)||(this.buildRecipe.plot&&!ownsAt(bt.x,bt.y));
+      const zOff=d&&d.z?ELEV:0;
+      const bad=(d&&d.z?!this.floorOk(bt.x,bt.y):!this.buildOk(bt.x,bt.y))||(this.buildRecipe.plot&&!ownsAt(bt.x,bt.y));
       this.ghost.setAlpha(0.55+Math.sin(this.time.now*0.008)*0.15)
-        .setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0x9aff8a);
+        .setPosition(isoX(wx,wy),isoY(wx,wy)-zOff).setDepth(isoY(wx,wy)+IH*0.28+(zOff?400:0)).setTint(bad?0xff6666:0x9aff8a);
     }else if(this.ghost){this.ghost.destroy();this.ghost=null;}
     this.survT+=dt;if(this.survT>0.5){this.survT=0;
       if(!dungeon)revealAt(this.px,this.py);
@@ -3005,8 +3073,9 @@ class World extends Phaser.Scene{
     if(this.atkAnimT>0)this.player.play('atk',true);
     else if(moving)this.player.play('walk',true);
     else{this.player.anims.stop();this.player.setTexture('heroIdle');}
-    this.player.setPosition(sx,sy).setDepth(sy+IH*0.28).setFlipX(this.flip<0);
-    this.pGlow.setPosition(sx,sy-14).setDepth(sy+IH*0.28-1);
+    const pzo=this.zf===1?ELEV:0;
+    this.player.setPosition(sx,sy-pzo).setDepth(sy+IH*0.28+(pzo?401:0)).setFlipX(this.flip<0);
+    this.pGlow.setPosition(sx,sy-14-pzo).setDepth(sy+IH*0.28+(pzo?400:-1));
     if(this.setEmit)this.setEmit.setPosition(sx,sy-20);
     this.camTarget.setPosition(sx,sy);
     for(let i=this.enemies.length-1;i>=0;i--){const e=this.enemies[i];
@@ -3083,7 +3152,7 @@ class World extends Phaser.Scene{
       const show=e.hp<e.maxHp;
       e.hbB.setVisible(show).setPosition(esx,esy-40);
       e.hbF.setVisible(show).setPosition(esx-17+17*(e.hp/e.maxHp),esy-40).setScale(Math.max(0,e.hp/e.maxHp),1);
-      if(dl<PR+16&&e.touch<=0&&this.hurtCD<=0&&G.hp>0){e.touch=0.9;this.hurtCD=0.3;
+      if(this.zf===0&&dl<PR+16&&e.touch<=0&&this.hurtCD<=0&&G.hp>0){e.touch=0.9;this.hurtCD=0.3;
         const d3=damageHero(Math.max(2,Math.round(e.atk*0.6-G._def*0.25)));updateHud();sfx('hit');
         this.cameras.main.shake(90,0.004);this.cameras.main.flash(130,190,40,40);
         const kb=30;this.px+=dx/dl*-kb;this.py+=dy/dl*-kb;
@@ -3217,6 +3286,14 @@ class World extends Phaser.Scene{
     // interact scan: gear drops & berry bushes
     this.interactT=null;let bestD=1e9,label='';
     const setT=(d2,max,t2,l2)=>{if(d2<bestD&&d2<max){bestD=d2;this.interactT=t2;label=l2;}};
+    if(this.zf===1){ // upstairs: only the way down matters
+      const ptx=Math.floor(this.px/TILE),pty=Math.floor(this.py/TILE);
+      for(let dy3=-1;dy3<=1;dy3++)for(let dx3=-1;dx3<=1;dx3++){
+        const sb=buildAt[(ptx+dx3)+','+(pty+dy3)];
+        if(sb&&sb.t==='stairs'){
+          const d2=Math.hypot((sb.x+0.5)*TILE-this.px,(sb.y+0.5)*TILE-this.py);
+          setT(d2,TILE*1.8,{down:sb},'⬇ Go Down');}}
+    }else{
     for(const d3 of drops){setT(Math.hypot(d3.x-this.px,d3.y-this.py),TILE*1.4,{drop:d3},'Pick up '+d3.item.name);}
     {const ctx2=Math.floor(this.px/TILE),cty=Math.floor(this.py/TILE);
       for(let yy=cty-2;yy<=cty+2;yy++)for(let xx=ctx2-2;xx<=ctx2+2;xx++){
@@ -3239,7 +3316,12 @@ class World extends Phaser.Scene{
         else if(t2==='E')setT(dd,TILE*1.3,{stairs:1},'Climb Out');
         else if(t2==='K')setT(dd,TILE*1.4,{treasure:{x:xx,y:yy}},'Open Chest');
         if(bld){
-          if(BUILD_DEF[bld.t]&&BUILD_DEF[bld.t].openable)setT(dd,TILE*1.5,{doorB:bld},bld.open?'Close Door':'Open Door');
+          if(bld.t==='stairs'&&this.zf===0){
+            let fc=null;
+            for(const[dx2,dy2]of[[0,-1],[1,0],[-1,0],[0,1]])
+              if(buildAt2[(bld.x+dx2)+','+(bld.y+dy2)]){fc={x:bld.x+dx2,y:bld.y+dy2};break;}
+            if(fc)setT(dd,TILE*1.5,{up:fc},'⬆ Go Upstairs');}
+          else if(BUILD_DEF[bld.t]&&BUILD_DEF[bld.t].openable)setT(dd,TILE*1.5,{doorB:bld},bld.open?'Close Door':'Open Door');
           else if(bld.t==='hut')setT(dd,TILE*1.4,{hut:bld},'Rest');
           else if(bld.t==='chest')setT(dd,TILE*1.4,{bank:bld},'Chest');
           else if(bld.t==='table'||bld.t==='forge')setT(dd,TILE*1.4,{station:bld},'Craft');
@@ -3251,6 +3333,7 @@ class World extends Phaser.Scene{
       if(!this.interactT&&!dungeon){const pl=plotAt(ctx2,cty);
         if(pl&&!G.plots[pl.id]){this.interactT={buyPlot:pl};bestD=0;
           label=G.coins>=pl.price?('🏷 Buy this land · '+pl.price+'c'):('🏷 Costs '+pl.price+'c (have '+G.coins+'c)');}}}
+    }
     {const tag=document.getElementById('interactTag');
      if(this.interactT&&!panelOpen){const cam2=this.cameras.main;
        const tx2=(sx-cam2.worldView.x)*cam2.zoom,ty2=(sy-cam2.worldView.y)*cam2.zoom;
