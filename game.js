@@ -1469,18 +1469,33 @@ function drawMenuIcon(cv,kind){
     og.addColorStop(0,'#e8d8ff');og.addColorStop(0.5,'#c07aff');og.addColorStop(1,'#6a3ab0');
     c.fillStyle=og;c.beginPath();c.arc(m,s*0.42,s*0.26,0,7);c.fill();c.stroke();
     c.fillStyle='rgba(255,255,255,.7)';c.beginPath();c.arc(m-s*0.09,s*0.33,s*0.05,0,7);c.fill();break;}
-  case 'dash':{ // speed streaks + body
-    c.strokeStyle='#eaf6ff';c.lineWidth=W*1.15;
-    for(const[dy,x0,l]of[[-0.15,0.14,0.3],[0,0.1,0.42],[0.15,0.16,0.26]]){
-      c.beginPath();c.moveTo(s*x0,m+s*dy);c.lineTo(s*x0+s*l,m+s*dy);c.stroke();}
-    c.fillStyle='#fff';c.strokeStyle=OL;c.lineWidth=W*0.8;
-    c.beginPath();c.arc(s*0.72,m,s*0.14,0,7);c.fill();c.stroke();break;}
-  case 'blink':{ // swirl portal
-    c.strokeStyle='#d8c9ff';c.lineWidth=W*1.1;
-    c.beginPath();for(let a=0;a<5.2;a+=0.14){const r=s*0.06+a*s*0.052;
-      const px=m+Math.cos(a*1.75)*r,py=m+Math.sin(a*1.75)*r;a===0?c.moveTo(px,py):c.lineTo(px,py);}c.stroke();
-    c.fillStyle='#fff';c.beginPath();c.arc(m,m,s*0.075,0,7);c.fill();
-    c.fillStyle='#ffd23c';star(s*0.78,s*0.2,s*0.09,s*0.038);c.fill();break;}
+  case 'dash':{ // sprinting runner figure
+    c.lineCap='round';c.lineJoin='round';
+    const limbs=[[[0.55,0.4],[0.45,0.6]],            // torso
+      [[0.55,0.4],[0.68,0.46],[0.76,0.37]],          // front arm pumping up
+      [[0.55,0.4],[0.44,0.5],[0.36,0.58]],           // back arm
+      [[0.45,0.6],[0.58,0.7],[0.68,0.83]],           // front leg bent
+      [[0.45,0.6],[0.35,0.7],[0.28,0.82]]];          // back leg driving
+    c.strokeStyle=OL;c.lineWidth=W*2.7;               // dark outline pass
+    for(const L of limbs){c.beginPath();c.moveTo(s*L[0][0],s*L[0][1]);for(let i=1;i<L.length;i++)c.lineTo(s*L[i][0],s*L[i][1]);c.stroke();}
+    c.fillStyle=OL;c.beginPath();c.arc(s*0.62,s*0.27,s*0.145,0,7);c.fill();
+    c.strokeStyle='#eaf2fb';c.lineWidth=W*1.55;        // light body pass
+    for(const L of limbs){c.beginPath();c.moveTo(s*L[0][0],s*L[0][1]);for(let i=1;i<L.length;i++)c.lineTo(s*L[i][0],s*L[i][1]);c.stroke();}
+    c.fillStyle='#eaf2fb';c.beginPath();c.arc(s*0.62,s*0.27,s*0.1,0,7);c.fill();
+    c.strokeStyle='rgba(120,200,255,.9)';c.lineWidth=W;  // speed lines
+    for(const dy of[-0.14,0.05,0.24]){c.beginPath();c.moveTo(s*0.05,s*(0.5+dy));c.lineTo(s*0.24,s*(0.5+dy));c.stroke();}break;}
+  case 'blink':{ // teleport gate + spark
+    c.save();c.translate(m,m);
+    c.strokeStyle=OL;c.lineWidth=W*2.5;c.beginPath();c.ellipse(0,0,s*0.23,s*0.34,0,0,7);c.stroke();
+    const g=c.createLinearGradient(0,-s*0.34,0,s*0.34);g.addColorStop(0,'#cfa6ff');g.addColorStop(1,'#7a52d0');
+    c.strokeStyle=g;c.lineWidth=W*1.4;c.beginPath();c.ellipse(0,0,s*0.23,s*0.34,0,0,7);c.stroke();
+    c.fillStyle='rgba(150,110,230,.32)';c.beginPath();c.ellipse(0,0,s*0.17,s*0.28,0,0,7);c.fill();
+    c.strokeStyle='#ead9ff';c.lineWidth=W*0.85;
+    c.beginPath();for(let a=0;a<3.6;a+=0.13){const r=s*0.03+a*s*0.045;
+      const px=Math.cos(a*1.9)*r,py=Math.sin(a*1.9)*r*1.25;a===0?c.moveTo(px,py):c.lineTo(px,py);}c.stroke();
+    c.restore();
+    c.fillStyle='#ffd23c';star(s*0.8,s*0.22,s*0.085,s*0.034);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(s*0.2,s*0.8,s*0.032,0,7);c.fill();break;}
   }
 }
 function setBtnIcon(el,kind,px){el.innerHTML='';const cv=document.createElement('canvas');
