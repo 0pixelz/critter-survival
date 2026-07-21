@@ -2383,7 +2383,9 @@ function updateHud(){if(!G)return;try{
   document.getElementById('hpTxt').textContent=hp+'/'+G.maxHp;
   document.getElementById('hunger').style.width=Math.max(0,G.hunger)+'%';
   document.getElementById('hungerTxt').textContent=Math.round(Math.max(0,G.hunger))+'%';
-  document.getElementById('xpb').style.width=Math.max(0,Math.min(100,G.xp/xpToNext(G.level)*100))+'%';
+  const xpN=xpToNext(G.level);
+  document.getElementById('xpb').style.width=Math.max(0,Math.min(100,G.xp/xpN*100))+'%';
+  document.getElementById('xpTxt').textContent=Math.floor(G.xp)+' / '+xpN;
   document.getElementById('coinN').textContent=G.coins;
   document.getElementById('lvl').textContent=G.level;
   const nf=(1+Math.cos((G.time||0)*6.2832))/2;
