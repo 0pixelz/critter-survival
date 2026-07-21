@@ -146,7 +146,16 @@ function rebuildBuildIndex(){buildAt={};if(G&&G.builds)for(const b of G.builds)b
 function solidWorld(wx,wy,forE){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
   if(SOLID.has(tileAt(tx,ty)))return true;
   const b=buildAt[tx+','+ty];if(!b)return false;
-  const d=BUILD_DEF[b.t]||{};return !!(forE?(d.eSolid||d.solid):d.solid);}
+  const d=BUILD_DEF[b.t]||{};
+  if(d.openable)return !b.open;                 // open door: everyone passes; closed: nobody
+  return !!(forE?(d.eSolid||d.solid):d.solid);}
+function shotSolid(wx,wy){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
+  if(SOLID.has(tileAt(tx,ty)))return true;
+  const b=buildAt[tx+','+ty];if(!b)return false;
+  const d=BUILD_DEF[b.t]||{};
+  if(d.shotPass)return false;                   // windows: bolts & arrows fly through
+  if(d.openable)return !b.open;
+  return !!d.solid;}
 function townDist(wx,wy){let d=1e9;for(const t of TOWNS)d=Math.min(d,Math.hypot(wx/TILE-t.cx,wy/TILE-t.cy));return d;}
 function zoneLevel(wx,wy){if(dungeon)return dungeon.lvl;return Math.max(1,1+Math.floor((townDist(wx,wy)-8)/5)*3);}
 function isoX(wx,wy){return (wx/TILE-wy/TILE)*(IW/2);}
@@ -1021,7 +1030,9 @@ const TOOLS={axe:{icon:'🪓',tiers:[{name:'Axe I',cost:{wood:3,stone:2}},{name:
   pickaxe:{icon:'⛏️',tiers:[{name:'Pickaxe I',cost:{wood:3,stone:3}},{name:'Pickaxe II',cost:{wood:5,ore:4},station:'forge'},{name:'Pickaxe III',cost:{wood:8,ore:7},station:'forge'}]}};
 const BUILD_DEF={
   campfire:{name:'Campfire',hp:60,light:1},torch:{name:'Torch',hp:40,light:1},
-  wall:{name:'Wall',hp:160,solid:1,eSolid:1},door:{name:'Door',hp:120,eSolid:1},
+  wall:{name:'Wall',hp:160,solid:1,eSolid:1,fam:'wall',autotile:1},
+  door:{name:'Door',hp:120,solid:1,eSolid:1,fam:'wall',openable:1},
+  window:{name:'Window',hp:100,solid:1,eSolid:1,fam:'wall',shotPass:1},
   hut:{name:'Hut',hp:320,solid:1,eSolid:1,light:1},chest:{name:'Chest',hp:120,eSolid:1},
   table:{name:'Craft Table',hp:100,eSolid:1},forge:{name:'Forge',hp:160,eSolid:1,light:1},
   spike:{name:'Spike Trap',hp:30,trap:1,uses:4},snare:{name:'Snare Trap',hp:20,trap:1,uses:3},
@@ -1037,7 +1048,8 @@ const RECIPES=[
   {key:'campfire',cost:{wood:5},lvl:1,desc:'Warm light. Place anywhere.'},
   {key:'torch',cost:{wood:2,fiber:2},lvl:1,desc:'Bright light. Place anywhere.'},
   {key:'wall',cost:{wood:2,stone:2},lvl:1,plot:1,desc:'Blocks enemies.'},
-  {key:'door',cost:{wood:4},lvl:1,plot:1,desc:'You pass, enemies don\'t.'},
+  {key:'door',cost:{wood:4},lvl:1,plot:1,desc:'Tap to open & close. Blocks all when shut.'},
+  {key:'window',cost:{wood:3,stone:2},lvl:1,plot:1,desc:'Blocks movement — you can shoot through.'},
   {key:'chest',cost:{wood:6},lvl:1,plot:1,desc:'Bank materials — safe on death!'},
   {key:'table',cost:{wood:6,stone:2},lvl:1,plot:1,desc:'Unlocks advanced recipes nearby.'},
   {key:'forge',cost:{stone:10,wood:4},lvl:2,plot:1,station:'table',desc:'Smith tier-2+ tools nearby.'},
@@ -2029,6 +2041,75 @@ function exitDungeon(){
   pendingPos={x:dungeon.returnX,y:dungeon.returnY};
   dungeon=null;sfx('coin');toast('☀️ Back to the surface');
   scene.scene.restart();}
+function bakeWallSet(){
+  // iso half-tile arm vectors per direction bit: N=1,E=2,S=4,W=8
+  const ARMS={1:[18,-9],2:[18,9],4:[-18,9],8:[-18,-9]};
+  const WH=26,CW=96,CH=96,cx=48,cy=72;
+  const OL='#12160f';
+  const out={};
+  const stone=(c,x0,y0,x1,y1)=>{const g=c.createLinearGradient(x0,y0-WH,x0,y0);
+    g.addColorStop(0,'#a8b2bc');g.addColorStop(1,'#6e7880');return g;};
+  const drawArm=(c,ax,ay)=>{
+    const px=-ay/Math.hypot(ax,ay)*7,py=ax/Math.hypot(ax,ay)*7; // perp half-width
+    c.fillStyle=stone(c,cx,cy);
+    c.strokeStyle=OL;c.lineWidth=3;c.lineJoin='round';
+    c.beginPath();
+    c.moveTo(cx+px,cy+py);c.lineTo(cx+ax+px,cy+ay+py);
+    c.lineTo(cx+ax+px,cy+ay+py-WH);c.lineTo(cx+px,cy+py-WH);
+    c.closePath();c.fill();c.stroke();
+    c.beginPath();
+    c.moveTo(cx-px,cy-py);c.lineTo(cx+ax-px,cy+ay-py);
+    c.lineTo(cx+ax-px,cy+ay-py-WH);c.lineTo(cx-px,cy-py-WH);
+    c.closePath();c.fill();c.stroke();
+    // top cap
+    c.fillStyle='#c0cad4';
+    c.beginPath();c.moveTo(cx+px,cy+py-WH);c.lineTo(cx+ax+px,cy+ay+py-WH);
+    c.lineTo(cx+ax-px,cy+ay-py-WH);c.lineTo(cx-px,cy-py-WH);c.closePath();c.fill();c.stroke();
+    // brick hints
+    c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1.6;
+    c.beginPath();c.moveTo(cx+ax*0.5+px,cy+ay*0.5+py-4);c.lineTo(cx+ax*0.5-px,cy+ay*0.5-py-4);c.stroke();
+    c.beginPath();c.moveTo(cx+ax*0.3+px,cy+ay*0.3+py-WH*0.55);c.lineTo(cx+ax*0.3-px,cy+ay*0.3-py-WH*0.55);c.stroke();};
+  const pillar=(c)=>{
+    c.fillStyle=stone(c,cx,cy);c.strokeStyle=OL;c.lineWidth=3;
+    c.beginPath();c.rect(cx-9,cy-WH-4,18,WH+4);c.fill();c.stroke();
+    c.fillStyle='#c0cad4';c.beginPath();c.rect(cx-11,cy-WH-9,22,7);c.fill();c.stroke();};
+  for(let m2=0;m2<16;m2++){
+    const cv=document.createElement('canvas');cv.width=CW;cv.height=CH;
+    const c=cv.getContext('2d');
+    c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(cx,cy+3,26,9,0,0,7);c.fill();
+    for(const bit of [1,8])if(m2&bit)drawArm(c,ARMS[bit][0],ARMS[bit][1]);   // back arms first
+    for(const bit of [2,4])if(m2&bit)drawArm(c,ARMS[bit][0],ARMS[bit][1]);
+    pillar(c);
+    out['wallA_'+m2]=cv;}
+  // door + window variants (H = along E/W screen axis, V = along N/S)
+  const seg=(c,horiz)=>{ // straight wall both arms
+    const a=horiz?ARMS[2]:ARMS[1],b2=horiz?ARMS[8]:ARMS[4];
+    drawArm(c,a[0],a[1]);drawArm(c,b2[0],b2[1]);};
+  const mkDW=(kind,horiz,open)=>{
+    const cv=document.createElement('canvas');cv.width=CW;cv.height=CH;
+    const c=cv.getContext('2d');
+    c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(cx,cy+3,26,9,0,0,7);c.fill();
+    seg(c,horiz);
+    if(kind==='door'){
+      c.strokeStyle=OL;c.lineWidth=3;
+      if(open){ // dark gap + swung panel
+        c.fillStyle='#1c2026';c.beginPath();c.rect(cx-10,cy-WH,20,WH);c.fill();c.stroke();
+        c.fillStyle='#6b4326';c.save();c.translate(cx-10,cy);c.rotate(-0.5);
+        c.beginPath();c.rect(0,-WH,8,WH);c.fill();c.stroke();c.restore();}
+      else{c.fillStyle='#6b4326';c.beginPath();c.rect(cx-11,cy-WH,22,WH);c.fill();c.stroke();
+        c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=2;
+        for(const dx of[-4,3]){c.beginPath();c.moveTo(cx+dx,cy-WH+3);c.lineTo(cx+dx,cy-3);c.stroke();}
+        c.fillStyle='#ffd23c';c.beginPath();c.arc(cx+6,cy-WH*0.45,2.4,0,7);c.fill();}}
+    else{ // window
+      c.strokeStyle=OL;c.lineWidth=3;
+      c.fillStyle='#22303c';c.beginPath();c.rect(cx-9,cy-WH+4,18,WH*0.6);c.fill();c.stroke();
+      c.fillStyle='rgba(140,200,255,.55)';c.beginPath();c.rect(cx-7,cy-WH+6,14,WH*0.6-4);c.fill();
+      c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=1.6;
+      c.beginPath();c.moveTo(cx-5,cy-WH+7);c.lineTo(cx+3,cy-8);c.stroke();}
+    out[kind+(horiz?'H':'V')+(kind==='door'?(open?'_o':'_c'):'')]=cv;};
+  mkDW('door',true,false);mkDW('door',true,true);mkDW('door',false,false);mkDW('door',false,true);
+  mkDW('win',true);mkDW('win',false);
+  return out;}
 function bakeDungeonArt(){
   return {
     rwall:(()=>{const cv=mkCv(76,64),cx=38,base=56;
@@ -2247,6 +2328,9 @@ class World extends Phaser.Scene{
      g.fillStyle(0xffd23c,1);g.fillPoints([{x:2,y:14},{x:2,y:7},{x:7,y:11},{x:11,y:5},{x:15,y:11},{x:20,y:7},{x:20,y:14}],true);
      g.generateTexture('crownTex',22,18);}
     // gear-drop chest texture
+    if(!this.textures.exists('wallA_0')){
+      const ws=bakeWallSet();
+      for(const k in ws)this.textures.addCanvas(k,ws[k]);}
     if(!this.textures.exists('drop_helm')){
       const mk2=(key,kind)=>{const cv=document.createElement('canvas');cv.width=52;cv.height=52;
         drawMenuIcon(cv,kind);this.textures.addCanvas(key,cv);};
@@ -2415,6 +2499,10 @@ class World extends Phaser.Scene{
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
     if(t2.vault){enterDungeon('sewer',t2.vault.x,t2.vault.y,'Castle Vault');return;}
     if(t2.quest){openQuest(t2.quest.town||0);return;}
+    if(t2.doorB){const b=t2.doorB;b.open=b.open?0:1;
+      this.refreshWall(b.x,b.y);
+      fNoise(0.14,0.12,500,180,'lowpass');tone(b.open?320:240,0.08,'triangle',0.1,b.open?520:120);
+      save();return;}
     if(t2.sewer){enterDungeon('sewer',t2.sewer.x,t2.sewer.y);return;}
     if(t2.stairs){exitDungeon();return;}
     if(t2.treasure){const{x,y}=t2.treasure;
@@ -2492,7 +2580,7 @@ class World extends Phaser.Scene{
   updateEshots(dt){
     for(let i=this.eshots.length-1;i>=0;i--){const s=this.eshots[i];
       s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
-      const dead=s.life<=0||solidWorld(s.x,s.y);
+      const dead=s.life<=0||shotSolid(s.x,s.y);
       const dp=Math.hypot(s.x-this.px,s.y-this.py);
       if(!dead&&dp<PR+8&&G.hp>0&&this.hurtCD<=0){
         this.hurtCD=0.25;
@@ -2705,10 +2793,30 @@ class World extends Phaser.Scene{
       if(!own){const mx=(pl.x+pl.w/2)*TILE,my2=(pl.y+pl.h/2)*TILE;
         this.plotTexts.push(this.add.text(isoX(mx,my2),isoY(mx,my2),'FOR SALE '+pl.price+'c',
           {fontFamily:'Fredoka',fontSize:'11px',color:'#ffd23c',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(-89999));}}}
+  wallMask(x,y){let m2=0;
+    const fam=(xx,yy)=>{const nb=buildAt[xx+','+yy];return nb&&BUILD_DEF[nb.t]&&BUILD_DEF[nb.t].fam==='wall';};
+    if(fam(x,y-1))m2|=1;if(fam(x+1,y))m2|=2;if(fam(x,y+1))m2|=4;if(fam(x-1,y))m2|=8;
+    return m2;}
+  wallTexFor(b){
+    const d=BUILD_DEF[b.t],m2=this.wallMask(b.x,b.y);
+    if(d.autotile)return 'wallA_'+m2;
+    const horiz=!!(m2&2)||!!(m2&8)||!(m2&5);
+    if(d.openable)return 'door'+(horiz?'H':'V')+(b.open?'_o':'_c');
+    return 'win'+(horiz?'H':'V');}
+  refreshWall(x,y){
+    const b=buildAt[x+','+y];if(!b)return;
+    const d=BUILD_DEF[b.t];if(!d||d.fam!=='wall')return;
+    const sp2=this.buildSprites[x+','+y];
+    if(sp2)sp2.setTexture(this.wallTexFor(b));}
+  refreshWallsAround(x,y){
+    this.refreshWall(x,y);
+    this.refreshWall(x,y-1);this.refreshWall(x+1,y);this.refreshWall(x,y+1);this.refreshWall(x-1,y);}
   addBuildSprite(b){
     const wx=(b.x+0.5)*TILE,wy=(b.y+0.5)*TILE,sx=isoX(wx,wy),sy=isoY(wx,wy);
-    const key=b.t==='hut'?'houseR2':b.t==='campfire'?'campfire':b.t==='chest'?'b_chestB':'b_'+b.t;
-    const sp2=this.add.image(sx,sy,key).setDepth(sy+IH*0.28).setOrigin(0.5,b.t==='hut'?0.8:0.82);
+    const d=BUILD_DEF[b.t];
+    let key=b.t==='hut'?'houseR2':b.t==='campfire'?'campfire':b.t==='chest'?'b_chestB':'b_'+b.t;
+    if(d&&d.fam==='wall')key=this.wallTexFor(b);
+    const sp2=this.add.image(sx,sy,key).setDepth(sy+IH*0.28).setOrigin(0.5,d&&d.fam==='wall'?0.75:(b.t==='hut'?0.8:0.82));
     this.buildSprites[b.x+','+b.y]=sp2;
     if(BUILD_DEF[b.t].light){const gl=this.add.image(sx,sy-14,'glow').setScale(0.9).setTint(b.t==='tfrost'?0x7ad0ff:0xff9a3c)
       .setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.45).setDepth(sy+IH*0.28+1);sp2._gl=gl;}}
@@ -2716,7 +2824,7 @@ class World extends Phaser.Scene{
     if(sp2){if(sp2._gl)sp2._gl.destroy();sp2.destroy();delete this.buildSprites[k];}}
   damageBuild(b,d){b.hp-=d;
     if(b.hp<=0){const i=G.builds.indexOf(b);if(i>=0)G.builds.splice(i,1);
-      rebuildBuildIndex();this.removeBuildSprite(b);
+      rebuildBuildIndex();this.removeBuildSprite(b);this.refreshWallsAround(b.x,b.y);
       toast('💥 Your '+BUILD_DEF[b.t].name+' was destroyed!');noiseBurst(0.25,0.18);save();}}
   buildOk(tx2,ty2){const t2=tileAt(tx2,ty2);
     const occ=!!buildAt[tx2+','+ty2]||(tx2===Math.floor(this.px/TILE)&&ty2===Math.floor(this.py/TILE));
@@ -2743,7 +2851,7 @@ class World extends Phaser.Scene{
     const b={t:this.buildMode,x:bt.x,y:bt.y,hp:maxHp2,maxHp:maxHp2};
     if(def.tower){b.tier=1;b.ammo=0;}
     if(def.trap)b.uses=def.uses*(isRSub('trapper')?2:1);
-    G.builds.push(b);rebuildBuildIndex();this.addBuildSprite(b);gainCraftXp();sfx('coin');save();
+    G.builds.push(b);rebuildBuildIndex();this.addBuildSprite(b);this.refreshWallsAround(b.x,b.y);gainCraftXp();sfx('coin');save();
     if(!haveCost(this.effCost(r))){this.cancelBuild();toast('Built! (out of materials)');}
     else toast('Built! Tap another tile, or ✕ when done');}
   cancelBuild(){this.buildMode=null;this.buildRecipe=null;this.buildSel=null;
@@ -2856,13 +2964,15 @@ class World extends Phaser.Scene{
         o.sp.setVisible(nodeReady(o.nd.tx,o.nd.ty));}}
     // build ghost sits on the tapped tile
     if(this.buildMode&&this.buildSel){
-      const bt=this.buildSel;
-      const key=this.buildMode==='hut'?'houseR2':this.buildMode==='campfire'?'campfire':this.buildMode==='chest'?'b_chestB':'b_'+this.buildMode;
-      if(!this.ghost)this.ghost=this.add.image(0,0,key).setOrigin(0.5,0.82);
+      const bt=this.buildSel,d=BUILD_DEF[this.buildMode];
+      let key=this.buildMode==='hut'?'houseR2':this.buildMode==='campfire'?'campfire':this.buildMode==='chest'?'b_chestB':'b_'+this.buildMode;
+      if(d&&d.fam==='wall')key=this.wallTexFor({t:this.buildMode,x:bt.x,y:bt.y,open:0});
+      if(!this.ghost)this.ghost=this.add.image(0,0,key).setOrigin(0.5,d&&d.fam==='wall'?0.75:0.82);
+      else if(this.ghost.texture.key!==key)this.ghost.setTexture(key);
       const wx=(bt.x+0.5)*TILE,wy=(bt.y+0.5)*TILE;
       const bad=!this.buildOk(bt.x,bt.y)||(this.buildRecipe.plot&&!ownsAt(bt.x,bt.y));
       this.ghost.setAlpha(0.55+Math.sin(this.time.now*0.008)*0.15)
-        .setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0xffffff);
+        .setPosition(isoX(wx,wy),isoY(wx,wy)).setDepth(isoY(wx,wy)+IH*0.28).setTint(bad?0xff6666:0x9aff8a);
     }else if(this.ghost){this.ghost.destroy();this.ghost=null;}
     this.survT+=dt;if(this.survT>0.5){this.survT=0;
       if(!dungeon)revealAt(this.px,this.py);
@@ -2992,7 +3102,7 @@ class World extends Phaser.Scene{
       s.core.setPosition(ssx,ssy).setDepth(999000);s.gl.setPosition(ssx,ssy).setDepth(998999);
       if(s.core.texture.key.indexOf('arrow')===0||s.core.texture.key.indexOf('bolt')>0){
         const pang=Math.atan2((s.vx+s.vy)*IH/2,(s.vx-s.vy)*IW/2);s.core.setRotation(pang);}
-      let dead=s.life<=0||solidWorld(s.x,s.y);
+      let dead=s.life<=0||shotSolid(s.x,s.y);
       if(!dead)for(const e of this.enemies){
         if(Math.hypot(e.x-s.x,e.y-s.y)<24){
           let sd=s.dmg;
@@ -3129,7 +3239,8 @@ class World extends Phaser.Scene{
         else if(t2==='E')setT(dd,TILE*1.3,{stairs:1},'Climb Out');
         else if(t2==='K')setT(dd,TILE*1.4,{treasure:{x:xx,y:yy}},'Open Chest');
         if(bld){
-          if(bld.t==='hut')setT(dd,TILE*1.4,{hut:bld},'Rest');
+          if(BUILD_DEF[bld.t]&&BUILD_DEF[bld.t].openable)setT(dd,TILE*1.5,{doorB:bld},bld.open?'Close Door':'Open Door');
+          else if(bld.t==='hut')setT(dd,TILE*1.4,{hut:bld},'Rest');
           else if(bld.t==='chest')setT(dd,TILE*1.4,{bank:bld},'Chest');
           else if(bld.t==='table'||bld.t==='forge')setT(dd,TILE*1.4,{station:bld},'Craft');
           else if(TOWERS[bld.t])setT(dd,TILE*1.4,{tower:bld},(bld.ammo||0)<=0?'Load Tower':'Tower');
