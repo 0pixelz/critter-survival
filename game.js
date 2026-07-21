@@ -87,6 +87,7 @@ function shadeCol(hex,amt){let h=hex.replace('#','');if(h.length===3)h=h.split('
 let grid=[];
 const SOLID=new Set(['T','W','H','N','M','S','B','R','V','C','U','r','b','K','w','Y','X','Q']);
 const PROP=new Set(['T','H','N','M','S','B','R','V','Q']);
+const LIQUID=new Set(['w','W']); // water/waste pools: block walking, NOT shots
 function inb(x,y){return x>1&&y>1&&x<MW-2&&y<MH-2;}
 function gen(){
   grid=[];
@@ -151,7 +152,8 @@ function solidWorld(wx,wy,forE){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TI
   if(d.openable)return !b.open;                 // open door: everyone passes; closed: nobody
   return !!(forE?(d.eSolid||d.solid):d.solid);}
 function shotSolid(wx,wy){const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
-  if(SOLID.has(tileAt(tx,ty)))return true;
+  const t=tileAt(tx,ty);
+  if(SOLID.has(t)&&!LIQUID.has(t))return true;  // arrows & bolts fly over water/lava
   const b=buildAt[tx+','+ty];if(!b)return false;
   const d=BUILD_DEF[b.t]||{};
   if(d.shotPass)return false;                   // windows: bolts & arrows fly through
