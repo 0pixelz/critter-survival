@@ -2645,7 +2645,12 @@ class World extends Phaser.Scene{
       const c=Math.round((4+e.lvl*2.5)*(e.alpha?3:e.rare?2:1)*mods().coins);G.coins+=c;
       const ct=this.add.text(e.s.x,e.s.y-24,'+'+c+'c',{fontFamily:'Fredoka',fontSize:'14px',color:'#ffd23c',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(9999000);
       this.tweens.add({targets:ct,y:ct.y-26,alpha:0,duration:800,onComplete:()=>ct.destroy()});
-      grantXp((6+e.lvl*3)*(e.boss?6:e.alpha?3:e.rare?2:1));killSfx(e);
+      {let xg=(4+e.lvl*2.2)*(e.boss?6:e.alpha?3:e.rare?2:1);
+       const gap=G.level-e.lvl;
+       if(gap>0)xg*=Math.max(0.1,1-gap*0.15);      // farming low-level mobs pays less and less
+       else if(gap<0)xg*=Math.min(1.4,1-gap*0.08); // punching up pays a bonus
+       grantXp(Math.max(1,Math.round(xg)));}
+      killSfx(e);
       if(e.boss){G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;G.coins+=100+e.lvl*8;
         this.dropGear(e.x,e.y,rollGear(e.lvl,3));this.dropGear(e.x+30,e.y,rollGear(e.lvl,2));
         for(const q2 of G.quests||[])if(q2.key==='boss')q2.n=Math.min(q2.need,(q2.n||0)+1);
