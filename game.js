@@ -862,9 +862,59 @@ function noiseBurst(dur,vol){const c=actx();if(!c||(G&&G.muted))return;const t=c
   for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
   const s2=c.createBufferSource();s2.buffer=b;const g=c.createGain();g.gain.value=vol||0.15;
   s2.connect(g).connect(c.destination);s2.start(t);}
+function fNoise(dur,vol,f0,f1,type){ // filtered noise sweep (whoosh/crackle/hiss)
+  const c=actx();if(!c||(G&&G.muted))return;const t=c.currentTime;
+  const b=c.createBuffer(1,Math.max(1,(c.sampleRate*dur)|0),c.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.4);
+  const s2=c.createBufferSource();s2.buffer=b;
+  const fl=c.createBiquadFilter();fl.type=type||'bandpass';fl.Q.value=1.1;
+  fl.frequency.setValueAtTime(f0,t);fl.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);
+  const g=c.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s2.connect(fl).connect(g).connect(c.destination);s2.start(t);}
+function crackle(dur,vol){ // sparse pops for fire
+  const c=actx();if(!c||(G&&G.muted))return;const t=c.currentTime;
+  const b=c.createBuffer(1,(c.sampleRate*dur)|0,c.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()<0.015?(Math.random()*2-1):d[i-1]?d[i-1]*0.6:0;
+  const s2=c.createBufferSource();s2.buffer=b;
+  const fl=c.createBiquadFilter();fl.type='highpass';fl.frequency.value=1400;
+  const g=c.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s2.connect(fl).connect(g).connect(c.destination);s2.start(t);}
+function bell(freq,dur,vol,delay){ // bright bell partials (quest/fanfare)
+  const c=actx();if(!c||(G&&G.muted))return;const t=c.currentTime+(delay||0);
+  for(const[m,v2]of[[1,1],[2.76,0.4],[5.4,0.18]]){
+    const o=c.createOscillator(),g=c.createGain();o.type='sine';
+    o.frequency.setValueAtTime(freq*m,t);
+    g.gain.setValueAtTime(vol*v2,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+0.02);}}
+function elemCastSfx(){
+  const el=(G&&G.element)||'fire';
+  if(G&&G.class==='ranger'){ // bow: string pluck + arrow whoosh
+    tone(190+Math.random()*30,0.05,'triangle',0.16,120);
+    fNoise(0.16,0.1,2600,700);return;}
+  if(G&&G.class==='warrior'){ // blade whoosh
+    fNoise(0.15,0.16,900,2600);return;}
+  switch(el){
+    case 'fire':fNoise(0.22,0.16,420,1600);crackle(0.2,0.12);break;
+    case 'chrono':case 'frost':tone(1450+Math.random()*120,0.16,'sine',0.09,2100);fNoise(0.18,0.07,4200,6800,'highpass');break;
+    case 'storm':tone(1900,0.09,'sawtooth',0.1,140);crackle(0.12,0.14);break;
+    case 'necro':tone(140,0.26,'sawtooth',0.1,90);tone(146,0.26,'sawtooth',0.08,88);fNoise(0.26,0.06,300,120,'lowpass');break;
+    default:tone(520,0.11,'square',0.13,900);}}
 let _hitT=0;
 function sfx(n){switch(n){
-  case 'cast':tone(520,0.11,'square',0.13,900);break;
+  case 'cast':elemCastSfx();break;
+  case 'ecast':tone(320,0.14,'sawtooth',0.07,110);fNoise(0.16,0.06,500,180,'lowpass');break;
+  case 'wall':{const el=(G&&G.element)||'fire';
+    if(G&&G.class==='warrior'){fNoise(0.4,0.2,150,60,'lowpass');noiseBurst(0.3,0.14);}
+    else if(G&&G.class==='ranger'){fNoise(0.35,0.14,700,250);tone(240,0.2,'triangle',0.08,120);}
+    else if(el==='chrono'){bell(1150,0.5,0.12);fNoise(0.4,0.08,5000,7600,'highpass');}
+    else if(el==='storm'){tone(2100,0.2,'sawtooth',0.12,110);crackle(0.3,0.16);}
+    else if(el==='necro'){tone(110,0.55,'sawtooth',0.13,60);fNoise(0.5,0.08,260,90,'lowpass');}
+    else{fNoise(0.45,0.2,300,1400);crackle(0.45,0.16);}break;}
+  case 'quest':{ // WoW-style completion flourish
+    [392,523,659,784].forEach((f,i)=>bell(f,0.5,0.16,i*0.09));
+    bell(1046,0.9,0.2,0.36);
+    setTimeout(()=>fNoise(0.5,0.06,3000,7000,'highpass'),320);
+    setTimeout(()=>sfx('coin'),430);break;}
   case 'hit':{if(performance.now()-_hitT<45)return;_hitT=performance.now();noiseBurst(0.09,0.12);tone(200,0.08,'sawtooth',0.09,90);break;}
   case 'super':tone(280,0.5,'sawtooth',0.2,1300);noiseBurst(0.5,0.13);break;
   case 'catch':tone(500,0.1,'square',0.16,720);setTimeout(()=>tone(760,0.11,'square',0.16,1000),110);setTimeout(()=>tone(1050,0.16,'triangle',0.16,1350),240);break;
@@ -1526,7 +1576,7 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
     else{scene.dropGear(scene.px,scene.py,it);toast('🎁 Quest done! +'+rw+'c · gear dropped (bag full)');}
     G.quests.splice(i,1);
     if(G.trackQ===i)G.trackQ=null;else if(G.trackQ>i)G.trackQ--;
-    G.questsDone=(G.questsDone||0)+1;sfx('level');save();updateHud();openQuest(ti);});
+    G.questsDone=(G.questsDone||0)+1;sfx('quest');save();updateHud();openQuest(ti);});
   document.getElementById('qClose').onclick=()=>pauseGame(false);}
 function openQuests(){const p=document.getElementById('panel');
   let h='<h2>📜 Quest Log</h2>';
@@ -2263,7 +2313,7 @@ class World extends Phaser.Scene{
       const fs=cls==='warrior'?0.75:1;
       sp2.setScale(0.1);this.tweens.add({targets:sp2,scaleX:fs,scaleY:fs,duration:180,ease:'Back.Out'});
       this.zones.push({x:sg.x,y:sg.y,sp:sp2,gl,life:dur,max:dur,tick:0.3+Math.random()*0.3,tickMax:isWSub('blademaster')?0.28:0.4,dmg,seed:Math.random()*6.28,fs});}
-    sfx('super');this.cameras.main.shake(120,0.004);
+    sfx('wall');this.cameras.main.shake(120,0.004);
     toast(wallDef().ic+' '+wallDef().nm.toUpperCase()+'!');}
   updateZones(dt){
     for(let i=this.zones.length-1;i>=0;i--){const z=this.zones[i];z.life-=dt;
@@ -2385,7 +2435,7 @@ class World extends Phaser.Scene{
     const spd=e.boss?260:210;
     this.eshots.push({core,gl,x:e.x,y:e.y,vx:Math.cos(aa)*spd,vy:Math.sin(aa)*spd,
       dmg:Math.max(3,Math.round(e.atk*0.75)),life:2.2});
-    sfx('cast');}
+    sfx('ecast');}
   updateEshots(dt){
     for(let i=this.eshots.length-1;i>=0;i--){const s=this.eshots[i];
       s.life-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
