@@ -2192,7 +2192,7 @@ const DAY_LEN=150;
 const drops=[];
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.style.opacity='1';
   clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity='0',1600);}
-function updateHud(){if(!G)return;
+function updateHud(){if(!G)return;try{
   const hp=Math.max(0,Math.ceil(G.hp));
   document.getElementById('hp').style.width=Math.max(0,G.hp/G.maxHp*100)+'%';
   document.getElementById('hpTxt').textContent=hp+'/'+G.maxHp;
@@ -2205,7 +2205,8 @@ function updateHud(){if(!G)return;
   const ph=nf>0.6?'night':(nf>0.32?'dusk':'day');
   const ic=document.getElementById('clockIc');
   if(ic.dataset.ph!==ph){ic.dataset.ph=ph;ic.innerHTML=DAY_ICON[ph];}
-  document.getElementById('clockTxt').textContent='Day '+G.day;}
+  document.getElementById('clockTxt').textContent='Day '+G.day;
+  }catch(e){}}
 const DAY_ICON={
   day:'<svg viewBox="0 0 24 24" width="15" height="15"><g stroke="#ffd84a" stroke-width="2" stroke-linecap="round">'+
     [0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180,x=12+Math.cos(r)*9,y=12+Math.sin(r)*9,x2=12+Math.cos(r)*6.6,y2=12+Math.sin(r)*6.6;return '<line x1="'+x2.toFixed(1)+'" y1="'+y2.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'"/>';}).join('')+
@@ -3476,7 +3477,11 @@ const _hasSave=load();
 menuUI();
 
 /* ---- PWA: service worker + install-to-homescreen popup ---- */
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator){
+  let _refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_refreshing)return;_refreshing=true;location.reload();});
+  navigator.serviceWorker.register('sw.js').then(reg=>{if(reg&&reg.update)reg.update();}).catch(()=>{});
+}
 (function(){
   const standalone=matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone;
   if(standalone||localStorage.getItem('cw-pwa-no'))return;
