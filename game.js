@@ -2199,11 +2199,19 @@ function updateHud(){if(!G)return;
   document.getElementById('hunger').style.width=Math.max(0,G.hunger)+'%';
   document.getElementById('hungerTxt').textContent=Math.round(Math.max(0,G.hunger))+'%';
   document.getElementById('xpb').style.width=Math.max(0,Math.min(100,G.xp/xpToNext(G.level)*100))+'%';
-  document.getElementById('coins').textContent='◉ '+G.coins;
+  document.getElementById('coinN').textContent=G.coins;
   document.getElementById('lvl').textContent=G.level;
-  const nf=(1+Math.cos((G.time||0)*6.2832))/2,night=nf>0.55;
-  document.getElementById('clockIc').textContent=night?'🌙':(nf<0.15||nf>0.9?'🌅':'☀️');
+  const nf=(1+Math.cos((G.time||0)*6.2832))/2;
+  const ph=nf>0.6?'night':(nf>0.32?'dusk':'day');
+  const ic=document.getElementById('clockIc');
+  if(ic.dataset.ph!==ph){ic.dataset.ph=ph;ic.innerHTML=DAY_ICON[ph];}
   document.getElementById('clockTxt').textContent='Day '+G.day;}
+const DAY_ICON={
+  day:'<svg viewBox="0 0 24 24" width="15" height="15"><g stroke="#ffd84a" stroke-width="2" stroke-linecap="round">'+
+    [0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180,x=12+Math.cos(r)*9,y=12+Math.sin(r)*9,x2=12+Math.cos(r)*6.6,y2=12+Math.sin(r)*6.6;return '<line x1="'+x2.toFixed(1)+'" y1="'+y2.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'"/>';}).join('')+
+    '</g><circle cx="12" cy="12" r="5" fill="#ffd23c" stroke="#c9971e" stroke-width="1.4"/></svg>',
+  dusk:'<svg viewBox="0 0 24 24" width="15" height="15"><g stroke="#e8863a" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="6"/><line x1="4.5" y1="6.5" x2="6.5" y2="8.5"/><line x1="19.5" y1="6.5" x2="17.5" y2="8.5"/></g><path d="M6 14a6 6 0 0 1 12 0Z" fill="#ff9a3c" stroke="#b5601e" stroke-width="1.5" stroke-linejoin="round"/><line x1="3" y1="17.5" x2="21" y2="17.5" stroke="#6a4a26" stroke-width="2" stroke-linecap="round"/></svg>',
+  night:'<svg viewBox="0 0 24 24" width="14" height="14"><path d="M18.5 15.5A8 8 0 1 1 10 4.2 6.4 6.4 0 0 0 18.5 15.5Z" fill="#d8e2f0" stroke="#2a3550" stroke-width="1.6" stroke-linejoin="round"/><circle cx="16.5" cy="6" r="1" fill="#fff"/><circle cx="19" cy="9.5" r="0.8" fill="#fff"/></svg>'};
 let scene;
 class World extends Phaser.Scene{
   create(){
