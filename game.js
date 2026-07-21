@@ -2516,6 +2516,10 @@ class World extends Phaser.Scene{
     if(!this.anims.exists('walk'))this.anims.create({key:'walk',frames:[0,1,2,3,4,5].map(f=>({key:'hero'+f})),frameRate:12,repeat:-1});
     if(!this.anims.exists('atk'))this.anims.create({key:'atk',frames:[0,1,1,2].map(f=>({key:'heroAtk'+f})),frameRate:18,repeat:0});
     this.atkAnimT=0;
+    if(!this.textures.exists('crownTex')){const g=this.make.graphics({add:false});
+     g.fillStyle(0x12160f,1);g.fillPoints([{x:0,y:17},{x:0,y:3},{x:6,y:9},{x:11,y:1},{x:16,y:9},{x:22,y:3},{x:22,y:17}],true);
+     g.fillStyle(0xffd23c,1);g.fillPoints([{x:2,y:14},{x:2,y:7},{x:7,y:11},{x:11,y:5},{x:15,y:11},{x:20,y:7},{x:20,y:14}],true);
+     g.generateTexture('crownTex',22,18);}
     this.enemies=[];this.shots=[];this.slash=this.add.graphics().setDepth(999900);this.slashes=[];
     this.castCD=0;this.dashT=0;this.dashCD=0;this.hurtCD=0;
     if(dungeon){
@@ -2594,11 +2598,6 @@ class World extends Phaser.Scene{
       $('bbPlace').addEventListener('pointerdown',e=>{e.preventDefault();scene.placeBuild();});
       $('bbCancel').addEventListener('pointerdown',e=>{e.preventDefault();scene.cancelBuild();toast('Build mode off');});
     }
-    // crown texture for alpha monsters
-    if(!this.textures.exists('crownTex')){const g=this.make.graphics({add:false});
-     g.fillStyle(0x12160f,1);g.fillPoints([{x:0,y:17},{x:0,y:3},{x:6,y:9},{x:11,y:1},{x:16,y:9},{x:22,y:3},{x:22,y:17}],true);
-     g.fillStyle(0xffd23c,1);g.fillPoints([{x:2,y:14},{x:2,y:7},{x:7,y:11},{x:11,y:5},{x:15,y:11},{x:20,y:7},{x:20,y:14}],true);
-     g.generateTexture('crownTex',22,18);}
     // gear-drop chest texture
     if(!this.textures.exists('wallA_0')){
       const ws=bakeWallSet();
@@ -3305,6 +3304,12 @@ class World extends Phaser.Scene{
     const nx=this.px+this.vx*dt,ny=this.py+this.vy*dt;
     if(!this.collides(nx,this.py))this.px=nx;
     if(!this.collides(this.px,ny))this.py=ny;
+    if(this.collides(this.px,this.py)){ // wedged (e.g. knocked into a tree) — escape to nearest open spot
+      const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+      let done=false;
+      for(let d=8;d<=TILE*1.5&&!done;d+=8)for(const[ox,oy]of dirs){
+        const tx=this.px+ox*d,ty=this.py+oy*d;
+        if(!this.collides(tx,ty)){this.px=tx;this.py=ty;this.vx=this.vy=0;done=true;break;}}}
     const sx=isoX(this.px,this.py),sy=isoY(this.px,this.py);
     const moving=Math.hypot(this.vx,this.vy)>20;
     this.atkAnimT=Math.max(0,this.atkAnimT-dt);
@@ -3394,7 +3399,9 @@ class World extends Phaser.Scene{
       if(this.zf===0&&dl<PR+16&&e.touch<=0&&this.hurtCD<=0&&G.hp>0){e.touch=0.9;this.hurtCD=0.3;
         const d3=damageHero(Math.max(2,Math.round(e.atk*0.6-G._def*0.25)));updateHud();sfx('hit');
         this.cameras.main.shake(90,0.004);this.cameras.main.flash(130,190,40,40);
-        const kb=30;this.px+=dx/dl*-kb;this.py+=dy/dl*-kb;
+        const kb=30,kbx=dx/dl*-kb,kby=dy/dl*-kb;
+        if(!this.collides(this.px+kbx,this.py))this.px+=kbx;
+        if(!this.collides(this.px,this.py+kby))this.py+=kby;
         if(G.hp<=0){toast('💀 You fell! Loose coins & materials lost — banked goods, gear & levels kept.');
           G.hp=G.maxHp;G.coins=0;G.res={wood:0,stone:0,fiber:0,ore:0};G.hunger=Math.max(50,G.hunger);
           if(dungeon){dungeon=null;const t0=TOWNS[0];G.px=(t0.cx+1.5)*TILE;G.py=(t0.cy+1.5)*TILE;
