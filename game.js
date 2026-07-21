@@ -85,7 +85,7 @@ function shadeCol(hex,amt){let h=hex.replace('#','');if(h.length===3)h=h.split('
   const f=amt<0?0:255,t=Math.abs(amt);r=Math.round(r+(f-r)*t);g=Math.round(g+(f-g)*t);b=Math.round(b+(f-b)*t);return`rgb(${r},${g},${b})`;}
 /* ---- world gen (v1's generator) ---- */
 let grid=[];
-const SOLID=new Set(['T','W','H','N','M','S','B','R','V','C','U','r','b','K','w','Y','X','Q']);
+const SOLID=new Set(['T','W','H','N','M','S','B','R','V','C','U','r','b','K','w','Y','X','Q','k']);
 const PROP=new Set(['T','H','N','M','S','B','R','V','Q']);
 const LIQUID=new Set(['w','W']); // water/waste pools: block walking, NOT shots
 function inb(x,y){return x>1&&y>1&&x<MW-2&&y<MH-2;}
@@ -199,6 +199,9 @@ function bakeGround(kind,v){
     case 'c':col=v===1?'#3a3531':'#332f2b';break;
     case 's':col=v===1?'#39413b':'#333a35';break;
     case 'w':col='#1c4a2e';break;
+    case 'f':col=v===1?'#6a6055':'#5e564c';break;
+    case 'k':col=v===1?'#4a443c':'#443f38';break;
+    case 'F':col=v===1?'#7a2c24':'#6e2620';break;
     default:col=v===1?'#3d6b39':'#365f33';}
   diamondPath(cx,cy);ctx.fillStyle=col;ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,0.045)';ctx.lineWidth=1;
@@ -209,6 +212,9 @@ function bakeGround(kind,v){
   else if(kind==='W'){ctx.fillStyle='rgba(120,200,240,0.18)';ctx.fillRect(cx-12,cy,22,2);
     ctx.fillStyle='rgba(205,230,255,0.22)';ctx.fillRect(cx-4,cy-4,10,2);}
   else if(kind==='P'||kind==='~'){ctx.fillStyle='rgba(0,0,0,0.14)';ctx.fillRect(cx-7,cy-2,3,3);ctx.fillRect(cx+6,cy+3,3,3);}
+  else if(kind==='f'){ctx.strokeStyle='rgba(0,0,0,0.16)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-IW/4,cy-IH/4);ctx.lineTo(cx+IW/4,cy+IH/4);ctx.stroke();}
+  else if(kind==='F'){ctx.fillStyle='rgba(255,210,120,0.12)';ctx.fillRect(cx-9,cy-2,18,2);}
   else if(v===2){ctx.fillStyle='rgba(28,64,28,0.5)';ctx.fillRect(cx-3,cy-5,2,6);ctx.fillRect(cx+2,cy-4,2,6);}
   return cv;}
 function bakeTree(variant){
@@ -2229,7 +2235,7 @@ let dungeon=null, GW=MW, GH=MH, pendingPos=null;
 const CAVE_NAMES=['Gloomdepth Cave','Howling Hollow','Crystal Chasm','The Old Delve'];
 function genDungeon(){
   const w=44,h=32,theme=dungeon.theme;
-  const wall=theme==='cave'?'r':'b', fl=theme==='cave'?'c':'s';
+  const wall=theme==='cave'?'r':theme==='castle'?'k':'b', fl=theme==='cave'?'c':theme==='castle'?'f':'s';
   const g=Array.from({length:h},()=>Array(w).fill(wall));
   const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   const rooms=[];const n=7+Math.floor(Math.random()*3);
@@ -2242,15 +2248,24 @@ function genDungeon(){
     while(y!==b2.cy){g[y][x]=fl;g[y][Math.min(w-2,x+1)]=fl;y+=Math.sign(b2.cy-y);}}
   if(theme==='sewer')for(const r of rooms)if(r.w>=6){const wy=r.y+(r.h>>1);
     for(let x=r.x+1;x<r.x+r.w-1;x++)if(g[wy][x]===fl)g[wy][x]='w';}
+  if(theme==='castle')for(const r of rooms){ // red carpet down room centres
+    const cyR=r.y+(r.h>>1);for(let x=r.x;x<r.x+r.w;x++)if(g[cyR][x]===fl)g[cyR][x]='F';
+    const cxR=r.x+(r.w>>1);for(let y=r.y;y<r.y+r.h;y++)if(g[y][cxR]===fl)g[y][cxR]='F';}
   const st=rooms[0];g[st.cy][st.cx]='E';
   let far=rooms[0],fd=-1;for(const r of rooms){const d=Math.hypot(r.cx-st.cx,r.cy-st.cy);if(d>fd){fd=d;far=r;}}
   g[far.cy][far.cx]='K';
+  // extra treasure chests scattered in mid rooms
+  const nChest=theme==='castle'?3:2;let placed=0;
+  for(const r of rooms){if(r===far||r===rooms[0])continue;if(placed>=nChest)break;
+    if(Math.random()<0.55){const cx2=r.x+1+Math.floor(Math.random()*Math.max(1,r.w-2)),
+      cy2=r.y+1+Math.floor(Math.random()*Math.max(1,r.h-2));
+      if(g[cy2][cx2]===fl){g[cy2][cx2]='K';placed++;}}}
   dungeon.grid=g;dungeon.w=w;dungeon.h=h;dungeon.rooms=rooms;dungeon.far=far;
   dungeon.sx=st.cx;dungeon.sy=Math.min(st.y+st.h-1,st.cy+1);}
 function enterDungeon(theme,ex,ey,title){
   if(G.raid&&G.raid.active){toast('⚔️ Repel the raid first!');sfx('fail');return;}
   const zl=zoneLevel((ex+.5)*TILE,(ey+.5)*TILE);
-  const lvl=theme==='cave'?Math.max(3,zl+1):Math.max(4,zl+3);
+  const lvl=theme==='cave'?Math.max(3,zl+1):theme==='castle'?Math.max(6,zl+5):Math.max(4,zl+3);
   let nm;
   if(title)nm=title;
   else if(theme==='cave')nm=CAVE_NAMES[Math.floor(hash(ex*3.1,ey*7.3)*4)%4];
@@ -2341,6 +2356,19 @@ function bakeDungeonArt(){
       ctx.fillStyle='#8fd0ff';ctx.shadowColor='#8fd0ff';ctx.shadowBlur=7;
       ctx.beginPath();ctx.moveTo(cx+2,base-20);ctx.lineTo(cx+6,base-14);ctx.lineTo(cx-1,base-13);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
       return cv;})(),
+    kwall:(()=>{const cv=mkCv(76,68),cx=38,base=56;
+      ctx.fillStyle='#7c7468';ctx.strokeStyle='#12160f';ctx.lineWidth=3.5;
+      rr(cx-30,base-46,60,50,4);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#8c8478';ctx.beginPath();ctx.ellipse(cx,base-44,27,8,0,0,7);ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.28)';ctx.lineWidth=1.5;   // brick coursing
+      for(let r2=0;r2<3;r2++){const yy=base-38+r2*13;ctx.beginPath();ctx.moveTo(cx-28,yy);ctx.lineTo(cx+28,yy);ctx.stroke();
+        for(let bx=-20+(r2%2)*13;bx<28;bx+=26){ctx.beginPath();ctx.moveTo(cx+bx,yy);ctx.lineTo(cx+bx,yy+13);ctx.stroke();}}
+      // wall torch
+      ctx.strokeStyle='#3a2a16';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx+18,base-20);ctx.lineTo(cx+18,base-8);ctx.stroke();
+      ctx.fillStyle='#ffb454';ctx.shadowColor='#ff9a3c';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.ellipse(cx+18,base-24,4,6,0,0,7);ctx.fill();ctx.shadowBlur=0;
+      ctx.fillStyle='#fff2c8';ctx.beginPath();ctx.ellipse(cx+18,base-23,1.8,3,0,0,7);ctx.fill();
+      return cv;})(),
     bwall:(()=>{const cv=mkCv(76,60),cx=38,base=52;
       ctx.fillStyle='#3c4a42';ctx.strokeStyle='#12160f';ctx.lineWidth=3.5;
       rr(cx-30,base-38,60,42,4);ctx.fill();ctx.stroke();
@@ -2426,7 +2454,8 @@ class World extends Phaser.Scene{
       for(const k in da)tx(k,da[k]);
       tx('g_c0',bakeGround('c',0));tx('g_c1',bakeGround('c',1));
       tx('g_s0',bakeGround('s',0));tx('g_s1',bakeGround('s',1));
-      tx('g_w0',bakeGround('w',0));tx('g_w1',bakeGround('w',1));}
+      tx('g_w0',bakeGround('w',0));tx('g_w1',bakeGround('w',1));
+      tx('g_f0',bakeGround('f',0));tx('g_f1',bakeGround('f',1));tx('g_F0',bakeGround('F',0));tx('g_F1',bakeGround('F',1));}
     for(const sp of WILD)tx('cr_'+sp,bakeCritter(sp));
     for(let f=0;f<6;f++)tx('hero'+f,bakeHero(cls,f,'walk'));
     tx('heroIdle',bakeHero(cls,0,'idle'));
@@ -2440,17 +2469,19 @@ class World extends Phaser.Scene{
      for(let r2=80;r2>0;r2-=2){lg.fillStyle(0xffffff,0.026);lg.fillCircle(84,84,r2);}
      lg.generateTexture('light',168,168);}
     const IWH=IW/2,IHH=IH/2;
-    this.chestSprite=null;
+    this.chestSprite=null;this.chestSprites={};
     for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
       const t=tileAt(x,y),sx=(x-y)*IWH,sy=(x+y)*IHH;
       if(dungeon){
-        const fl=dungeon.theme==='cave'?'c':'s';
-        const gk=(t==='r'||t==='b'||t==='K'||t==='E')?fl:(t==='w'?'w':fl);
+        const fl=dungeon.theme==='cave'?'c':dungeon.theme==='castle'?'f':'s';
+        const gk=(t==='w')?'w':(t==='F')?'F':((t==='r'||t==='b'||t==='k'||t==='K'||t==='E')?fl:fl);
         this.add.image(sx,sy,'g_'+gk+((x+y)&1)).setDepth(sy-100000);
         if(t==='r')this.add.image(sx,sy+4,'rwall').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
+        else if(t==='k')this.add.image(sx,sy+4,'kwall').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
         else if(t==='b')this.add.image(sx,sy+4,'bwall').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
         else if(t==='E')this.add.image(sx,sy,'stairs').setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
         else if(t==='K'){this.chestSprite=this.add.image(sx,sy,'b_chestB').setScale(1.3).setDepth(sy+IH*0.28).setOrigin(0.5,0.84);
+          this.chestSprites[x+','+y]=this.chestSprite;
           this.add.image(sx,sy-12,'glow').setScale(0.9).setTint(0xffd23c).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5).setDepth(sy+IH*0.28+1);}
         continue;}
       const gk=PROP.has(t)||t==='C'||t==='U'||t==='Y'||t==='X'?'.':t;
@@ -2495,8 +2526,12 @@ class World extends Phaser.Scene{
           if(SOLID.has(dungeon.grid[y][x]))continue;
           this.spawnEnemyAt((x+.5)*TILE,(y+.5)*TILE,dungeon.lvl+Math.floor(Math.random()*3),Math.random()<0.15);}});
       const bx=dungeon.far.cx,by=Math.min(dungeon.far.y+dungeon.far.h-1,dungeon.far.cy+1);
-      const g2=this.spawnEnemyAt((bx+0.5)*TILE,(by+0.5)*TILE,dungeon.lvl+3,false,true);
-      if(g2){g2.s.setScale(0.95);g2.nameT.setText('⭐ Guardian L'+(dungeon.lvl+3));}
+      const g2=this.spawnEnemyAt((bx+0.5)*TILE,(by+0.5)*TILE,dungeon.lvl+4,false,true);
+      if(g2){g2.boss=true;g2.ranged=true;g2.s.setScale(1.2);
+        g2.hp=g2.maxHp=Math.round(g2.maxHp*2.2);g2.atk=Math.round(g2.atk*1.2);
+        const bn=dungeon.theme==='castle'?'Vault Warden':dungeon.theme==='cave'?'Cave Tyrant':'Sewer Horror';
+        g2.nameT.setText('☠ '+bn+' L'+(dungeon.lvl+4)).setColor('#ff5a4a').setFontSize(13);
+        if(g2.ring)g2.ring.setTint(0xff5a4a).setScale(1.15);}
     }else{for(let i=0;i<12;i++)this.spawnEnemy();
       if(G.day>=(G.bossRespawn||0))this.spawnBoss();}
     this.hitEmit=this.add.particles(0,0,'dot',{speed:{min:50,max:150},scale:{start:0.45,end:0},lifespan:420,gravityY:140,emitting:false,blendMode:'ADD'}).setDepth(999890);
@@ -2736,7 +2771,7 @@ class World extends Phaser.Scene{
       this.waveGfx.closePath();this.waveGfx.strokePath();}}
   doInteract(){const t2=this.interactT;if(!t2)return;
     if(t2.cave){enterDungeon('cave',t2.cave.x,t2.cave.y);return;}
-    if(t2.vault){enterDungeon('sewer',t2.vault.x,t2.vault.y,'Castle Vault');return;}
+    if(t2.vault){enterDungeon('castle',t2.vault.x,t2.vault.y,'Castle Vault');return;}
     if(t2.quest){openQuest(t2.quest.town||0);return;}
     if(t2.up){this.zf=1;G.zf=1;
       this.px=(t2.up.x+0.5)*TILE;this.py=(t2.up.y+0.5)*TILE;
@@ -2751,8 +2786,8 @@ class World extends Phaser.Scene{
     if(t2.sewer){enterDungeon('sewer',t2.sewer.x,t2.sewer.y);return;}
     if(t2.stairs){exitDungeon();return;}
     if(t2.treasure){const{x,y}=t2.treasure;
-      grid[y][x]=dungeon.theme==='cave'?'c':'s';
-      if(this.chestSprite)this.chestSprite.setVisible(false);
+      grid[y][x]=dungeon.theme==='cave'?'c':dungeon.theme==='castle'?'f':'s';
+      const cs=this.chestSprites&&this.chestSprites[x+','+y];if(cs)cs.setVisible(false);else if(this.chestSprite)this.chestSprite.setVisible(false);
       const lvl=dungeon.lvl+2;
       this.dropGear((x+0.5)*TILE,(y+0.9)*TILE,rollGear(lvl,2));
       this.dropGear((x-0.1)*TILE,(y+0.4)*TILE,rollGear(lvl,1));
@@ -2984,10 +3019,12 @@ class World extends Phaser.Scene{
        else if(gap<0)xg*=Math.min(1.4,1-gap*0.08); // punching up pays a bonus
        grantXp(Math.max(1,Math.round(xg)));}
       killSfx(e);
-      if(e.boss){G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;G.coins+=100+e.lvl*8;
+      if(e.boss){G.coins+=100+e.lvl*8;
         this.dropGear(e.x,e.y,rollGear(e.lvl,3));this.dropGear(e.x+30,e.y,rollGear(e.lvl,2));
-        for(const q2 of G.quests||[])if(q2.key==='boss')q2.n=Math.min(q2.need,(q2.n||0)+1);
-        toast('💀 '+BOSS_NAME+' DEFEATED! Epic loot + '+(100+e.lvl*8)+'c');sfx('level');}
+        if(dungeon){toast('The '+(e.nameT?e.nameT.text.replace(/^..|L\d+/g,'').trim():'boss')+' falls! Epic loot + '+(100+e.lvl*8)+'c');sfx('level');}
+        else{G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;
+          for(const q2 of G.quests||[])if(q2.key==='boss')q2.n=Math.min(q2.need,(q2.n||0)+1);
+          toast(BOSS_NAME+' DEFEATED! Epic loot + '+(100+e.lvl*8)+'c');sfx('level');}}
       else if(e.alpha){this.dropGear(e.x,e.y,rollGear(e.lvl,2));toast('⭐ Defeated the ALPHA '+e.sp+'!');}
       else if(e.rare)this.dropGear(e.x,e.y,rollGear(e.lvl,1));
       else if(Math.random()<0.06)this.dropGear(e.x,e.y,rollGear(e.lvl,0));
@@ -3010,7 +3047,7 @@ class World extends Phaser.Scene{
         toast('💀 '+e.sp+' rises to serve you!');}
       e.s.destroy();e.hbB.destroy();e.hbF.destroy();if(e.nameT)e.nameT.destroy();if(e.crown)e.crown.destroy();if(e.ring)e.ring.destroy();
       this.enemies.splice(this.enemies.indexOf(e),1);
-      updateHud();this.spawnEnemy();
+      updateHud();if(!dungeon)this.spawnEnemy();
     }
   }
   dash(){
