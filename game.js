@@ -1270,7 +1270,7 @@ function blitBuildIcons(p){
     c.imageSmoothingEnabled=true;
     c.drawImage(src,(76-w)/2,(76-h2)/2,w,h2);});}
 function openCraft(){pauseGame(true);const p=document.getElementById('panel');const R=G.res;
-  let h=`<h2>🔨 Crafting</h2><div class="subline">🔨 Lv.${G.craftLvl} (${G.craftXp}/${craftXpToNext(G.craftLvl)}) · 🪵${R.wood} 🪨${R.stone} 🌿${R.fiber} ⛏️${R.ore}</div>`;
+  let h=`<h2>${hIco('craft')} Crafting</h2><div class="subline">Lv.${G.craftLvl} (${G.craftXp}/${craftXpToNext(G.craftLvl)}) · wood ${R.wood} · stone ${R.stone} · fiber ${R.fiber} · ore ${R.ore}</div>`;
   h+='<div class="subline" style="color:#f2c14e;font-weight:700">TOOLS</div><div class="plist">';
   for(const key of Object.keys(TOOLS)){const T2=TOOLS[key],tier=G.tools[key]||0,next=T2.tiers[tier];
     const ok=next&&haveCost(next.cost)&&(!next.station||nearStation(next.station));
@@ -1287,6 +1287,7 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
       <button class="cbtn" data-craft="${r.key}" ${ok?'':'disabled'}>${r.item?'Craft':'Build'}</button></div>`;}
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="craftClose">◀ Close</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   blitBuildIcons(p);
   p.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{const key=b.dataset.tool,T2=TOOLS[key],tier=G.tools[key]||0,next=T2.tiers[tier];
     if(!next||!haveCost(next.cost)||(next.station&&!nearStation(next.station)))return;
@@ -1349,6 +1350,24 @@ function drawMenuIcon(cv,kind){
     for(let i=0;i<3;i++){c.beginPath();c.moveTo(s*0.32,s*(0.38+i*0.13));c.lineTo(s*0.68,s*(0.38+i*0.13));c.stroke();}
     c.strokeStyle=OL;c.lineWidth=W;
     c.fillStyle='#d8c49a';c.beginPath();c.ellipse(m,s*0.18,s*0.28,s*0.075,0,0,7);c.fill();c.stroke();break;}
+  case 'quest':{ // quest banner with a gold ! seal
+    c.fillStyle='#c85a3c';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.28,s*0.16);c.lineTo(s*0.72,s*0.16);c.lineTo(s*0.72,s*0.76);
+    c.lineTo(s*0.5,s*0.64);c.lineTo(s*0.28,s*0.76);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#a8442a';c.beginPath();c.moveTo(s*0.28,s*0.16);c.lineTo(s*0.34,s*0.16);c.lineTo(s*0.34,s*0.7);c.lineTo(s*0.28,s*0.74);c.closePath();c.fill();
+    c.fillStyle='#ffd23c';c.strokeStyle=OL;c.lineWidth=W*0.7;
+    c.beginPath();c.arc(s*0.53,s*0.4,s*0.12,0,7);c.fill();c.stroke();
+    c.fillStyle='#5a3a00';c.font='bold '+(s*0.2)+'px Fredoka,system-ui';c.textAlign='center';c.textBaseline='middle';
+    c.fillText('!',s*0.53,s*0.41);c.textBaseline='alphabetic';break;}
+  case 'map':{ // folded parchment map
+    c.fillStyle='#e6d5a8';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.16,s*0.28);c.lineTo(s*0.38,s*0.2);c.lineTo(s*0.62,s*0.28);c.lineTo(s*0.84,s*0.2);
+    c.lineTo(s*0.84,s*0.72);c.lineTo(s*0.62,s*0.8);c.lineTo(s*0.38,s*0.72);c.lineTo(s*0.16,s*0.8);c.closePath();c.fill();c.stroke();
+    c.strokeStyle='#a8895a';c.lineWidth=W*0.55;
+    c.beginPath();c.moveTo(s*0.38,s*0.2);c.lineTo(s*0.38,s*0.72);c.moveTo(s*0.62,s*0.28);c.lineTo(s*0.62,s*0.8);c.stroke();
+    c.strokeStyle='#b5601e';c.lineWidth=W*0.6;c.setLineDash([s*0.05,s*0.04]);
+    c.beginPath();c.moveTo(s*0.26,s*0.62);c.quadraticCurveTo(s*0.5,s*0.4,s*0.7,s*0.5);c.stroke();c.setLineDash([]);
+    c.fillStyle='#c8402e';c.beginPath();c.moveTo(s*0.7,s*0.44);c.lineTo(s*0.74,s*0.52);c.lineTo(s*0.66,s*0.52);c.closePath();c.fill();break;}
   case 'soundOn': case 'soundOff':{ // speaker + waves or red X
     c.fillStyle='#6f7377';c.beginPath();
     c.moveTo(s*0.12,s*0.4);c.lineTo(s*0.28,s*0.4);c.lineTo(s*0.46,s*0.22);c.lineTo(s*0.46,s*0.78);c.lineTo(s*0.28,s*0.6);c.lineTo(s*0.12,s*0.6);c.closePath();c.fill();c.stroke();
@@ -1549,8 +1568,8 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
     <div class="mtile" id="mInv"><canvas class="micon" data-ic="inventory"></canvas>Inventory</div>
     <div class="mtile" id="mSkill"><canvas class="micon" data-ic="skills"></canvas>Skills${(G.skillPoints||0)>0?`<span class="badge">${G.skillPoints}</span>`:''}</div>
     <div class="mtile" id="mCraft"><canvas class="micon" data-ic="craft"></canvas>Craft &amp; Build</div>
-    <div class="mtile" id="mMap"><canvas class="micon" data-ic="guide"></canvas>Map</div>
-    <div class="mtile" id="mQuests"><canvas class="micon" data-ic="guide"></canvas>Quests${(G.quests||[]).filter(questDone).length?`<span class="badge">${G.quests.filter(questDone).length}</span>`:''}</div>
+    <div class="mtile" id="mMap"><canvas class="micon" data-ic="map"></canvas>Map</div>
+    <div class="mtile" id="mQuests"><canvas class="micon" data-ic="quest"></canvas>Quests${(G.quests||[]).filter(questDone).length?`<span class="badge">${G.quests.filter(questDone).length}</span>`:''}</div>
     <div class="mtile" id="mSound"><canvas class="micon" data-ic="${G.muted?'soundOff':'soundOn'}"></canvas>Sound ${G.muted?'Off':'On'}</div>
     <div class="mtile" id="mClose"><canvas class="micon" data-ic="resume"></canvas>Resume</div>
   </div>`;
@@ -1648,7 +1667,7 @@ function drawPinIcon(cv,t){
     c.lineTo(m+S2*0.13,S2*0.38);c.lineTo(m+S2*0.06,S2*0.45);c.closePath();c.fill();c.stroke();}}
 function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById('panel');
   const tn2=TOWNS[ti]?TOWNS[ti].name:'Town';
-  let h='<h2>❗ '+tn2+' Quest Board</h2>';
+  let h='<h2>'+hIco('quest')+' '+tn2+' Quests</h2>';
   const mine=G.quests.map((q,i)=>({q,i})).filter(o=>(o.q.town||0)===ti);
   if(mine.length){
     h+='<div class="plist" style="margin-top:6px">';
@@ -1669,6 +1688,7 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
   h+='<div class="subline" style="margin-top:8px">📜 Manage & track quests in the menu → Quests</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="qClose">Leave</button></div>';
   p.innerHTML=h;p.style.display='flex';
+  blitPanelIcons(p);
   const acc=document.getElementById('qAccept');
   if(acc)acc.onclick=()=>{const q=townOffer(ti);
     G.quests.push({key:q.key,need:q.need,n:0,town:ti});
@@ -1687,7 +1707,7 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
     G.questsDone=(G.questsDone||0)+1;sfx('quest');save();updateHud();openQuest(ti);});
   document.getElementById('qClose').onclick=()=>pauseGame(false);}
 function openQuests(){const p=document.getElementById('panel');
-  let h='<h2>📜 Quest Log</h2>';
+  let h='<h2>'+hIco('quest')+' Quest Log</h2>';
   h+=`<div class="subline">Active: ${G.quests.length}/3 · tap TRACK to follow one on screen</div>`;
   if(G.quests.length){h+='<div class="plist" style="margin-top:6px">';
     G.quests.forEach((q,i)=>{const def=QUESTS.find(x=>x.key===q.key);
@@ -1706,6 +1726,7 @@ function openQuests(){const p=document.getElementById('panel');
     h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${t.name}</b><br><small style="color:#5a4">${q.txt} — visit the ❗ villager to accept</small></div></div>`;});
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="qlBack">◀ Menu</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   p.querySelectorAll('[data-tq]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.tq;
     G.trackQ=(G.trackQ===i)?null:i;sfx('menu');save();openQuests();});
   p.querySelectorAll('[data-aq]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.aq;
@@ -1714,11 +1735,12 @@ function openQuests(){const p=document.getElementById('panel');
     sfx('menu');save();openQuests();});
   document.getElementById('qlBack').onclick=openPanel;}
 function openMap(){const p=document.getElementById('panel');
-  let h='<h2>🗺 World Map</h2>';
+  let h='<h2>'+hIco('map')+' World Map</h2>';
   h+='<div style="text-align:center;line-height:0;margin-top:4px"><canvas id="mapCv" width="'+(MW*8)+'" height="'+(MH*8)+'" style="width:min(96vw,480px);border:4px solid #2a2118;border-radius:14px;background:#0b1220;box-shadow:0 0 24px rgba(0,0,0,.6)"></canvas></div>';
   h+='<div class="subline" style="margin-top:6px">⭐ you · unexplored lands are shrouded — go discover them!</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="mapBack">◀ Menu</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   const cv=document.getElementById('mapCv'),c=cv.getContext('2d'),S=8;
   const COL={'.':'#5a9e4c',',':'#4a8a40','T':'#33682c','W':'#2e6ba6','P':'#9a7a4c','~':'#8a7a50',
     'H':'#d9a24a','N':'#e08a9a','M':'#5f8fc0','S':'#c9a15a','B':'#b0885a','R':'#8a7ad0','V':'#c9a15a','Q':'#c07ad6',
@@ -1790,12 +1812,23 @@ const INV_DEF={
   ore:{ic:'⛏️',nm:'Ore',fx:'Smithing material (needs pickaxe)',lore:'Glinting ore veins only a pickaxe can crack open.'},
   axe:{ic:'🪓',nm:'Axe',fx:'Chop trees for wood',lore:'The woodsman\'s answer to every problem.'},
   pickaxe:{ic:'⛏',nm:'Pickaxe',fx:'Mine stone & ore nodes',lore:'Bites through rock like it holds a grudge.'}};
+function hIco(k){return '<canvas class="hico" data-ic="'+k+'"></canvas>';}
+function blitPanelIcons(p){p.querySelectorAll('canvas.hico').forEach(cv=>{if(cv.dataset.done)return;cv.dataset.done=1;cv.width=52;cv.height=52;drawMenuIcon(cv,cv.dataset.ic);});}
+function sIco(k){const S={
+  hp:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 21C5 16 2.5 12.5 2.5 8.8 2.5 6 4.6 4 7.2 4c1.9 0 3.4 1 4.8 2.8C13.4 5 14.9 4 16.8 4 19.4 4 21.5 6 21.5 8.8 21.5 12.5 19 16 12 21Z" fill="#e8483a" stroke="#1c2716" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  food:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"><path d="M8.5 11.5 5 15c-1.6 1.6-1.6 3.4-.4 4.6 1.2 1.2 3 1.2 4.6-.4l3.5-3.5" fill="#b5652e"/><path d="M9 12.5c-2.2-2.2-2-5.3.3-7.2C11.3 3.6 14.4 3.5 16.5 5.6 18.6 7.7 18.5 10.8 16.7 12.7 14.8 15 11.2 14.7 9 12.5Z" fill="#d98a4a"/></g><circle cx="4.6" cy="19.4" r="2" fill="#f0e8d8" stroke="#1c2716" stroke-width="1.5"/></svg>',
+  coin:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><circle cx="12" cy="12" r="9" fill="#ffd23c" stroke="#1c2716" stroke-width="2"/><path d="M12 8l1.1 2.3 2.5.3-1.9 1.7.5 2.5L12 15.6l-2.2 1.2.5-2.5-1.9-1.7 2.5-.3Z" fill="#c9971e"/></svg>',
+  atk:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"><path d="M13 3l4 4-8 8-3 1 1-3z" fill="#cfd6dd"/><path d="M5 16l3 3M4 20l3-1 1-3-3 1z" fill="#8a5a2b"/></g></svg>',
+  def:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3l7 2v6c0 5-3 8-7 10-4-2-7-5-7-10V5z" fill="#7ad0ff" stroke="#1c2716" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  spd:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M6 5h7l1 6h3l-1 6H8l-1-4H4z" fill="#c8cfd6" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  xp:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3l2.3 6.2L21 10l-5 4 1.6 7L12 17l-5.6 4L8 14 3 10l6.7-.8z" fill="#a58cff" stroke="#1c2716" stroke-width="1.5" stroke-linejoin="round"/></svg>'};
+  return S[k]||'';}
 function openInventory(sel){if(typeof sel!=='string')sel=null;
   const p=document.getElementById('panel');const it=G.items,R=G.res;
   const cnt=k=>k==='axe'||k==='pickaxe'?(G.tools[k]||0):(INV_DEF[k].use?(it[k]||0):(R[k]||0));
   if(!sel){sel=['berry','potion','ration'].find(k=>cnt(k)>0)||'berry';}
-  let h='<h2>🎒 Inventory</h2>';
-  h+=`<div class="subline">🍖 hunger ${Math.round(G.hunger)}% · ❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ◉ ${G.coins}</div>`;
+  let h='<h2>'+hIco('inventory')+' Inventory</h2>';
+  h+=`<div class="subline">${sIco('food')} ${Math.round(G.hunger)}% · ${sIco('hp')} ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ${sIco('coin')} ${G.coins}</div>`;
   // Zelda-style detail card for the selected item
   const D=INV_DEF[sel];
   if(D){const n=cnt(sel),isTool=sel==='axe'||sel==='pickaxe';
@@ -1814,9 +1847,10 @@ function openInventory(sel){if(typeof sel!=='string')sel=null;
   grid('CONSUMABLES',['berry','potion','ration']);
   grid('MATERIALS',['wood','stone','fiber','ore']);
   grid('TOOLS',['axe','pickaxe']);
-  h+=`<div class="subline" style="margin-top:7px">⚔ Gear lives in the <b>Character</b> screen${G.gear.length?` — ${G.gear.length} in bag`:''}</div>`;
+  h+=`<div class="subline" style="margin-top:7px">${sIco('atk')} Gear lives in the <b>Character</b> screen${G.gear.length?` — ${G.gear.length} in bag`:''}</div>`;
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="invBack">◀ Menu</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   p.querySelectorAll('[data-inv]').forEach(el=>el.onclick=()=>{sfx('menu');openInventory(el.dataset.inv);});
   const ub=document.getElementById('invUse');
   if(ub)ub.onclick=()=>{const k=sel;
@@ -1830,10 +1864,10 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   const SN=SETS[G.class].name,sc=setCount();
   const SD=subDef(G.class,G.element),EL=SD;
-  let h=`<h2>${G.name||nm} <span style="font-size:13px;color:${EL.col}">${SD.ic} ${SD.nm}</span> — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">🌟</span>':''}</h2>`;
-  h+=`<div class="subline">❤ ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ⚔ ${G._atk} · 🛡 ${G._def}`+
-     `${M.speed>1?` · 👟 +${Math.round((M.speed-1)*100)}%`:''}${M.xp>1?` · ✦ +${Math.round((M.xp-1)*100)}%`:''}${M.coins>1?` · ◉ +${Math.round((M.coins-1)*100)}%`:''}</div>`;
-  if(sc>0)h+=`<div class="subline" style="color:#2fd06a;font-weight:700">${SN} set: ${sc}/6${fullSet()?' — COMPLETE! +12% ⚔🛡, +8% ❤':''}</div>`;
+  let h=`<h2>${hIco('armor')} ${G.name||nm} <span style="font-size:13px;color:${EL.col}">${SD.nm}</span> — Lv.${G.level}${fullSet()?' <span style="color:#2fd06a">★</span>':''}</h2>`;
+  h+=`<div class="subline">${sIco('hp')} ${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} · ${sIco('atk')} ${G._atk} · ${sIco('def')} ${G._def}`+
+     `${M.speed>1?` · ${sIco('spd')} +${Math.round((M.speed-1)*100)}%`:''}${M.xp>1?` · ${sIco('xp')} +${Math.round((M.xp-1)*100)}%`:''}${M.coins>1?` · ${sIco('coin')} +${Math.round((M.coins-1)*100)}%`:''}</div>`;
+  if(sc>0)h+=`<div class="subline" style="color:#2fd06a;font-weight:700">${SN} set: ${sc}/6${fullSet()?' — COMPLETE! +12% ATK/DEF, +8% HP':''}</div>`;
   const slotBox=(slot)=>{const it=G.equip[slot];const col=gearCol(it);
     if(it)return `<div class="eqslot ${sel==='slot:'+slot?'sel':''}" data-sel="slot:${slot}" style="${col?`border-color:${col};box-shadow:0 0 10px ${col}66,0 3px 0 rgba(0,0,0,.22);`:''}">
       <span class="ic">${SLOT_ICON[slot]}</span><span class="eqlv">${it.lvl}</span><span class="eqlab">${slot}</span></div>`;
@@ -1851,7 +1885,7 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
     h+=`<div class="pcard" style="max-width:500px;margin:6px auto 0;width:100%;border-color:${col}">
       <div style="flex:1;min-width:0"><b style="color:${col}">${SLOT_ICON[det.slot]} ${det.name}</b> <span class="lv">${det.set?'SET':R.name} Lv.${det.lvl}</span><br>
       <small style="color:#5a4">${statStr(det)}</small>${det.set?`<br><small style="color:#2fd06a">${det.set} set piece (${sc}/6 worn)</small>`:''}</div>
-      ${detIsBag?`<button class="cbtn" data-eq="${bagIdx}">Equip</button><button class="cbtn" data-sv="${bagIdx}">⚒</button>`
+      ${detIsBag?`<button class="cbtn" data-eq="${bagIdx}">Equip</button><button class="cbtn" data-sv="${bagIdx}">Salvage</button>`
                 :`<button class="cbtn" data-uneq="${det.slot}">Unequip</button>`}</div>`;}
   else h+=`<div class="subline" style="margin-top:4px">Tap a slot or bag item to inspect</div>`;
   // gear bag grid
@@ -1860,15 +1894,16 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
     G.gear.forEach((it,i)=>{const col=gearCol(it);
       h+=`<div class="bagslot ${sel==='bag:'+i?'sel':''}" data-sel="bag:${i}" style="${col?`border-color:${col};box-shadow:0 0 9px ${col}55,0 3px 0 rgba(0,0,0,.22);`:''}">${SLOT_ICON[it.slot]}<span class="eqlv">${it.lvl}</span></div>`;});
     h+='</div>';}
-  else h+='<div class="subline">💜 rares always drop gear — hunt them!</div>';
+  else h+='<div class="subline">Rare monsters always drop gear — hunt them!</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="charBack">◀ Menu</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   heroPreview(document.getElementById('dollCv'),G.class,true);
   p.querySelectorAll('[data-sel]').forEach(el=>el.onclick=()=>{sfx('menu');openCharacter(el.dataset.sel);});
   p.querySelectorAll('[data-eq]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.eq,it=G.gear[i];if(!it)return;
     const cur=G.equip[it.slot];G.gear.splice(i,1);if(cur)G.gear.push(cur);G.equip[it.slot]=it;
     recalcHero();if(G.hp>G.maxHp)G.hp=G.maxHp;
-    if(fullSet()&&!G.setDone){G.setDone=1;toast('🌟 '+SETS[G.class].name+' SET COMPLETE — you shine with power!');sfx('level');}
+    if(fullSet()&&!G.setDone){G.setDone=1;toast('★ '+SETS[G.class].name+' SET COMPLETE — you shine with power!');sfx('level');}
     else toast('Equipped '+it.name);
     save();updateHud();applyGearFx();openCharacter('slot:'+it.slot);});
   p.querySelectorAll('[data-sv]').forEach(b2=>b2.onclick=()=>{const i=+b2.dataset.sv,it=G.gear[i];if(!it)return;
@@ -1883,7 +1918,7 @@ function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cl
 function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
 function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');
   const RN=['I','II','III','IV'];
-  let h=`<h2>\u2726 Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
+  let h=`<h2>${hIco('skills')} Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
   if(skTab==='loadout')skTab='spell';
   h+=`<div class="sktabs">
     <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">\u2694 Spells</button>
@@ -1937,6 +1972,7 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
     h+='</div>';}
   h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   p.querySelectorAll('canvas.skcv2').forEach(cv=>{cv.width=56;cv.height=56;drawMenuIcon(cv,cv.dataset.ic);});
   p.querySelectorAll('[data-eqs]').forEach(b2=>b2.onclick=()=>{const k=b2.dataset.eqs;
     if(G.loadout.includes(k))G.loadout=G.loadout.filter(x=>x!==k);
