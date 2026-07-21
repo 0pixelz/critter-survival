@@ -57,9 +57,9 @@ function isWSub(k){return G&&G.class==='warrior'&&G.element===k;}
 function isRSub(k){return G&&G.class==='ranger'&&G.element===k;}
 function isMSub(k){return G&&G.class==='mage'&&G.element===k;}
 const PETS={
-  wolf:{tex:'wolfTex',ic:'🐺',nm:'Wolf',dmg:0.45,rate:1.1,spd:190,desc:'Balanced hunter — solid bites, marks prey'},
-  hawk:{tex:'hawkTex',ic:'🦅',nm:'Hawk',dmg:0.30,rate:0.75,spd:255,desc:'Lightning-fast strikes — lower damage, relentless marking',lock:()=>((G.skills||{}).feralfang||0)>=2,lockTxt:'Feral Fangs rank 2'},
-  boar:{tex:'boarTex',ic:'🐗',nm:'Boar',dmg:0.70,rate:1.7,spd:165,stun:0.5,desc:'Crushing charges — heavy damage and a stunning knockdown',lock:()=>((G.skills||{}).alphabond||0)>=1,lockTxt:'Alpha Bond rank 1'}};
+  wolf:{tex:'wolfTex',ic:'paw',nm:'Wolf',dmg:0.45,rate:1.1,spd:190,desc:'Balanced hunter — solid bites, marks prey'},
+  hawk:{tex:'hawkTex',ic:'paw',nm:'Hawk',dmg:0.30,rate:0.75,spd:255,desc:'Lightning-fast strikes — lower damage, relentless marking',lock:()=>((G.skills||{}).feralfang||0)>=2,lockTxt:'Feral Fangs rank 2'},
+  boar:{tex:'boarTex',ic:'paw',nm:'Boar',dmg:0.70,rate:1.7,spd:165,stun:0.5,desc:'Crushing charges — heavy damage and a stunning knockdown',lock:()=>((G.skills||{}).alphabond||0)>=1,lockTxt:'Alpha Bond rank 1'}};
 function petDef(){return PETS[(G&&G.pet)||'wolf']||PETS.wolf;}
 function petDmg(){return Math.max(2,Math.round((G._atk||6)*petDef().dmg*(1+0.2*((G.skills||{}).feralfang||0))));}
 function petRate(){return petDef().rate*Math.max(0.55,1-0.12*((G.skills||{}).alphabond||0));}
@@ -989,7 +989,8 @@ const RARITIES=[
   {key:'rare',name:'Rare',col:'#ffd23c',hex:0xffd23c,mult:1.7,affixes:3},
   {key:'epic',name:'Epic',col:'#c07aff',hex:0xc07aff,mult:2.2,affixes:4}];
 const GEAR_SLOTS=['weapon','helm','armor','boots','trinket','charm'];
-const SLOT_ICON={weapon:'⚔️',helm:'🪖',armor:'🥋',boots:'🥾',trinket:'💍',charm:'🔮'};
+const SLOT_ICON={weapon:'atk',helm:'helm',armor:'def',boots:'boot',trinket:'ring',charm:'orb'};
+function slotIco(sl){return sIco(SLOT_ICON[sl]||'atk');}
 const GEAR_NAMES={weapon:{mage:'Staff',ranger:'Bow',warrior:'Blade'},
   helm:['Cap','Helm','Hood','Circlet'],armor:['Tunic','Cloak','Mail','Plate'],
   boots:['Boots','Treads','Greaves','Striders'],trinket:['Ring','Amulet','Band','Totem'],
@@ -1013,8 +1014,8 @@ const SKILLS=[
   {tree:'spell',tier:4,icon:'firewall',cv:1,key:'firewall',cls:'mage',name:'Fire Wall',max:3,eff:'SWIPE SPELL: draw a wall of flame (longer+stronger / rank)',req:{shield:1}},
   {tree:'spell',tier:4,icon:'spikes',cv:1,key:'spikewall',cls:'warrior',name:'Earthshatter',max:3,eff:'SWIPE SPELL: draw stone spikes that root foes',req:{warcry:1}},
   {tree:'spell',tier:4,icon:'thorns',cv:1,key:'thornwall',cls:'ranger',name:'Thorn Wall',max:3,eff:'SWIPE SPELL: draw a hedge of thorns that slows foes',req:{quiver:1}},
-  {tree:'spell',tier:2,icon:'🐾',key:'feralfang',cls:'ranger',sub:'beastmaster',name:'Feral Fangs',max:5,eff:'+20% companion damage / rank'},
-  {tree:'spell',tier:3,icon:'🐺',key:'alphabond',cls:'ranger',sub:'beastmaster',name:'Alpha Bond',max:3,eff:'Companion attacks 12% faster & MARK lasts +1s / rank'},
+  {tree:'spell',tier:2,icon:'paw',cv:1,key:'feralfang',cls:'ranger',sub:'beastmaster',name:'Feral Fangs',max:5,eff:'+20% companion damage / rank'},
+  {tree:'spell',tier:3,icon:'paw',cv:1,key:'alphabond',cls:'ranger',sub:'beastmaster',name:'Alpha Bond',max:3,eff:'Companion attacks 12% faster & MARK lasts +1s / rank'},
   // == PASSIVE TREE ==
   {tree:'passive',tier:1,icon:'\u2764\ufe0f',key:'vitality',name:'Vitality',max:5,eff:'+6% max HP / rank'},
   {tree:'passive',tier:1,icon:'\ud83d\udcaa',key:'might',name:'Might',max:5,eff:'+4% ATK / rank'},
@@ -1054,11 +1055,12 @@ function mods(){const m={dmg:1,cd:1,speed:1,xp:1,coins:1,crit:0,count:0,pierce:0
 
 /* ---- economy / craft / build data (v1) ---- */
 const RES_KEYS=['wood','stone','fiber','ore'];
-const RES_ICON={wood:'🪵',stone:'🪨',fiber:'🌿',ore:'⛏️'};
+const RES_ICON_K={wood:'wood',stone:'stone',fiber:'fiber',ore:'ore'};
+const RES_ICON=new Proxy({},{get:(_,k)=>sIco(RES_ICON_K[k]||'wood')});
 const SELL_PRICE={wood:2,stone:2,fiber:2,ore:6};
 const SHOP_ITEMS=[{key:'berry',name:'Berry',price:15},{key:'potion',name:'Potion',price:30},{key:'ration',name:'Ration',price:25}];
-const TOOLS={axe:{icon:'🪓',tiers:[{name:'Axe I',cost:{wood:3,stone:2}},{name:'Axe II',cost:{wood:5,ore:3},station:'forge'},{name:'Axe III',cost:{wood:8,ore:6},station:'forge'}]},
-  pickaxe:{icon:'⛏️',tiers:[{name:'Pickaxe I',cost:{wood:3,stone:3}},{name:'Pickaxe II',cost:{wood:5,ore:4},station:'forge'},{name:'Pickaxe III',cost:{wood:8,ore:7},station:'forge'}]}};
+const TOOLS={axe:{icon:'axe',tiers:[{name:'Axe I',cost:{wood:3,stone:2}},{name:'Axe II',cost:{wood:5,ore:3},station:'forge'},{name:'Axe III',cost:{wood:8,ore:6},station:'forge'}]},
+  pickaxe:{icon:'pickaxe',tiers:[{name:'Pickaxe I',cost:{wood:3,stone:3}},{name:'Pickaxe II',cost:{wood:5,ore:4},station:'forge'},{name:'Pickaxe III',cost:{wood:8,ore:7},station:'forge'}]}};
 const BUILD_DEF={
   campfire:{name:'Campfire',hp:60,light:1},torch:{name:'Torch',hp:40,light:1},
   wall:{name:'Wall',hp:160,solid:1,eSolid:1,fam:'wall',autotile:1},
@@ -1126,9 +1128,9 @@ function abilityKey(){return {mage:'shield',warrior:'warcry',ranger:'quiver'}[(G
 function abilityRank(){return (G&&G.skills&&G.skills[abilityKey()])||0;}
 function runeKey(){return {mage:'firewall',warrior:'spikewall',ranger:'thornwall'}[(G&&G.class)||'mage'];}
 const SPELLBOOK={
-  strike:{name:()=>({mage:'Power Bolt',warrior:'Heavy Blow',ranger:'Power Shot'}[G.class]),icon:()=>'\ud83d\udca5',cv:0,
+  strike:{name:()=>({mage:'Power Bolt',warrior:'Heavy Blow',ranger:'Power Shot'}[G.class]),icon:()=>'swords',cv:1,
     desc:'Heavy attack \u2014 1.9\u00d7 damage \u00b7 5s cooldown',avail:()=>true},
-  nova:{name:()=>({mage:'Nova Burst',warrior:'Whirlwind',ranger:'Arrow Fan'}[G.class]),icon:()=>'\u2734\ufe0f',cv:0,
+  nova:{name:()=>({mage:'Nova Burst',warrior:'Whirlwind',ranger:'Arrow Fan'}[G.class]),icon:()=>'skills',cv:1,
     desc:'All-around burst \u00b7 8s cooldown',avail:()=>((G.skills||{}).multi||0)>0,lock:'Learn Split Shot (Spell tree)'},
   active:{name:()=>{const n=SKILLS.find(s2=>s2.key===abilityKey());return n?n.name:'Active';},
     icon:()=>({mage:'shield',warrior:'horn',ranger:'quiver'}[G.class]),cv:1,
@@ -1208,8 +1210,8 @@ function rollGear(lvl,minR){
     it.set=sn;it.name=sn+' '+base;
     stats[G.class==='warrior'?'def':G.class==='mage'?'atk':'spd']=(stats[G.class==='warrior'?'def':G.class==='mage'?'atk':'spd']||0)+Math.max(2,Math.round(lvl*0.8));}
   return it;}
-function statStr(it){const L={atk:'⚔',def:'🛡',hp:'❤',spd:'👟%',xp:'✦%',coin:'◉%'};
-  return Object.entries(it.stats).map(([k,v])=>L[k]+'+'+v).join(' · ');}
+function statStr(it){const P={spd:1,xp:1,coin:1};
+  return Object.entries(it.stats).map(([k,v])=>sIco(k)+'+'+v+(P[k]?'%':'')).join(' ');}
 function gearRarCol(slot){const it=G&&G.equip[slot];return (it&&it.rar>0)?RARITIES[it.rar].col:null;}
 function grantXp(a){G.xp+=Math.round(a*mods().xp);
   while(G.xp>=xpToNext(G.level)&&G.level<50){G.xp-=xpToNext(G.level);G.level++;
@@ -1224,8 +1226,8 @@ const VILLAGER_LINES=[
  'The forge unlocks tier-2 tools. Better tools, bigger hauls.',
  'Purple-named monsters always drop gear!'];
 function openShop(){pauseGame(true);const p=document.getElementById('panel');
-  let h='<h2>🛒 Trader\'s Mart</h2>';
-  h+=`<div class="subline" style="color:#ffd23c">◉ ${G.coins} coins</div>`;
+  let h='<h2>'+hIco('cart')+' Trader\'s Mart</h2>';
+  h+=`<div class="subline" style="color:#ffd23c">${sIco('coin')} ${G.coins} coins</div>`;
   h+='<div class="subline" style="color:#f2c14e;font-weight:700">BUY</div><div class="plist">';
   SHOP_ITEMS.forEach(s2=>{h+=`<div class="pcard"><div style="flex:1"><b>${s2.name}</b> <span style="color:#c98b3a">${s2.price}c</span> <span class="lv">owned ${G.items[s2.key]||0}</span></div>
     <button class="cbtn" data-buy="${s2.key}" ${G.coins<s2.price?'disabled':''}>Buy</button></div>`;});
@@ -1235,19 +1237,21 @@ function openShop(){pauseGame(true);const p=document.getElementById('panel');
       <button class="cbtn" data-sell="${k}" ${n?'':'disabled'}>Sell +${n*SELL_PRICE[k]}c</button></div>`;});
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="shopClose">Leave</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const s2=SHOP_ITEMS.find(x=>x.key===b.dataset.buy);
     if(G.coins<s2.price)return;G.coins-=s2.price;G.items[s2.key]=(G.items[s2.key]||0)+1;sfx('coin');save();updateHud();openShop();});
   p.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{const k=b.dataset.sell,n=G.res[k]||0;if(!n)return;
     G.coins+=n*SELL_PRICE[k];G.res[k]=0;sfx('coin');save();updateHud();openShop();});
   document.getElementById('shopClose').onclick=()=>pauseGame(false);}
 function openRegistrar(){pauseGame(true);const p=document.getElementById('panel');
-  let h='<h2>🏛 Land Registrar</h2><div class="subline">Gold stakes = for sale · green = yours. Stand on a plot to buy it directly.</div><div class="plist">';
+  let h='<h2>'+hIco('pillar')+' Land Registrar</h2><div class="subline">Gold stakes = for sale · green = yours. Stand on a plot to buy it directly.</div><div class="plist">';
   PLOTS.forEach(pl=>{const own=G.plots[pl.id];
     h+=`<div class="pcard"><div style="flex:1"><b>${pl.town} plot</b> <span class="lv">${pl.w}×${pl.h}</span><br>
-      <small style="color:#8a6d3a">${own?'✅ Owned':'Price: '+pl.price+'c'}</small></div>
+      <small style="color:#8a6d3a">${own?'Owned':'Price: '+pl.price+'c'}</small></div>
       ${own?'':`<button class="cbtn" data-plot="${pl.id}" ${G.coins<pl.price?'disabled':''}>Buy</button>`}</div>`;});
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="regClose">Leave</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   p.querySelectorAll('[data-plot]').forEach(b=>b.onclick=()=>{const pl=PLOTS.find(x=>x.id===b.dataset.plot);
     if(!pl||G.coins<pl.price)return;G.coins-=pl.price;G.plots[pl.id]=true;sfx('catch');
     if(scene&&scene.refreshPlots)scene.refreshPlots();save();updateHud();openRegistrar();});
@@ -1274,7 +1278,7 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
   h+='<div class="subline" style="color:#f2c14e;font-weight:700">TOOLS</div><div class="plist">';
   for(const key of Object.keys(TOOLS)){const T2=TOOLS[key],tier=G.tools[key]||0,next=T2.tiers[tier];
     const ok=next&&haveCost(next.cost)&&(!next.station||nearStation(next.station));
-    h+=`<div class="pcard"><div style="flex:1"><b>${T2.icon} ${next?next.name:T2.tiers[tier-1].name}</b> <span class="lv">${next?'tier '+(tier+1):'MAX'}</span><br>
+    h+=`<div class="pcard"><div style="width:36px;text-align:center;flex:none"><canvas class="hico" data-ic="${T2.icon}" style="width:28px;height:28px"></canvas></div><div style="flex:1"><b>${next?next.name:T2.tiers[tier-1].name}</b> <span class="lv">${next?'tier '+(tier+1):'MAX'}</span><br>
       <small style="color:#5a4">${next?costStr(next.cost)+(next.station?' · near '+BUILD_DEF[next.station].name:''):'Top tier'}</small></div>
       <button class="cbtn" data-tool="${key}" ${ok?'':'disabled'}>${next?'Craft':'✓'}</button></div>`;}
   h+='</div><div class="subline" style="color:#f2c14e;font-weight:700;margin-top:6px">RECIPES</div><div class="plist">';
@@ -1282,7 +1286,7 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
     const rc=scene&&scene.effCost?scene.effCost(r):r.cost;
     const ok=!lock&&!noSt&&haveCost(rc);
     const nm2=r.item?(r.key.charAt(0).toUpperCase()+r.key.slice(1)):BUILD_DEF[r.key].name;
-    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}">${r.item?'<div style="width:38px;text-align:center;font-size:24px;flex:none">🧪</div>':`<canvas class="bicon" data-bk="${r.key}"></canvas>`}<div style="flex:1;min-width:0"><b>${nm2}</b>${lock?' <span style="color:#c0392b">🔒Lv.'+r.lvl+'</span>':''}${noSt?' <span style="color:#c0392b">near '+BUILD_DEF[r.station].name+'</span>':''}${r.plot?' <span style="color:#3f7d34">⌂</span>':''}<br>
+    h+=`<div class="pcard" style="${ok?'':'opacity:.6'}">${r.item?'<canvas class="hico" data-ic="potion" style="width:30px;height:30px;margin:4px"></canvas>':`<canvas class="bicon" data-bk="${r.key}"></canvas>`}<div style="flex:1;min-width:0"><b>${nm2}</b>${lock?' <span style="color:#c0392b">Lv.'+r.lvl+'</span>':''}${noSt?' <span style="color:#c0392b">near '+BUILD_DEF[r.station].name+'</span>':''}${r.plot?' <span style="color:#3f7d34">(on owned land)</span>':''}<br>
       <small style="color:#5a4">${r.desc} — ${costStr(rc)}</small></div>
       <button class="cbtn" data-craft="${r.key}" ${ok?'':'disabled'}>${r.item?'Craft':'Build'}</button></div>`;}
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="craftClose">◀ Close</button></div>';
@@ -1291,7 +1295,7 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
   blitBuildIcons(p);
   p.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{const key=b.dataset.tool,T2=TOOLS[key],tier=G.tools[key]||0,next=T2.tiers[tier];
     if(!next||!haveCost(next.cost)||(next.station&&!nearStation(next.station)))return;
-    payCost(next.cost);G.tools[key]=tier+1;gainCraftXp();sfx('level');toast(T2.icon+' '+next.name+' crafted!');save();openCraft();});
+    payCost(next.cost);G.tools[key]=tier+1;gainCraftXp();sfx('level');toast(next.name+' crafted!');save();openCraft();});
   p.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>{const r=RECIPES.find(x=>x.key===b.dataset.craft);
     const rc=scene&&scene.effCost?scene.effCost(r):r.cost;
     if(G.craftLvl<r.lvl||!haveCost(rc)||(r.station&&!nearStation(r.station)))return;
@@ -1299,24 +1303,26 @@ function openCraft(){pauseGame(true);const p=document.getElementById('panel');co
     else{scene.enterBuild(r.key,r);pauseGame(false);toast('Placing '+BUILD_DEF[r.key].name+' — tap a tile to aim it, ✓ to build');}});
   document.getElementById('craftClose').onclick=()=>pauseGame(false);}
 function openBank(){pauseGame(true);const p=document.getElementById('panel');
-  let h='<h2>📦 Storage Chest</h2><div class="subline">Banked materials survive death.</div><div class="plist">';
+  let h='<h2>'+hIco('crate')+' Storage Chest</h2><div class="subline">Banked materials survive death.</div><div class="plist">';
   for(const k of RES_KEYS)h+=`<div class="pcard"><div style="flex:1"><b>${RES_ICON[k]} ${k}</b></div><span class="lv">carry ${G.res[k]||0} · bank ${G.bank[k]||0}</span></div>`;
   h+='</div><div class="prow" style="margin-top:8px">';
-  h+='<button class="cbtn" id="bkDep">⬇ Deposit all</button><button class="cbtn" id="bkTake">⬆ Withdraw all</button>';
+  h+='<button class="cbtn" id="bkDep">Deposit all</button><button class="cbtn" id="bkTake">Withdraw all</button>';
   h+='<button class="cbtn" id="bkClose">Close</button></div>';
   p.innerHTML=h;
+  blitPanelIcons(p);
   document.getElementById('bkDep').onclick=()=>{for(const k of RES_KEYS){G.bank[k]=(G.bank[k]||0)+(G.res[k]||0);G.res[k]=0;}sfx('coin');save();openBank();};
   document.getElementById('bkTake').onclick=()=>{for(const k of RES_KEYS){G.res[k]=(G.res[k]||0)+(G.bank[k]||0);G.bank[k]=0;}sfx('coin');save();openBank();};
   document.getElementById('bkClose').onclick=()=>pauseGame(false);}
 function openTower(b){pauseGame(true);const p=document.getElementById('panel');
   const T2=TOWERS[b.t],tier=T2.tiers[(b.tier||1)-1],up=(b.tier||1)<3?T2.up[(b.tier||1)-1]:null;
   let h=`<h2>${T2.name} — Tier ${b.tier||1}</h2>`;
-  h+=`<div class="subline">💥 ${tier.dmg} · 📏 ${tier.range} tiles${tier.slow?' · ❄ slows':''}${tier.aoe?' · 💣 AoE':''} · Ammo <b style="color:#ffd23c">${b.ammo||0}</b> (${T2.ammo}) · HP ${Math.ceil(b.hp)}/${b.maxHp}</div>`;
+  h+=`<div class="subline">${sIco('atk')} ${tier.dmg} · Range ${tier.range}${tier.slow?' · slows':''}${tier.aoe?' · AoE':''} · Ammo <b style="color:#ffd23c">${b.ammo||0}</b> (${T2.ammo}) · HP ${Math.ceil(b.hp)}/${b.maxHp}</div>`;
   h+='<div class="prow" style="margin-top:8px">';
   h+=`<button class="cbtn" id="twLoad" ${!(G.res[T2.ammo]>0)?'disabled':''}>Load (1 ${T2.ammo} → ${T2.ammoPer} shots) · have ${G.res[T2.ammo]||0}</button>`;
-  if(up)h+=`<button class="cbtn" id="twUp" ${haveCost(up)?'':'disabled'}>⬆ Tier ${(b.tier||1)+1} — ${costStr(up)}</button>`;
+  if(up)h+=`<button class="cbtn" id="twUp" ${haveCost(up)?'':'disabled'}>Upgrade to Tier ${(b.tier||1)+1} — ${costStr(up)}</button>`;
   h+=`<button class="cbtn" id="twClose">Close</button></div>`;
   p.innerHTML=h;
+  blitPanelIcons(p);
   document.getElementById('twLoad').onclick=()=>{if(!(G.res[T2.ammo]>0))return;G.res[T2.ammo]--;b.ammo=(b.ammo||0)+T2.ammoPer;sfx('coin');save();openTower(b);};
   const u=document.getElementById('twUp');if(u)u.onclick=()=>{if(!up||!haveCost(up))return;payCost(up);b.tier=(b.tier||1)+1;
     b.maxHp=Math.round(b.maxHp*1.3);b.hp=b.maxHp;sfx('level');save();openTower(b);};
@@ -1368,6 +1374,114 @@ function drawMenuIcon(cv,kind){
     c.strokeStyle='#b5601e';c.lineWidth=W*0.6;c.setLineDash([s*0.05,s*0.04]);
     c.beginPath();c.moveTo(s*0.26,s*0.62);c.quadraticCurveTo(s*0.5,s*0.4,s*0.7,s*0.5);c.stroke();c.setLineDash([]);
     c.fillStyle='#c8402e';c.beginPath();c.moveTo(s*0.7,s*0.44);c.lineTo(s*0.74,s*0.52);c.lineTo(s*0.66,s*0.52);c.closePath();c.fill();break;}
+  case 'berry':{ // berries
+    c.fillStyle='#5a8adf';c.strokeStyle=OL;c.lineWidth=W*0.7;
+    for(const[x,y]of[[0.4,0.58],[0.58,0.56],[0.5,0.72]]){c.beginPath();c.arc(s*x,s*y,s*0.13,0,7);c.fill();c.stroke();}
+    c.fillStyle='rgba(255,255,255,.5)';for(const[x,y]of[[0.36,0.53],[0.54,0.51],[0.46,0.67]]){c.beginPath();c.arc(s*x,s*y,s*0.03,0,7);c.fill();}
+    c.strokeStyle='#3f7d34';c.lineWidth=W*0.9;c.beginPath();c.moveTo(s*0.5,s*0.5);c.lineTo(s*0.6,s*0.28);c.stroke();
+    c.fillStyle='#5aa84a';c.beginPath();c.ellipse(s*0.66,s*0.26,s*0.1,s*0.05,0.5,0,7);c.fill();c.stroke();break;}
+  case 'potion':{ // flask
+    c.fillStyle='#c85a6a';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.42,s*0.24);c.lineTo(s*0.42,s*0.42);c.quadraticCurveTo(s*0.24,s*0.6,s*0.32,s*0.76);
+    c.quadraticCurveTo(s*0.5,s*0.86,s*0.68,s*0.76);c.quadraticCurveTo(s*0.76,s*0.6,s*0.58,s*0.42);c.lineTo(s*0.58,s*0.24);c.closePath();c.fill();c.stroke();
+    c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(s*0.42,s*0.62,s*0.05,s*0.09,0.3,0,7);c.fill();
+    c.fillStyle='#6a4a26';R(s*0.4,s*0.18,s*0.2,s*0.08,s*0.02);c.fill();c.stroke();break;}
+  case 'ration':{ // meat drumstick
+    c.strokeStyle=OL;c.lineWidth=W;c.lineJoin='round';
+    c.fillStyle='#b5652e';c.beginPath();c.moveTo(s*0.34,s*0.46);c.lineTo(s*0.2,s*0.6);c.quadraticCurveTo(s*0.12,s*0.72,s*0.2,s*0.78);c.quadraticCurveTo(s*0.3,s*0.84,s*0.38,s*0.72);c.lineTo(s*0.5,s*0.58);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#d98a4a';c.beginPath();c.arc(s*0.56,s*0.42,s*0.16,0,7);c.fill();c.stroke();
+    c.fillStyle='#f0e8d8';c.beginPath();c.arc(s*0.22,s*0.76,s*0.06,0,7);c.fill();c.stroke();break;}
+  case 'wood':{ c.fillStyle='#a06a3a';c.strokeStyle=OL;c.lineWidth=W;R(s*0.16,s*0.4,s*0.68,s*0.26,s*0.08);c.fill();c.stroke();
+    c.fillStyle='#d8b888';c.beginPath();c.ellipse(s*0.16,s*0.53,s*0.09,s*0.14,0,0,7);c.fill();c.stroke();
+    c.fillStyle='#a06a3a';c.beginPath();c.arc(s*0.16,s*0.53,s*0.045,0,7);c.fill();break;}
+  case 'stone':{ c.fillStyle='#9aa2ac';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.2,s*0.66);c.lineTo(s*0.34,s*0.32);c.lineTo(s*0.62,s*0.26);c.lineTo(s*0.82,s*0.5);c.lineTo(s*0.74,s*0.72);c.lineTo(s*0.4,s*0.78);c.closePath();c.fill();c.stroke();
+    c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=W*0.6;c.beginPath();c.moveTo(s*0.34,s*0.32);c.lineTo(s*0.48,s*0.52);c.lineTo(s*0.4,s*0.78);c.moveTo(s*0.48,s*0.52);c.lineTo(s*0.82,s*0.5);c.stroke();break;}
+  case 'fiber':{ c.strokeStyle='#3f7d34';c.lineWidth=W*1.4;c.lineCap='round';c.fillStyle='none';
+    c.beginPath();c.moveTo(s*0.5,s*0.82);c.lineTo(s*0.5,s*0.38);c.stroke();
+    c.beginPath();c.moveTo(s*0.5,s*0.5);c.quadraticCurveTo(s*0.24,s*0.42,s*0.24,s*0.2);c.quadraticCurveTo(s*0.46,s*0.24,s*0.5,s*0.46);c.stroke();
+    c.beginPath();c.moveTo(s*0.5,s*0.56);c.quadraticCurveTo(s*0.76,s*0.46,s*0.76,s*0.24);c.quadraticCurveTo(s*0.54,s*0.3,s*0.5,s*0.5);c.stroke();break;}
+  case 'ore':{ c.fillStyle='#7a828c';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.22,s*0.62);c.lineTo(s*0.32,s*0.34);c.lineTo(s*0.58,s*0.26);c.lineTo(s*0.8,s*0.44);c.lineTo(s*0.72,s*0.72);c.lineTo(s*0.4,s*0.78);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#ffd23c';for(const[x,y]of[[0.5,0.44],[0.62,0.56],[0.42,0.6]]){c.beginPath();c.arc(s*x,s*y,s*0.05,0,7);c.fill();c.stroke();}break;}
+  case 'axe':{ c.save();c.translate(m,m);c.rotate(-0.5);
+    c.fillStyle='#6a4a26';c.strokeStyle=OL;c.lineWidth=W;R(-s*0.05,-s*0.02,s*0.1,s*0.42,s*0.03);c.fill();c.stroke();
+    c.fillStyle='#b8bfc6';c.beginPath();c.moveTo(-s*0.04,-s*0.28);c.quadraticCurveTo(s*0.3,-s*0.34,s*0.28,-s*0.04);c.quadraticCurveTo(s*0.06,-s*0.02,-s*0.04,-s*0.02);c.closePath();c.fill();c.stroke();c.restore();break;}
+  case 'pickaxe':{ c.strokeStyle='#8a5a2b';c.lineWidth=W*1.4;c.lineCap='round';
+    c.beginPath();c.moveTo(s*0.5,s*0.24);c.lineTo(s*0.5,s*0.8);c.stroke();
+    c.strokeStyle='#b8bfc6';c.lineWidth=W*1.5;c.beginPath();c.moveTo(s*0.2,s*0.36);c.quadraticCurveTo(s*0.5,s*0.2,s*0.8,s*0.36);c.stroke();
+    c.lineWidth=W;c.beginPath();c.moveTo(s*0.2,s*0.36);c.lineTo(s*0.16,s*0.3);c.moveTo(s*0.8,s*0.36);c.lineTo(s*0.84,s*0.3);c.stroke();break;}
+  case 'paw':{ c.fillStyle='#c9803a';c.strokeStyle=OL;c.lineWidth=W*0.7;
+    c.beginPath();c.ellipse(m,s*0.6,s*0.16,s*0.13,0,0,7);c.fill();c.stroke();
+    for(const[x,y]of[[0.32,0.38],[0.46,0.32],[0.6,0.34],[0.72,0.42]]){c.beginPath();c.ellipse(s*x,s*y,s*0.06,s*0.08,0,0,7);c.fill();c.stroke();}break;}
+  case 'gamepad':{ // controller
+    c.fillStyle='#4a525c';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.28,s*0.36);c.lineTo(s*0.72,s*0.36);c.quadraticCurveTo(s*0.9,s*0.4,s*0.82,s*0.64);
+    c.quadraticCurveTo(s*0.76,s*0.74,s*0.66,s*0.66);c.lineTo(s*0.6,s*0.58);c.lineTo(s*0.4,s*0.58);c.lineTo(s*0.34,s*0.66);
+    c.quadraticCurveTo(s*0.24,s*0.74,s*0.18,s*0.64);c.quadraticCurveTo(s*0.1,s*0.4,s*0.28,s*0.36);c.closePath();c.fill();c.stroke();
+    c.strokeStyle='#c8cfd6';c.lineWidth=W*0.9;c.beginPath();c.moveTo(s*0.3,s*0.46);c.lineTo(s*0.4,s*0.46);c.moveTo(s*0.35,s*0.41);c.lineTo(s*0.35,s*0.51);c.stroke();
+    c.fillStyle='#e8483a';c.beginPath();c.arc(s*0.62,s*0.44,s*0.04,0,7);c.fill();c.fillStyle='#54c23a';c.beginPath();c.arc(s*0.7,s*0.5,s*0.04,0,7);c.fill();break;}
+  case 'tent':{ // camp
+    c.fillStyle='#5a8a4a';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(m,s*0.22);c.lineTo(s*0.82,s*0.74);c.lineTo(s*0.18,s*0.74);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#3f6a34';c.beginPath();c.moveTo(m,s*0.22);c.lineTo(m,s*0.74);c.lineTo(s*0.18,s*0.74);c.closePath();c.fill();
+    c.fillStyle='#2a1c10';c.beginPath();c.moveTo(m,s*0.44);c.lineTo(s*0.62,s*0.74);c.lineTo(s*0.38,s*0.74);c.closePath();c.fill();c.stroke();
+    c.strokeStyle=OL;c.lineWidth=W*0.7;c.beginPath();c.moveTo(m,s*0.16);c.lineTo(m,s*0.24);c.stroke();break;}
+  case 'swords':{ // crossed swords
+    for(const dir of[-1,1]){c.save();c.translate(m,m);c.rotate(dir*0.78);
+      c.fillStyle='#cfd6dd';c.strokeStyle=OL;c.lineWidth=W*0.7;
+      c.beginPath();c.moveTo(-s*0.045,s*0.12);c.lineTo(-s*0.045,-s*0.26);c.lineTo(0,-s*0.36);c.lineTo(s*0.045,-s*0.26);c.lineTo(s*0.045,s*0.12);c.closePath();c.fill();c.stroke();
+      c.fillStyle='#ffd23c';R(-s*0.12,s*0.1,s*0.24,s*0.06,s*0.02);c.fill();c.stroke();
+      c.fillStyle='#8a5a2b';R(-s*0.035,s*0.16,s*0.07,s*0.16,s*0.02);c.fill();c.stroke();c.restore();}break;}
+  case 'globe':{ // world sphere
+    const g=c.createRadialGradient(m-s*0.09,m-s*0.09,s*0.04,m,m,s*0.34);g.addColorStop(0,'#6fc2ea');g.addColorStop(1,'#2f7fb8');
+    c.fillStyle=g;c.beginPath();c.arc(m,m,s*0.32,0,7);c.fill();c.stroke();
+    c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=W*0.55;
+    c.beginPath();c.ellipse(m,m,s*0.32,s*0.13,0,0,7);c.stroke();
+    c.beginPath();c.ellipse(m,m,s*0.13,s*0.32,0,0,7);c.stroke();
+    c.beginPath();c.moveTo(m-s*0.32,m);c.lineTo(m+s*0.32,m);c.stroke();
+    c.fillStyle='#5aa84a';c.beginPath();c.ellipse(m-s*0.1,m-s*0.05,s*0.09,s*0.06,0.3,0,7);c.fill();
+    c.beginPath();c.ellipse(m+s*0.12,m+s*0.1,s*0.07,s*0.05,-0.2,0,7);c.fill();break;}
+  case 'book':{ // open book
+    c.fillStyle='#f2e6c8';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(m,s*0.28);c.quadraticCurveTo(s*0.3,s*0.2,s*0.16,s*0.26);c.lineTo(s*0.16,s*0.74);c.quadraticCurveTo(s*0.3,s*0.68,m,s*0.76);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.moveTo(m,s*0.28);c.quadraticCurveTo(s*0.7,s*0.2,s*0.84,s*0.26);c.lineTo(s*0.84,s*0.74);c.quadraticCurveTo(s*0.7,s*0.68,m,s*0.76);c.closePath();c.fill();c.stroke();
+    c.strokeStyle='#a8895a';c.lineWidth=W*0.5;
+    for(let i=0;i<3;i++){c.beginPath();c.moveTo(s*0.24,s*(0.4+i*0.1));c.lineTo(s*0.44,s*(0.38+i*0.1));c.moveTo(s*0.56,s*(0.38+i*0.1));c.lineTo(s*0.76,s*(0.4+i*0.1));c.stroke();}break;}
+  case 'trophy':{ // cup
+    c.fillStyle='#ffd23c';c.strokeStyle=OL;c.lineWidth=W;
+    c.beginPath();c.moveTo(s*0.34,s*0.2);c.lineTo(s*0.66,s*0.2);c.lineTo(s*0.62,s*0.46);c.quadraticCurveTo(m,s*0.6,s*0.38,s*0.46);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.moveTo(s*0.34,s*0.24);c.quadraticCurveTo(s*0.18,s*0.26,s*0.22,s*0.4);c.stroke();
+    c.beginPath();c.moveTo(s*0.66,s*0.24);c.quadraticCurveTo(s*0.82,s*0.26,s*0.78,s*0.4);c.stroke();
+    c.fillStyle='#c9971e';R(s*0.44,s*0.58,s*0.12,s*0.1,s*0.02);c.fill();c.stroke();
+    c.fillStyle='#8a5a2b';R(s*0.36,s*0.68,s*0.28,s*0.08,s*0.03);c.fill();c.stroke();break;}
+  case 'gear':{ // cog
+    c.fillStyle='#b8bfc6';c.strokeStyle=OL;c.lineWidth=W*0.8;
+    c.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,a2=a+Math.PI/8;
+      c.lineTo(m+Math.cos(a)*s*0.34,m+Math.sin(a)*s*0.34);c.lineTo(m+Math.cos(a2)*s*0.26,m+Math.sin(a2)*s*0.26);}
+    c.closePath();c.fill();c.stroke();
+    c.fillStyle='#5a6470';c.beginPath();c.arc(m,m,s*0.12,0,7);c.fill();c.stroke();break;}
+  case 'dice':{ // die
+    c.fillStyle='#f2ede2';c.strokeStyle=OL;c.lineWidth=W;R(s*0.22,s*0.22,s*0.56,s*0.56,s*0.1);c.fill();c.stroke();
+    c.fillStyle=OL;for(const[x,y]of[[0.36,0.36],[0.64,0.36],[0.5,0.5],[0.36,0.64],[0.64,0.64]]){c.beginPath();c.arc(s*x,s*y,s*0.05,0,7);c.fill();}break;}
+  case 'cart':{ // market stall / cart
+    c.strokeStyle=OL;c.lineWidth=W;c.fillStyle='#c98b3a';
+    R(s*0.24,s*0.34,s*0.5,s*0.28,s*0.05);c.fill();c.stroke();
+    c.fillStyle='#e0a94a';for(let i=0;i<3;i++){R(s*(0.26+i*0.16),s*0.34,s*0.08,s*0.28,s*0.02);c.fill();c.stroke();}
+    c.fillStyle='#8a5a2b';R(s*0.2,s*0.28,s*0.58,s*0.08,s*0.03);c.fill();c.stroke();
+    c.fillStyle='#5a6470';c.beginPath();c.arc(s*0.34,s*0.72,s*0.07,0,7);c.fill();c.stroke();c.beginPath();c.arc(s*0.64,s*0.72,s*0.07,0,7);c.fill();c.stroke();break;}
+  case 'crate':{ // storage box
+    c.fillStyle='#a8703a';c.strokeStyle=OL;c.lineWidth=W;R(s*0.2,s*0.3,s*0.6,s*0.48,s*0.04);c.fill();c.stroke();
+    c.fillStyle='#c98b4a';R(s*0.2,s*0.3,s*0.6,s*0.14,s*0.04);c.fill();c.stroke();
+    c.strokeStyle='#6a4a26';c.lineWidth=W*0.6;
+    c.beginPath();c.moveTo(s*0.2,s*0.56);c.lineTo(s*0.8,s*0.56);c.moveTo(s*0.5,s*0.44);c.lineTo(s*0.5,s*0.78);c.stroke();
+    c.fillStyle='#ffd23c';c.beginPath();c.arc(m,s*0.5,s*0.05,0,7);c.fill();c.stroke();break;}
+  case 'pillar':{ // registrar column
+    c.fillStyle='#d8d2c4';c.strokeStyle=OL;c.lineWidth=W;
+    R(s*0.2,s*0.2,s*0.6,s*0.1,s*0.03);c.fill();c.stroke();
+    R(s*0.26,s*0.7,s*0.48,s*0.1,s*0.03);c.fill();c.stroke();
+    c.fillStyle='#e6e0d2';for(const x of[0.32,0.44,0.56]){R(s*x,s*0.3,s*0.08,s*0.4,s*0.01);c.fill();c.stroke();}
+    c.fillStyle='#c8402e';c.beginPath();c.moveTo(m,s*0.12);c.lineTo(s*0.58,s*0.2);c.lineTo(s*0.42,s*0.2);c.closePath();c.fill();c.stroke();break;}
   case 'soundOn': case 'soundOff':{ // speaker + waves or red X
     c.fillStyle='#6f7377';c.beginPath();
     c.moveTo(s*0.12,s*0.4);c.lineTo(s*0.28,s*0.4);c.lineTo(s*0.46,s*0.22);c.lineTo(s*0.46,s*0.78);c.lineTo(s*0.28,s*0.6);c.lineTo(s*0.12,s*0.6);c.closePath();c.fill();c.stroke();
@@ -1558,7 +1672,7 @@ function openPanel(){if(!G)return;pauseGame(true);const p=document.getElementByI
   const C=CLASSES[G.class],hpPct=Math.max(0,G.hp/G.maxHp*100);
   const nm={warrior:'Warrior',mage:'Mage',ranger:'Ranger'}[G.class];
   let h=`<h2>${nm} <span style="font-size:14px;opacity:.8">Lv.${G.level}</span></h2>`;
-  h+=`<div class="subline"><span style="color:#ffd23c">◉ ${G.coins}</span> · Day ${G.day} · engine beta</div>`;
+  h+=`<div class="subline"><span style="color:#ffd23c">${sIco('coin')} ${G.coins}</span> · Day ${G.day}</div>`;
   h+=`<div class="plist"><div class="pcard"><canvas width="56" height="56" id="heroCv" style="width:44px;height:44px"></canvas>
     <div style="flex:1"><div class="hpwrap"><i style="width:${hpPct}%"></i></div>
     <small>${Math.ceil(Math.max(0,G.hp))}/${G.maxHp} HP · ⚔ ${G._atk} · 🛡 ${G._def} · XP ${G.xp}/${xpToNext(G.level)}</small></div></div></div>`;
@@ -1674,7 +1788,7 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
     for(const o of mine){const q=o.q,def=QUESTS.find(x=>x.key===q.key);
       const can=questDone(q),rw=30+G.level*6;
       h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${def.txt}</b> <span class="lv">${questProg(q)}</span><br>
-        <small style="color:#5a4">Reward: ◉ ${rw} + gear</small></div>
+        <small style="color:#5a4">Reward: ${sIco('coin')} ${rw} + gear</small></div>
         <button class="cbtn" data-turn="${o.i}" ${can?'':'disabled'}>${def.kind==='bring'?'Deliver':'Claim'}</button></div>`;}
     h+='</div>';}
   if(!mine.length&&G.quests.length<3){
@@ -1682,10 +1796,10 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
     h+=`<div class="subline">"Psst, adventurer! Help ${tn2} and I'll make it worth your while."</div>`;
     h+=`<div class="pcard" style="max-width:500px;margin:8px auto 0;width:100%">
       <div style="flex:1;min-width:0"><b>${q.txt}</b><br>
-      <small style="color:#5a4">Reward: ◉ ${rw} + a piece of ${q.key==='boss'?'EPIC':'quality'} gear</small></div>
+      <small style="color:#5a4">Reward: ${sIco('coin')} ${rw} + a piece of ${q.key==='boss'?'EPIC':'quality'} gear</small></div>
       <button class="cbtn" id="qAccept">Accept</button></div>`;}
   else if(!mine.length)h+='<div class="subline" style="margin-top:8px">Your quest log is full (3/3).</div>';
-  h+='<div class="subline" style="margin-top:8px">📜 Manage & track quests in the menu → Quests</div>';
+  h+='<div class="subline" style="margin-top:8px">Manage & track quests in the menu → Quests</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="qClose">Leave</button></div>';
   p.innerHTML=h;p.style.display='flex';
   blitPanelIcons(p);
@@ -1700,8 +1814,8 @@ function openQuest(ti){ti=ti||0;pauseGame(true);const p=document.getElementById(
     if(def.kind==='bring')G.res[def.res]-=q.need;
     const rw=30+G.level*6;G.coins+=rw;
     const it=rollGear(G.level+1,q.key==='boss'?3:1);
-    if(G.gear.length<15){G.gear.push(it);toast('🎁 Quest done! +'+rw+'c · '+it.name+' → bag');}
-    else{scene.dropGear(scene.px,scene.py,it);toast('🎁 Quest done! +'+rw+'c · gear dropped (bag full)');}
+    if(G.gear.length<15){G.gear.push(it);toast('Quest done! +'+rw+'c · '+it.name+' → bag');}
+    else{scene.dropGear(scene.px,scene.py,it);toast('Quest done! +'+rw+'c · gear dropped (bag full)');}
     G.quests.splice(i,1);
     if(G.trackQ===i)G.trackQ=null;else if(G.trackQ>i)G.trackQ--;
     G.questsDone=(G.questsDone||0)+1;sfx('quest');save();updateHud();openQuest(ti);});
@@ -1714,16 +1828,16 @@ function openQuests(){const p=document.getElementById('panel');
       const tn2=TOWNS[q.town||0].name,can=questDone(q),tracked=G.trackQ===i;
       h+=`<div class="pcard" style="${tracked?'border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
         <div style="flex:1;min-width:0"><b>${def.txt}</b> <span class="lv">${questProg(q)}</span><br>
-        <small style="color:#5a4">${tn2}${can?' · <b style="color:#3f7d34">READY — return to ❗</b>':''}</small></div>
+        <small style="color:#5a4">${tn2}${can?' · <b style="color:#3f7d34">READY — return to the quest-giver</b>':''}</small></div>
         <button class="cbtn" data-tq="${i}">${tracked?'Untrack':'Track'}</button>
         <button class="cbtn" data-aq="${i}" style="opacity:.7">✕</button></div>`;});
     h+='</div>';}
-  else h+='<div class="subline" style="margin-top:8px">No active quests — visit a ❗ villager in any town.</div>';
+  else h+='<div class="subline" style="margin-top:8px">No active quests — visit a quest-giver in any town.</div>';
   h+='<div class="subline" style="margin-top:10px;color:#f2c14e;font-weight:700">OFFERED IN TOWNS</div><div class="plist" style="margin-top:4px">';
   TOWNS.forEach((t,i)=>{
     if(G.quests.some(q2=>(q2.town||0)===i)){h+=`<div class="pcard" style="opacity:.6"><div style="flex:1"><b>${t.name}</b><br><small>quest already taken</small></div></div>`;return;}
     const q=townOffer(i);
-    h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${t.name}</b><br><small style="color:#5a4">${q.txt} — visit the ❗ villager to accept</small></div></div>`;});
+    h+=`<div class="pcard"><div style="flex:1;min-width:0"><b>${t.name}</b><br><small style="color:#5a4">${q.txt} — visit the quest-giver to accept</small></div></div>`;});
   h+='</div><div class="prow" style="margin-top:8px"><button class="cbtn" id="qlBack">◀ Menu</button></div>';
   p.innerHTML=h;
   blitPanelIcons(p);
@@ -1737,7 +1851,7 @@ function openQuests(){const p=document.getElementById('panel');
 function openMap(){const p=document.getElementById('panel');
   let h='<h2>'+hIco('map')+' World Map</h2>';
   h+='<div style="text-align:center;line-height:0;margin-top:4px"><canvas id="mapCv" width="'+(MW*8)+'" height="'+(MH*8)+'" style="width:min(96vw,480px);border:4px solid #2a2118;border-radius:14px;background:#0b1220;box-shadow:0 0 24px rgba(0,0,0,.6)"></canvas></div>';
-  h+='<div class="subline" style="margin-top:6px">⭐ you · unexplored lands are shrouded — go discover them!</div>';
+  h+='<div class="subline" style="margin-top:6px">The gold marker is you · unexplored lands are shrouded — go discover them!</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="mapBack">◀ Menu</button></div>';
   p.innerHTML=h;
   blitPanelIcons(p);
@@ -1780,8 +1894,15 @@ function openMap(){const p=document.getElementById('panel');
     c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=4;
     c.strokeText(t.name,t.cx*S,(t.cy-4)*S);c.fillText(t.name,t.cx*S,(t.cy-4)*S);}
   c.font='26px system-ui';
-  for(const ca of CASTLES)if(chunkSeen(ca.x,ca.y))c.fillText('🏰',ca.x*S,(ca.y-1)*S);
-  if(chunkSeen(BOSS_LAIR.x,BOSS_LAIR.y))c.fillText('💀',BOSS_LAIR.x*S,BOSS_LAIR.y*S);
+  for(const ca of CASTLES)if(chunkSeen(ca.x,ca.y)){const mx=ca.x*S,my=(ca.y-0.5)*S;
+    c.fillStyle='#9aa2ac';c.strokeStyle='#12160f';c.lineWidth=2;
+    c.beginPath();c.rect(mx-8,my-14,16,16);c.fill();c.stroke();
+    c.beginPath();for(let i=0;i<4;i++)c.rect(mx-8+i*5,my-18,3,4);c.fill();
+    c.fillStyle='#c8402e';c.beginPath();c.moveTo(mx,my-18);c.lineTo(mx+7,my-22);c.lineTo(mx,my-22);c.closePath();c.fill();}
+  if(chunkSeen(BOSS_LAIR.x,BOSS_LAIR.y)){const mx=BOSS_LAIR.x*S,my=BOSS_LAIR.y*S;
+    c.fillStyle='#e8e2d8';c.strokeStyle='#8a1a10';c.lineWidth=2.5;
+    c.beginPath();c.arc(mx,my-4,7,Math.PI,0);c.lineTo(mx+7,my+3);c.lineTo(mx-7,my+3);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#8a1a10';c.beginPath();c.arc(mx-3,my-4,2,0,7);c.arc(mx+3,my-4,2,0,7);c.fill();}
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(grid[y][x]==='C'&&chunkSeen(x,y)){
     c.fillStyle='#12160f';c.beginPath();c.arc(x*S+S/2,y*S+S/2,S*0.9,0,7);c.fill();
     c.fillStyle='#8a6d3a';c.beginPath();c.arc(x*S+S/2,y*S+S/2,S*0.5,0,7);c.fill();}
@@ -1803,15 +1924,15 @@ function openMap(){const p=document.getElementById('panel');
     c.fillStyle='#12160f';c.beginPath();c.arc(pxT*S,pyT*S,S*0.4,0,7);c.fill();}
   document.getElementById('mapBack').onclick=openPanel;}
 const INV_DEF={
-  berry:{ic:'🫐',nm:'Berry',fx:'Heals 35% HP · +25 hunger',lore:'Plump forest berries — sweet, juicy, and just a little magical.',use:1},
-  potion:{ic:'🧪',nm:'Potion',fx:'Restores 60 HP',lore:'A swirling red brew from the nurse\'s own recipe.',use:1},
-  ration:{ic:'🍖',nm:'Ration',fx:'Fully fills hunger',lore:'Smoked meat wrapped in leaves. A traveler\'s best friend.',use:1},
-  wood:{ic:'🪵',nm:'Wood',fx:'Building & crafting material',lore:'Sturdy timber chopped from wild trees.'},
-  stone:{ic:'🪨',nm:'Stone',fx:'Building & crafting material',lore:'Rough grey stone pried from rocky outcrops.'},
-  fiber:{ic:'🌿',nm:'Fiber',fx:'Crafting material · tower ammo',lore:'Tough plant fibers, good for rope and snares.'},
-  ore:{ic:'⛏️',nm:'Ore',fx:'Smithing material (needs pickaxe)',lore:'Glinting ore veins only a pickaxe can crack open.'},
-  axe:{ic:'🪓',nm:'Axe',fx:'Chop trees for wood',lore:'The woodsman\'s answer to every problem.'},
-  pickaxe:{ic:'⛏',nm:'Pickaxe',fx:'Mine stone & ore nodes',lore:'Bites through rock like it holds a grudge.'}};
+  berry:{ic:'berry',nm:'Berry',fx:'Heals 35% HP · +25 hunger',lore:'Plump forest berries — sweet, juicy, and just a little magical.',use:1},
+  potion:{ic:'potion',nm:'Potion',fx:'Restores 60 HP',lore:'A swirling red brew from the nurse\'s own recipe.',use:1},
+  ration:{ic:'ration',nm:'Ration',fx:'Fully fills hunger',lore:'Smoked meat wrapped in leaves. A traveler\'s best friend.',use:1},
+  wood:{ic:'wood',nm:'Wood',fx:'Building & crafting material',lore:'Sturdy timber chopped from wild trees.'},
+  stone:{ic:'stone',nm:'Stone',fx:'Building & crafting material',lore:'Rough grey stone pried from rocky outcrops.'},
+  fiber:{ic:'fiber',nm:'Fiber',fx:'Crafting material · tower ammo',lore:'Tough plant fibers, good for rope and snares.'},
+  ore:{ic:'ore',nm:'Ore',fx:'Smithing material (needs pickaxe)',lore:'Glinting ore veins only a pickaxe can crack open.'},
+  axe:{ic:'axe',nm:'Axe',fx:'Chop trees for wood',lore:'The woodsman\'s answer to every problem.'},
+  pickaxe:{ic:'pickaxe',nm:'Pickaxe',fx:'Mine stone & ore nodes',lore:'Bites through rock like it holds a grudge.'}};
 function hIco(k){return '<canvas class="hico" data-ic="'+k+'"></canvas>';}
 function blitPanelIcons(p){p.querySelectorAll('canvas.hico').forEach(cv=>{if(cv.dataset.done)return;cv.dataset.done=1;cv.width=52;cv.height=52;drawMenuIcon(cv,cv.dataset.ic);});}
 function sIco(k){const S={
@@ -1821,7 +1942,19 @@ function sIco(k){const S={
   atk:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"><path d="M13 3l4 4-8 8-3 1 1-3z" fill="#cfd6dd"/><path d="M5 16l3 3M4 20l3-1 1-3-3 1z" fill="#8a5a2b"/></g></svg>',
   def:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3l7 2v6c0 5-3 8-7 10-4-2-7-5-7-10V5z" fill="#7ad0ff" stroke="#1c2716" stroke-width="1.7" stroke-linejoin="round"/></svg>',
   spd:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M6 5h7l1 6h3l-1 6H8l-1-4H4z" fill="#c8cfd6" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/></svg>',
-  xp:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3l2.3 6.2L21 10l-5 4 1.6 7L12 17l-5.6 4L8 14 3 10l6.7-.8z" fill="#a58cff" stroke="#1c2716" stroke-width="1.5" stroke-linejoin="round"/></svg>'};
+  xp:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3l2.3 6.2L21 10l-5 4 1.6 7L12 17l-5.6 4L8 14 3 10l6.7-.8z" fill="#a58cff" stroke="#1c2716" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  wood:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#1c2716" stroke-width="1.6"><rect x="4" y="9" width="16" height="7" rx="2" fill="#a06a3a"/><ellipse cx="4" cy="12.5" rx="2.2" ry="3.5" fill="#d8b888"/></g><circle cx="4" cy="12.5" r="1.1" fill="#a06a3a"/></svg>',
+  stone:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M5 14l3-6 6-2 5 4-1 6-7 2z" fill="#9aa2ac" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 8l3 4-2 5" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/></svg>',
+  fiber:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#3f7d34" stroke-width="1.8" stroke-linecap="round" fill="none"><path d="M12 20V8"/><path d="M12 12C9 11 7 8 7 5c3 0 5 3 5 6"/><path d="M12 14c3-1 5-4 5-7-3 0-5 3-5 6"/></g></svg>',
+  ore:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M6 15l2-6 5-2 6 3-1 6-7 2z" fill="#7a828c" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/><path d="M11 9l2 3-1.5 4M15 8l1 4" stroke="#ffd23c" stroke-width="1.3" fill="none"/></svg>',
+  fire:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M12 3c1 4 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 1 1 2 2 2 0-3 0-5 1-7z" fill="#ff8844" stroke="#1c2716" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  frost:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><g stroke="#7ad0ff" stroke-width="1.7" stroke-linecap="round"><path d="M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9"/></g></svg>',
+  storm:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><path d="M13 2L5 13h5l-2 9 9-12h-5z" fill="#ffd23c" stroke="#1c2716" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  arcane:'<svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-2px"><circle cx="12" cy="12" r="6" fill="#c07aff" stroke="#1c2716" stroke-width="1.6"/><circle cx="10" cy="10" r="1.8" fill="#fff"/></svg>',
+  helm:'<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px"><path d="M5 13a7 7 0 0 1 14 0l-1 4H6z" fill="#9aa4ad" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/><rect x="8" y="13" width="8" height="3" fill="#2a2f36"/></svg>',
+  boot:'<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px"><path d="M9 4h3v8l6 2v4H7z" fill="#6b4a2a" stroke="#1c2716" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  ring:'<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px"><circle cx="12" cy="14" r="5.5" fill="none" stroke="#ffd23c" stroke-width="2.4"/><path d="M12 3l2 4h-4z" fill="#7ad0ff" stroke="#1c2716" stroke-width="1.3"/></svg>',
+  orb:'<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px"><circle cx="12" cy="11" r="6" fill="#c07aff" stroke="#1c2716" stroke-width="1.6"/><circle cx="10" cy="9" r="2" fill="#fff" opacity=".7"/></svg>'};
   return S[k]||'';}
 function openInventory(sel){if(typeof sel!=='string')sel=null;
   const p=document.getElementById('panel');const it=G.items,R=G.res;
@@ -1833,7 +1966,7 @@ function openInventory(sel){if(typeof sel!=='string')sel=null;
   const D=INV_DEF[sel];
   if(D){const n=cnt(sel),isTool=sel==='axe'||sel==='pickaxe';
     h+=`<div class="pcard" style="max-width:500px;margin:5px auto 0;width:100%">
-      <div style="width:44px;text-align:center;font-size:30px;flex:none">${D.ic}</div>
+      <div style="width:44px;text-align:center;flex:none"><canvas class="hico" data-ic="${D.ic}" style="width:30px;height:30px"></canvas></div>
       <div style="flex:1;min-width:0"><b style="color:#c98b3a">${D.nm}</b> <span class="lv">${isTool?(n?'tier '+n:'not crafted'):'×'+n}</span><br>
       <small style="color:#7a6a4a;font-style:italic">${D.lore}</small><br>
       <small style="color:#3f7d34">${D.fx}</small></div>
@@ -1842,7 +1975,7 @@ function openInventory(sel){if(typeof sel!=='string')sel=null;
     h+=`<div class="subline" style="margin-top:7px;color:#f2c14e;font-weight:700">${title}</div><div class="baggrid">`;
     for(const k of keys){const n=cnt(k),D2=INV_DEF[k];
       h+=`<div class="bagslot ${sel===k?'sel':''}" data-inv="${k}" style="${n>0?'':'opacity:.45;'}">
-        ${D2.ic}<span class="eqlv">${k==='axe'||k==='pickaxe'?(n?['I','II','III'][n-1]||n:'—'):n}</span></div>`;}
+        <canvas class="hico" data-ic="${D2.ic}" style="width:26px;height:26px"></canvas><span class="eqlv">${k==='axe'||k==='pickaxe'?(n?['I','II','III'][n-1]||n:'—'):n}</span></div>`;}
     h+='</div>';};
   grid('CONSUMABLES',['berry','potion','ration']);
   grid('MATERIALS',['wood','stone','fiber','ore']);
@@ -1870,8 +2003,8 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
   if(sc>0)h+=`<div class="subline" style="color:#2fd06a;font-weight:700">${SN} set: ${sc}/6${fullSet()?' — COMPLETE! +12% ATK/DEF, +8% HP':''}</div>`;
   const slotBox=(slot)=>{const it=G.equip[slot];const col=gearCol(it);
     if(it)return `<div class="eqslot ${sel==='slot:'+slot?'sel':''}" data-sel="slot:${slot}" style="${col?`border-color:${col};box-shadow:0 0 10px ${col}66,0 3px 0 rgba(0,0,0,.22);`:''}">
-      <span class="ic">${SLOT_ICON[slot]}</span><span class="eqlv">${it.lvl}</span><span class="eqlab">${slot}</span></div>`;
-    return `<div class="eqslot empty ${sel==='slot:'+slot?'sel':''}" data-sel="slot:${slot}"><span class="ic">${SLOT_ICON[slot]}</span><span class="eqlab">${slot}</span></div>`;};
+      <span class="ic">${slotIco(slot)}</span><span class="eqlv">${it.lvl}</span><span class="eqlab">${slot}</span></div>`;
+    return `<div class="eqslot empty ${sel==='slot:'+slot?'sel':''}" data-sel="slot:${slot}"><span class="ic">${slotIco(slot)}</span><span class="eqlab">${slot}</span></div>`;};
   h+=`<div class="dollwrap">
     <div class="eqcol">${slotBox('weapon')}${slotBox('armor')}${slotBox('boots')}</div>
     <canvas id="dollCv" width="340" height="340" style="width:160px;height:160px"></canvas>
@@ -1883,7 +2016,7 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
   else if(sel&&sel.startsWith('bag:')){bagIdx=+sel.slice(4);det=G.gear[bagIdx];detIsBag=true;}
   if(det){const R=RARITIES[det.rar],col=gearCol(det)||'#20301c';
     h+=`<div class="pcard" style="max-width:500px;margin:6px auto 0;width:100%;border-color:${col}">
-      <div style="flex:1;min-width:0"><b style="color:${col}">${SLOT_ICON[det.slot]} ${det.name}</b> <span class="lv">${det.set?'SET':R.name} Lv.${det.lvl}</span><br>
+      <div style="flex:1;min-width:0"><b style="color:${col}">${slotIco(det.slot)} ${det.name}</b> <span class="lv">${det.set?'SET':R.name} Lv.${det.lvl}</span><br>
       <small style="color:#5a4">${statStr(det)}</small>${det.set?`<br><small style="color:#2fd06a">${det.set} set piece (${sc}/6 worn)</small>`:''}</div>
       ${detIsBag?`<button class="cbtn" data-eq="${bagIdx}">Equip</button><button class="cbtn" data-sv="${bagIdx}">Salvage</button>`
                 :`<button class="cbtn" data-uneq="${det.slot}">Unequip</button>`}</div>`;}
@@ -1892,7 +2025,7 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
   h+=`<div class="subline" style="margin-top:8px;color:#f2c14e;font-weight:700">GEAR BAG (${G.gear.length}/15)</div>`;
   if(G.gear.length){h+='<div class="baggrid">';
     G.gear.forEach((it,i)=>{const col=gearCol(it);
-      h+=`<div class="bagslot ${sel==='bag:'+i?'sel':''}" data-sel="bag:${i}" style="${col?`border-color:${col};box-shadow:0 0 9px ${col}55,0 3px 0 rgba(0,0,0,.22);`:''}">${SLOT_ICON[it.slot]}<span class="eqlv">${it.lvl}</span></div>`;});
+      h+=`<div class="bagslot ${sel==='bag:'+i?'sel':''}" data-sel="bag:${i}" style="${col?`border-color:${col};box-shadow:0 0 9px ${col}55,0 3px 0 rgba(0,0,0,.22);`:''}">${slotIco(it.slot)}<span class="eqlv">${it.lvl}</span></div>`;});
     h+='</div>';}
   else h+='<div class="subline">Rare monsters always drop gear — hunt them!</div>';
   h+='<div class="prow" style="margin-top:8px"><button class="cbtn" id="charBack">◀ Menu</button></div>';
@@ -1914,6 +2047,7 @@ function openCharacter(sel){if(typeof sel!=='string')sel=null;const p=document.g
     G.equip[slot]=null;G.gear.push(it);recalcHero();if(G.hp>G.maxHp)G.hp=G.maxHp;save();updateHud();applyGearFx();openCharacter();});
   document.getElementById('charBack').onclick=openPanel;}
 let skTab='spell';
+const SKICO={vitality:'hp',might:'atk',iron:'def',swift:'spd',mending:'hp',scholar:'xp',fortune:'coin',crit:'atk',power:'atk',haste:'storm',multi:'atk',pierce:'atk',focus:'arcane',overload:'fire'};
 function spentIn(tree){let t=0;for(const nd of SKILLS)if(nd.tree===tree&&(!nd.cls||nd.cls===G.class)&&(!nd.sub||nd.sub===G.element))t+=(G.skills||{})[nd.key]||0;return t;}
 function nodeOpen(nd){return spentIn(nd.tree)>=(nd.tier-1)*2&&skillReq(nd);}
 function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getElementById('panel');
@@ -1921,15 +2055,15 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
   let h=`<h2>${hIco('skills')} Skills</h2><div class="subline">Points: <b style="color:#ffd23c">${G.skillPoints||0}</b> \u00b7 +1 every level-up</div>`;
   if(skTab==='loadout')skTab='spell';
   h+=`<div class="sktabs">
-    <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">\u2694 Spells</button>
+    <button class="sktab ${skTab==='spell'?'on':''}" data-tab="spell">Spells</button>
     <button class="sktab ${skTab==='passive'?'on':''}" data-tab="passive">\u2726 Passives</button></div>`;
   const nd=SKILLS.find(n=>n.key===sel);
   if(nd){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
     const dispNm=(nd.key==='firewall'||nd.key==='spikewall'||nd.key==='thornwall')?wallDef().nm:nd.name;
     const spentT=spentIn(nd.tree),need=(nd.tier-1)*2;
     let lockTxt='';
-    if(spentT<need)lockTxt=`\ud83d\udd12 Needs ${need} points spent in this tree`;
-    else if(!skillReq(nd))lockTxt='\ud83d\udd12 Requires '+Object.entries(nd.req).map(([k,v])=>((SKILLS.find(n=>n.key===k)||{name:k}).name)+' '+v).join(', ');
+    if(spentT<need)lockTxt=`Needs ${need} points spent in this tree`;
+    else if(!skillReq(nd))lockTxt='Requires '+Object.entries(nd.req).map(([k,v])=>((SKILLS.find(n=>n.key===k)||{name:k}).name)+' '+v).join(', ');
     h+=`<div class="pcard" style="max-width:500px;margin:4px auto 0;width:100%">
       <div style="flex:1;min-width:0"><b>${dispNm}</b> <span class="lv">${rank}/${nd.max}</span><br>
       <small>${nd.eff}</small>${lockTxt?`<br><small style="color:#e8483a">${lockTxt}</small>`:''}</div>
@@ -1941,10 +2075,10 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
     const nodes=SKILLS.filter(n=>n.tree===skTab&&n.tier===t&&(!n.cls||n.cls===G.class)&&(!n.sub||n.sub===G.element));
     if(!nodes.length)continue;
     const need=(t-1)*2,open=spent>=need;
-    if(t>1)h+=`<div class="sktsep ${open?'':'dim'}">TIER ${RN[t-1]}${open?'':' \ud83d\udd12 '+need+' pts in tree'}</div>`;
+    if(t>1)h+=`<div class="sktsep ${open?'':'dim'}">TIER ${RN[t-1]}${open?'':' \u2014 '+need+' pts in tree'}</div>`;
     h+='<div class="sktier">';
     for(const nd of nodes){const rank=(G.skills||{})[nd.key]||0,maxed=rank>=nd.max,ok=nodeOpen(nd);
-      h+=`<div class="sknode ${ok?'':'locked'} ${maxed?'maxed':''} ${sel===nd.key?'sel':''}" data-sk="${nd.key}">${nd.cv?`<canvas class="skcv" data-ic="${nd.icon}"></canvas>`:`<span>${nd.icon}</span>`}<span class="skrk">${rank}/${nd.max}</span></div>`;}
+      h+=`<div class="sknode ${ok?'':'locked'} ${maxed?'maxed':''} ${sel===nd.key?'sel':''}" data-sk="${nd.key}">${nd.cv?`<canvas class="skcv" data-ic="${nd.icon}"></canvas>`:(SKICO[nd.key]?`<span class="siwrap">${sIco(SKICO[nd.key])}</span>`:`<span>${nd.icon}</span>`)}<span class="skrk">${rank}/${nd.max}</span></div>`;}
     h+='</div>';}
   h+='</div>';
   if(skTab==='spell'){
@@ -1955,9 +2089,9 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
       for(const pk in PETS){const P2=PETS[pk];
         const locked=P2.lock&&!P2.lock();
         h+=`<div class="pcard" style="${locked?'opacity:.55':''}${G.pet===pk?';border-color:#ffd23c;box-shadow:0 0 10px rgba(255,210,60,.4),0 3px 0 rgba(0,0,0,.22)':''}">
-          <div style="width:34px;text-align:center;font-size:23px">${P2.ic}</div>
-          <div style="flex:1;min-width:0"><b>${P2.nm}</b>${G.pet===pk?' <span style="color:#3f7d34;font-size:11px">\u2714 active</span>':''}<br>
-          <small>${locked?'\ud83d\udd12 Unlock: '+P2.lockTxt:P2.desc+' \u00b7 '+Math.round(P2.dmg*100)+'% ATK every '+P2.rate+'s'}</small></div>
+          <div style="width:34px;text-align:center"><canvas class="hico" data-ic="${P2.ic}" style="width:26px;height:26px"></canvas></div>
+          <div style="flex:1;min-width:0"><b>${P2.nm}</b>${G.pet===pk?' <span style="color:#3f7d34;font-size:11px">\u2713 active</span>':''}<br>
+          <small>${locked?'Locked — '+P2.lockTxt:P2.desc+' \u00b7 '+Math.round(P2.dmg*100)+'% ATK every '+P2.rate+'s'}</small></div>
           <button class="cbtn" data-pet="${pk}" ${locked||G.pet===pk?'disabled':''}>${G.pet===pk?'\u2713':'Choose'}</button></div>`;}
       h+='</div>';}
     h+=`<div class="subline" style="margin-top:10px;color:#f2c14e;font-weight:700">EQUIPPED SPELLS (${G.loadout.length}/3)</div>
@@ -1966,8 +2100,8 @@ function openSkills(sel){if(typeof sel!=='string')sel=null;const p=document.getE
       const av=sb.avail(),eq=G.loadout.includes(k),full=G.loadout.length>=3;
       h+=`<div class="pcard" style="${av?'':'opacity:.55'}">
         <div style="width:34px;text-align:center;font-size:22px">${sb.cv?`<canvas class="skcv2" data-ic="${sb.icon()}" style="width:28px;height:28px"></canvas>`:sb.icon()}</div>
-        <div style="flex:1;min-width:0"><b>${sb.name()}</b>${eq?' <span style="color:#3f7d34;font-size:11px">\u2714 equipped</span>':''}<br>
-        <small>${av?sb.desc:'\ud83d\udd12 '+(sb.lock||'')}</small></div>
+        <div style="flex:1;min-width:0"><b>${sb.name()}</b>${eq?' <span style="color:#3f7d34;font-size:11px">\u2713 equipped</span>':''}<br>
+        <small>${av?sb.desc:'Locked — '+(sb.lock||'')}</small></div>
         <button class="cbtn" data-eqs="${k}" ${av&&(eq||!full)?'':'disabled'}>${eq?'Remove':'Equip'}</button></div>`;}
     h+='</div>';}
   h+='<div class="prow" style="margin-top:6px"><button class="cbtn" id="skBack">\u25c0 Menu</button></div>';
@@ -3371,7 +3505,7 @@ class World extends Phaser.Scene{
         else if(t2==='Q'){let bt2=0,bd4=1e9;
           TOWNS.forEach((t3,ti2)=>{const d4=Math.hypot(t3.cx-xx,t3.cy-yy);if(d4<bd4){bd4=d4;bt2=ti2;}});
           const has=G.quests.some(q2=>(q2.town||0)===bt2);
-          setT(dd,TILE*1.3,{quest:{town:bt2}},has?'❗ Quest progress':'❗ New Quest');}
+          setT(dd,TILE*1.3,{quest:{town:bt2}},has?'Quest progress':'New Quest');}
         else if(t2==='S')setT(dd,TILE*1.2,{sign:1},'Read');
         else if(t2==='T'&&!dungeon&&!((this.choppedCD[xx+','+yy]||0)>this.time.now))setT(dd,TILE*1.25,{tree:{x:xx,y:yy}},'Chop');
         else if(t2==='C')setT(dd,TILE*1.3,{cave:{x:xx,y:yy}},'Enter Cave');
@@ -3431,14 +3565,15 @@ function menuUI(){
   const bd=document.getElementById('mkBody');
   const hasSave=!!G;
   let h='<div style="height:2vh"></div>';
-  if(hasSave)h+=`<button class="zbtn gold" id="zCont"><span class="zic">▶</span>Continue<small>${G.name} the ${subDef(G.class,G.element).nm} · Lv.${G.level} · Day ${G.day}</small></button>`;
-  h+=`<button class="zbtn" id="zSingle"><span class="zic">⚔</span>${hasSave?'New Adventure':'Single Player'}${hasSave?'<small>forge a new hero (replaces your save)</small>':'<small>forge your hero and set out</small>'}</button>`;
-  h+=`<button class="zbtn off"><span class="zic">🌐</span>Multiplayer<span class="soon">COMING SOON</span></button>`;
-  h+=`<button class="zbtn" id="zHow"><span class="zic">📖</span>How to Play</button>`;
-  if(hasSave)h+=`<button class="zbtn" id="zRec"><span class="zic">🏆</span>Records</button>`;
-  h+=`<button class="zbtn" id="zOpt"><span class="zic">⚙</span>Options</button>`;
+  if(hasSave)h+=`<button class="zbtn gold" id="zCont"><span class="zic">${hIco('resume')}</span>Continue<small>${G.name} the ${subDef(G.class,G.element).nm} · Lv.${G.level} · Day ${G.day}</small></button>`;
+  h+=`<button class="zbtn" id="zSingle"><span class="zic">${hIco('swords')}</span>${hasSave?'New Adventure':'Single Player'}${hasSave?'<small>forge a new hero (replaces your save)</small>':'<small>forge your hero and set out</small>'}</button>`;
+  h+=`<button class="zbtn off"><span class="zic">${hIco('globe')}</span>Multiplayer<span class="soon">COMING SOON</span></button>`;
+  h+=`<button class="zbtn" id="zHow"><span class="zic">${hIco('book')}</span>How to Play</button>`;
+  if(hasSave)h+=`<button class="zbtn" id="zRec"><span class="zic">${hIco('trophy')}</span>Records</button>`;
+  h+=`<button class="zbtn" id="zOpt"><span class="zic">${hIco('gear')}</span>Options</button>`;
   h+=`<div style="margin-top:6px;color:#5f5540;font-size:10px;font-weight:700">CRITTER WILDS · <a href="classic/" style="color:#8a7a5c">classic version</a></div>`;
   bd.innerHTML=h;
+  blitPanelIcons(bd);
   const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn;};
   on('zCont',()=>{cls=G.class;boot();});
   on('zSingle',()=>creationUI());
@@ -3450,15 +3585,16 @@ function backBtn(){return '<button class="zbtn slim" id="zBack"><span class="zic
 function howUI(){
   const bd=document.getElementById('mkBody');
   bd.innerHTML=`<div class="zpanel">
-    <b>🕹 Controls</b>
+    <b>${hIco('gamepad')} Controls</b>
     <p>Left thumb — move (virtual stick). Right thumb — swipe to attack in a direction, or draw a <b>V</b> / <b>Z</b> / <b>circle</b> for gesture spells. Hold the weapon button and drag to aim, release to fire.</p>
-    <b>⚔ Fighting</b>
-    <p>Fill the ✦ Super by dealing damage. Equip up to 3 spells in Skills → Loadout. Your subclass makes every hit burn, chill, arc lightning or pierce.</p>
-    <b>🏕 Surviving</b>
+    <b>${hIco('swords')} Fighting</b>
+    <p>Fill the Super meter by dealing damage. Equip up to 3 spells in the Skills menu. Your subclass makes every hit burn, chill, arc lightning or pierce.</p>
+    <b>${hIco('tent')} Surviving</b>
     <p>Eat berries, rest at huts, bank materials in a chest — banked goods survive death. Buy land, build walls & towers; raids come at night.</p>
-    <b>🗺 Exploring</b>
-    <p>The map is shrouded until you explore. Find caves, sewers, castles, the world boss 💀 — and take quests from the ❗ villager in each town.</p>
+    <b>${hIco('map')} Exploring</b>
+    <p>The map is shrouded until you explore. Find caves, sewers, castles and the world boss — and take quests from the quest-giver in each town.</p>
   </div>`+backBtn();
+  blitPanelIcons(bd);
   document.getElementById('zBack').onclick=menuUI;}
 function recordsUI(){
   const bd=document.getElementById('mkBody');
@@ -3481,17 +3617,18 @@ function recordsUI(){
 function optionsUI(){
   const bd=document.getElementById('mkBody');
   let h='<div class="zpanel">';
-  if(G)h+=`<button class="zbtn slim" id="zMute"><span class="zic">${G.muted?'🔇':'🔊'}</span>Sound: ${G.muted?'Off':'On'}</button>`;
-  h+=`<button class="zbtn slim" id="zInstall"><span class="zic">📲</span>Install to Home Screen</button>`;
-  if(G)h+=`<button class="zbtn slim danger" id="zErase"><span class="zic">🗑</span>Erase Save</button>`;
+  if(G)h+=`<button class="zbtn slim" id="zMute"><span class="zic">${hIco(G.muted?'soundOff':'soundOn')}</span>Sound: ${G.muted?'Off':'On'}</button>`;
+  h+=`<button class="zbtn slim" id="zInstall"><span class="zic">${hIco('map')}</span>Install to Home Screen</button>`;
+  if(G)h+=`<button class="zbtn slim danger" id="zErase"><span class="zic">${hIco('crate')}</span>Erase Save</button>`;
   h+='</div>'+backBtn();
   bd.innerHTML=h;
+  blitPanelIcons(bd);
   const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn;};
   on('zMute',()=>{G.muted=!G.muted;save();optionsUI();});
   on('zInstall',()=>{localStorage.removeItem('cw-pwa-no');
     const evb=window._pwaDeferred;
     if(evb)evb.prompt();
-    else alert('iPhone: tap the Share ⬆ button, then "Add to Home Screen".');});
+    else alert('iPhone: tap the Share button, then "Add to Home Screen".');});
   on('zErase',()=>{if(confirm('Erase '+(G.name||'your hero')+' forever?')){localStorage.removeItem(SAVE_KEY);location.reload();}});
   document.getElementById('zBack').onclick=menuUI;}
 const MK_NAMES=['Ash','Rook','Vex','Kael','Nyx','Bram','Sol','Wren','Dax','Mira','Torin','Lira','Fenn','Oren','Sable','Juno'];
@@ -3505,11 +3642,11 @@ function creationUI(){
   h+='</div><div class="mklab">CHOOSE YOUR SUBCLASS</div><div class="crow">';
   if(!SUBCLASSES[mkCls][mkElem])mkElem=Object.keys(SUBCLASSES[mkCls])[0];
   for(const k in SUBCLASSES[mkCls]){const sd=SUBCLASSES[mkCls][k];
-    h+=`<button class="echip ${mkElem===k?'sel':''}" data-mke="${k}">${sd.ic} ${sd.nm}</button>`;}
+    h+=`<button class="echip ${mkElem===k?'sel':''}" data-mke="${k}">${sd.nm}</button>`;}
   h+=`</div><div id="elemDesc">${subDef(mkCls,mkElem).desc}</div>`;
   h+=`<div class="mklab">NAME YOUR HERO</div>
-  <div id="nameRow"><input id="heroName" maxlength="12" value="${window._mkName||MK_NAMES[Math.floor(Math.random()*MK_NAMES.length)]}" spellcheck="false"><button id="rollName">🎲</button></div>`;
-  h+='<button id="beginBtn">⚔ BEGIN YOUR LEGEND</button>';
+  <div id="nameRow"><input id="heroName" maxlength="12" value="${window._mkName||MK_NAMES[Math.floor(Math.random()*MK_NAMES.length)]}" spellcheck="false"><button id="rollName">↻</button></div>`;
+  h+='<button id="beginBtn">BEGIN YOUR LEGEND</button>';
   h+=backBtn();
   bd.innerHTML=h;
   bd.querySelectorAll('[data-cv]').forEach(cv2=>{
