@@ -899,6 +899,19 @@ function elemCastSfx(){
     case 'storm':tone(1900,0.09,'sawtooth',0.1,140);crackle(0.12,0.14);break;
     case 'necro':tone(140,0.26,'sawtooth',0.1,90);tone(146,0.26,'sawtooth',0.08,88);fNoise(0.26,0.06,300,120,'lowpass');break;
     default:tone(520,0.11,'square',0.13,900);}}
+function killSfx(e){
+  if(G&&G.muted)return;
+  if(e.boss){tone(70,0.8,'sawtooth',0.2,40);fNoise(0.7,0.18,300,60,'lowpass');bell(520,0.9,0.12,0.25);return;}
+  const body=e.raider?'brute':critBody(e.sp);
+  switch(body){
+    case 'imp':tone(880+Math.random()*120,0.18,'sawtooth',0.12,260);tone(1200,0.08,'square',0.06,500);break;
+    case 'bat':tone(1500,0.06,'square',0.09,2100);setTimeout(()=>tone(1250,0.07,'square',0.08,1800),70);fNoise(0.14,0.05,3800,6200,'highpass');break;
+    case 'brute':tone(110,0.22,'sawtooth',0.16,55);fNoise(0.2,0.14,250,90,'lowpass');break;
+    case 'slime':fNoise(0.2,0.16,600,150,'lowpass');tone(300,0.14,'sine',0.1,90);break;
+    case 'shroom':fNoise(0.16,0.12,800,300,'lowpass');fNoise(0.25,0.05,2600,4200,'highpass');break;
+    default:tone(950,0.3,'sine',0.08,240);fNoise(0.3,0.05,5000,7800,'highpass');}
+  if(!e.raider)setTimeout(()=>tone(1150,0.05,'square',0.05,1500),160); // faint coin tick
+}
 let _hitT=0;
 function sfx(n){switch(n){
   case 'cast':elemCastSfx();break;
@@ -1379,6 +1392,36 @@ function drawMenuIcon(cv,kind){
     for(const[tx2,ty2,a]of[[0.34,0.42,-0.6],[0.58,0.3,0.4],[0.5,0.62,2.6],[0.72,0.56,1.8]]){
       c.save();c.translate(s*tx2,s*ty2);c.rotate(a);
       c.beginPath();c.moveTo(-s*0.05,0);c.lineTo(0,-s*0.12);c.lineTo(s*0.05,0);c.closePath();c.fill();c.stroke();c.restore();}break;}
+  case 'helm':{ // knight helm
+    const hg2=c.createLinearGradient(0,s*0.2,0,s*0.8);hg2.addColorStop(0,'#c8cfd6');hg2.addColorStop(1,'#828b94');
+    c.fillStyle=hg2;c.beginPath();c.arc(m,s*0.45,s*0.3,Math.PI,0);
+    c.lineTo(s*0.8,s*0.72);c.quadraticCurveTo(m,s*0.8,s*0.2,s*0.72);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#2a2f36';R(s*0.26,s*0.48,s*0.48,s*0.12,s*0.05);c.fill();
+    c.fillStyle='#ffb454';c.beginPath();c.moveTo(m-s*0.03,s*0.16);c.quadraticCurveTo(s*0.62,s*0.08,s*0.56,s*0.28);c.quadraticCurveTo(m,s*0.2,m-s*0.03,s*0.16);c.closePath();c.fill();c.stroke();
+    c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.ellipse(s*0.38,s*0.32,s*0.08,s*0.05,-0.4,0,7);c.fill();break;}
+  case 'boots':{ // leather boot
+    c.fillStyle='#6b4a2a';c.beginPath();
+    c.moveTo(s*0.34,s*0.2);c.lineTo(s*0.56,s*0.2);c.lineTo(s*0.56,s*0.52);
+    c.quadraticCurveTo(s*0.82,s*0.54,s*0.82,s*0.7);c.quadraticCurveTo(s*0.82,s*0.78,s*0.7,s*0.78);
+    c.lineTo(s*0.36,s*0.78);c.quadraticCurveTo(s*0.3,s*0.78,s*0.3,s*0.68);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#4a3018';R(s*0.3,s*0.66,s*0.52,s*0.12,s*0.05);c.fill();c.stroke();
+    c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=W*0.5;
+    c.beginPath();c.moveTo(s*0.38,s*0.3);c.lineTo(s*0.52,s*0.3);c.moveTo(s*0.38,s*0.4);c.lineTo(s*0.52,s*0.4);c.stroke();break;}
+  case 'ring':{ // gold ring with gem
+    c.strokeStyle='#ffd23c';c.lineWidth=W*1.6;
+    c.beginPath();c.arc(m,s*0.56,s*0.2,0,7);c.stroke();
+    c.strokeStyle=OL;c.lineWidth=W*0.6;
+    c.beginPath();c.arc(m,s*0.56,s*0.2+W*0.8,0,7);c.stroke();
+    c.beginPath();c.arc(m,s*0.56,s*0.2-W*0.8,0,7);c.stroke();
+    c.fillStyle='#7ad0ff';c.strokeStyle=OL;c.lineWidth=W*0.7;
+    c.beginPath();c.moveTo(m,s*0.14);c.lineTo(m+s*0.11,s*0.26);c.lineTo(m,s*0.38);c.lineTo(m-s*0.11,s*0.26);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#fff';c.beginPath();c.arc(m-s*0.03,s*0.22,s*0.03,0,7);c.fill();break;}
+  case 'orb':{ // charm orb on stand
+    c.fillStyle='#6a4a26';R(s*0.32,s*0.66,s*0.36,s*0.14,s*0.05);c.fill();c.stroke();
+    const og=c.createRadialGradient(m-s*0.08,s*0.36,s*0.03,m,s*0.42,s*0.3);
+    og.addColorStop(0,'#e8d8ff');og.addColorStop(0.5,'#c07aff');og.addColorStop(1,'#6a3ab0');
+    c.fillStyle=og;c.beginPath();c.arc(m,s*0.42,s*0.26,0,7);c.fill();c.stroke();
+    c.fillStyle='rgba(255,255,255,.7)';c.beginPath();c.arc(m-s*0.09,s*0.33,s*0.05,0,7);c.fill();break;}
   case 'dash':{ // speed streaks + body
     c.strokeStyle='#eaf6ff';c.lineWidth=W*1.15;
     for(const[dy,x0,l]of[[-0.15,0.14,0.3],[0,0.1,0.42],[0.15,0.16,0.26]]){
@@ -2204,6 +2247,11 @@ class World extends Phaser.Scene{
      g.fillStyle(0xffd23c,1);g.fillPoints([{x:2,y:14},{x:2,y:7},{x:7,y:11},{x:11,y:5},{x:15,y:11},{x:20,y:7},{x:20,y:14}],true);
      g.generateTexture('crownTex',22,18);}
     // gear-drop chest texture
+    if(!this.textures.exists('drop_helm')){
+      const mk2=(key,kind)=>{const cv=document.createElement('canvas');cv.width=52;cv.height=52;
+        drawMenuIcon(cv,kind);this.textures.addCanvas(key,cv);};
+      mk2('drop_weapon','w_'+cls);mk2('drop_helm','helm');mk2('drop_armor','armor');
+      mk2('drop_boots','boots');mk2('drop_trinket','ring');mk2('drop_charm','orb');}
     if(!this.textures.exists('chestTex')){const g=this.make.graphics({add:false});
      g.fillStyle(0x12160f,1);g.fillRoundedRect(0,10,30,20,4);
      g.fillStyle(0x8a5a2e,1);g.fillRoundedRect(2,12,26,16,3);
@@ -2427,9 +2475,10 @@ class World extends Phaser.Scene{
   dropGear(wx,wy,item){
     const sx=isoX(wx,wy),sy=isoY(wx,wy);
     const R=RARITIES[item.rar],col=R.hex;
-    const beam=this.add.image(sx,sy-38,'glow').setScale(0.55,2.6).setTint(col).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5).setDepth(sy+9);
-    const chest=this.add.image(sx,sy-8,'chestTex').setDepth(sy+10);
-    const gl=this.add.image(sx,sy-8,'glow').setScale(0.5).setTint(col).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.55).setDepth(sy+11);
+    const beam=this.add.image(sx,sy-38,'glow').setScale(0.3,2.4).setTint(col).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.22).setDepth(sy+9);
+    const tex='drop_'+item.slot;
+    const chest=this.add.image(sx,sy-10,this.textures.exists(tex)?tex:'chestTex').setScale(0.72).setDepth(sy+10);
+    const gl=this.add.image(sx,sy-8,'glow').setScale(0.3).setTint(col).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.26).setDepth(sy+9.5);
     this.tweens.add({targets:chest,y:sy-14,duration:600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     drops.push({x:wx,y:wy,item,beam,chest,gl});}
   spawnEshot(e,aa){
@@ -2596,7 +2645,7 @@ class World extends Phaser.Scene{
       const c=Math.round((4+e.lvl*2.5)*(e.alpha?3:e.rare?2:1)*mods().coins);G.coins+=c;
       const ct=this.add.text(e.s.x,e.s.y-24,'+'+c+'c',{fontFamily:'Fredoka',fontSize:'14px',color:'#ffd23c',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(9999000);
       this.tweens.add({targets:ct,y:ct.y-26,alpha:0,duration:800,onComplete:()=>ct.destroy()});
-      grantXp((6+e.lvl*3)*(e.boss?6:e.alpha?3:e.rare?2:1));sfx('coin');
+      grantXp((6+e.lvl*3)*(e.boss?6:e.alpha?3:e.rare?2:1));killSfx(e);
       if(e.boss){G.bossRespawn=G.day+2;G.bossKills=(G.bossKills||0)+1;G.coins+=100+e.lvl*8;
         this.dropGear(e.x,e.y,rollGear(e.lvl,3));this.dropGear(e.x+30,e.y,rollGear(e.lvl,2));
         for(const q2 of G.quests||[])if(q2.key==='boss')q2.n=Math.min(q2.need,(q2.n||0)+1);
