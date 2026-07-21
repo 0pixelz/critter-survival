@@ -2193,13 +2193,17 @@ const drops=[];
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.style.opacity='1';
   clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity='0',1600);}
 function updateHud(){if(!G)return;
+  const hp=Math.max(0,Math.ceil(G.hp));
   document.getElementById('hp').style.width=Math.max(0,G.hp/G.maxHp*100)+'%';
+  document.getElementById('hpTxt').textContent=hp+'/'+G.maxHp;
   document.getElementById('hunger').style.width=Math.max(0,G.hunger)+'%';
+  document.getElementById('hungerTxt').textContent=Math.round(Math.max(0,G.hunger))+'%';
   document.getElementById('xpb').style.width=Math.max(0,Math.min(100,G.xp/xpToNext(G.level)*100))+'%';
   document.getElementById('coins').textContent='◉ '+G.coins;
-  document.getElementById('lvl').textContent='Lv.'+G.level;
-  const nf=(1+Math.cos((G.time||0)*6.2832))/2;
-  document.getElementById('clock').textContent=(nf>0.55?'🌙':'☀️')+' Day '+G.day;}
+  document.getElementById('lvl').textContent=G.level;
+  const nf=(1+Math.cos((G.time||0)*6.2832))/2,night=nf>0.55;
+  document.getElementById('clockIc').textContent=night?'🌙':(nf<0.15||nf>0.9?'🌅':'☀️');
+  document.getElementById('clockTxt').textContent='Day '+G.day;}
 let scene;
 class World extends Phaser.Scene{
   create(){
